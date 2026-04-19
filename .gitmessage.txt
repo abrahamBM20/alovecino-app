@@ -1,0 +1,13 @@
+# Formato sugerido:
+# tipo: descripcion breve [AVXX][HU-YY]
+#
+# Ejemplo:
+# feat: estandarizar nomenclatura de usuario-service [AV26][HU-01]
+
+tipo: descripcion breve [AV26][HU-01]
+
+# Detalle opcional:
+# - Contexto:
+# - Cambio principal:
+# - Riesgo/impacto:
+# - Evidencia (tests/build):
