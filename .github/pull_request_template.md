@@ -1,39 +1,32 @@
-# Resumen
+# 📝 Resumen
+Describe brevemente qué cambio realizaste y por qué.
 
-Describe brevemente que cambio realizaste.
+# 🔗 Trazabilidad
+- **Jira ID:** [Ej: AV-26]
+- **Historia de Usuario:** [Ej: HU-01]
 
-# Trazabilidad
+# 🛠️ Tipo de cambio
+- [ ] **feat**: Nueva funcionalidad
+- [ ] **fix**: Corrección de error
+- [ ] **refactor**: Mejora de código (sin cambio funcional)
+- [ ] **docs**: Documentación
+- [ ] **chore**: Mantenimiento/Dependencias
 
-- Jira: AV26
-- Historia de usuario: HU-01
+# ✅ Criterios de Aceptación (Referencia HU)
+Copia aquí los criterios de la historia que este PR completa:
+- [ ] CA-01: [Descripción]
+- [ ] CA-02: [Descripción]
 
-# Tipo de cambio
+# 🧪 Evidencia y QA
+- [ ] Pruebas unitarias/integración ejecutadas.
+- [ ] Build exitoso (Local).
+- [ ] Capturas de pantalla, logs o video adjunto (Obligatorio para UI).
 
-- [ ] feat (nueva funcionalidad)
-- [ ] fix (correccion)
-- [ ] refactor
-- [ ] docs
-- [ ] chore
+# 📋 Checklist Técnico
+- [ ] El título del PR sigue el formato: `tipo: [ID-Jira] descripción`.
+- [ ] Los mensajes de los commits incluyen el ID de Jira.
+- [ ] No rompe compatibilidad con otras ramas.
+- [ ] Las variables de entorno (.env) están actualizadas en el grupo.
 
-# Criterios de aceptacion
-
-- [ ] CA-01:
-- [ ] CA-02:
-- [ ] CA-03:
-
-# Evidencia
-
-- [ ] Pruebas unitarias/integracion ejecutadas
-- [ ] Build exitoso
-- [ ] Capturas o logs adjuntos (si aplica)
-
-# Checklist tecnico
-
-- [ ] Incluye AV26 y HU-01 en titulo de PR
-- [ ] Commits incluyen AV26 y HU-01
-- [ ] No rompe compatibilidad
-- [ ] Documentacion actualizada (si aplica)
-
-# Notas de despliegue
-
-Indica si requiere migraciones, variables o pasos especiales.
+# 🚀 Notas de Despliegue
+Indica si requiere migraciones de base de datos (NeonDB), nuevas variables en Render o pasos especiales.
