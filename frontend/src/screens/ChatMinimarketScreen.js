@@ -11,22 +11,16 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { colors } from '../theme/colors';
-import IconoUsuario    from '../../assets/icons/icono_usuario.svg';
-import IconoAlmacen   from '../../assets/icons/icono_almacen.svg';
-import BtnFiltro      from '../../assets/icons/boton_filtro.svg';
-import BtnInicio      from '../../assets/icons/boton_inicio.svg';
-import BtnConfig      from '../../assets/icons/boton_configuracion.svg';
-import BtnPerfil      from '../../assets/icons/boton_perfil.svg';
 
 const INITIAL_MESSAGES = [
   { id: '1', from: 'almacen', text: '¡Hola! ¿En qué podemos ayudarte?' },
 ];
 
 const TAB_ITEMS = [
-  { id: 'filtro',        Icon: BtnFiltro },
-  { id: 'inicio',        Icon: BtnInicio },
-  { id: 'configuracion', Icon: BtnConfig },
-  { id: 'perfil',        Icon: BtnPerfil },
+  { id: 'filtro',        label: '≡' },
+  { id: 'inicio',        label: '⌂' },
+  { id: 'configuracion', label: '⚙' },
+  { id: 'perfil',        label: '👤' },
 ];
 
 export default function ChatMinimarketScreen({ navigation }) {
@@ -58,9 +52,9 @@ export default function ChatMinimarketScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <IconoUsuario  width={63} height={63} />
+        <View style={styles.avatar} />
         <Text style={styles.headerTitle}>Almacén</Text>
-        <IconoAlmacen  width={63} height={63} />
+        <View style={styles.avatar} />
       </View>
 
       {/* Mensajes */}
@@ -97,14 +91,14 @@ export default function ChatMinimarketScreen({ navigation }) {
 
       {/* Tab bar */}
       <View style={styles.tabBar}>
-        {TAB_ITEMS.map(({ id, Icon }) => (
+        {TAB_ITEMS.map(({ id, label }) => (
           <TouchableOpacity
             key={id}
             style={styles.tabBtn}
             activeOpacity={0.75}
             onPress={() => navigation?.navigate(id)}
           >
-            <Icon width={63} height={63} />
+            <Text style={styles.tabBtnText}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -208,5 +202,16 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  tabBtnText: {
+    fontSize: 22,
+    color: colors.white,
+  },
+  avatar: {
+    width: 63,
+    height: 63,
+    borderRadius: 31.5,
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
 });
