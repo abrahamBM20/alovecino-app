@@ -140,3 +140,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 backend/usuario-service/msusuariosbs.env
+
+# Mobile build artifacts and EAS logs
+frontend/eas-log-*.txt
+frontend/*.apk
+frontend/*.aab
+
+# Backend secrets
+backend/**/msusuariosbs.env
