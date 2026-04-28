@@ -10,6 +10,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 const INITIAL_MESSAGES = [
@@ -17,10 +18,10 @@ const INITIAL_MESSAGES = [
 ];
 
 const TAB_ITEMS = [
-  { id: 'filtro',        label: '≡' },
-  { id: 'inicio',        label: '⌂' },
-  { id: 'configuracion', label: '⚙' },
-  { id: 'perfil',        label: '👤' },
+  { id: 'filtro',        icon: 'location-outline' },
+  { id: 'inicio',        icon: 'home-outline' },
+  { id: 'configuracion', icon: 'settings-outline' },
+  { id: 'perfil',        icon: 'person-outline' },
 ];
 
 export default function ChatMinimarketScreen({ navigation }) {
@@ -42,8 +43,15 @@ export default function ChatMinimarketScreen({ navigation }) {
   function renderMessage({ item }) {
     const isAlmacen = item.from === 'almacen';
     return (
-      <View style={[styles.bubble, isAlmacen ? styles.bubbleLeft : styles.bubbleRight]}>
-        <Text style={styles.bubbleText}>{item.text}</Text>
+      <View style={[styles.messageRow, isAlmacen ? styles.messageRowLeft : styles.messageRowRight]}>
+        {isAlmacen && (
+          <View style={styles.msgAvatar}>
+            <Ionicons name="storefront-outline" size={24} color={colors.white} />
+          </View>
+        )}
+        <View style={[styles.bubble, isAlmacen ? styles.bubbleLeft : styles.bubbleRight]}>
+          <Text style={styles.bubbleText}>{item.text}</Text>
+        </View>
       </View>
     );
   }
@@ -52,9 +60,13 @@ export default function ChatMinimarketScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.avatar} />
+        <View style={styles.avatar}>
+          <Ionicons name="person-circle-outline" size={40} color={colors.white} />
+        </View>
         <Text style={styles.headerTitle}>Almacén</Text>
-        <View style={styles.avatar} />
+        <View style={styles.avatar}>
+          <Ionicons name="storefront-outline" size={36} color={colors.white} />
+        </View>
       </View>
 
       {/* Mensajes */}
@@ -84,21 +96,21 @@ export default function ChatMinimarketScreen({ navigation }) {
             returnKeyType="send"
           />
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} activeOpacity={0.75}>
-            <Text style={styles.sendBtnText}>›</Text>
+            <Ionicons name="arrow-forward" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
       {/* Tab bar */}
       <View style={styles.tabBar}>
-        {TAB_ITEMS.map(({ id, label }) => (
+        {TAB_ITEMS.map(({ id, icon }) => (
           <TouchableOpacity
             key={id}
             style={styles.tabBtn}
             activeOpacity={0.75}
             onPress={() => navigation?.navigate(id)}
           >
-            <Text style={styles.tabBtnText}>{label}</Text>
+            <Ionicons name={icon} size={28} color={colors.white} />
           </TouchableOpacity>
         ))}
       </View>
@@ -126,6 +138,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.white,
   },
+  avatar: {
+    width: 63,
+    height: 63,
+    borderRadius: 31.5,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // Mensajes
   messageList: {
@@ -133,18 +153,37 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
   },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  messageRowLeft: {
+    justifyContent: 'flex-start',
+  },
+  messageRowRight: {
+    justifyContent: 'flex-end',
+  },
+  msgAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bubble: {
-    maxWidth: 237,
+    maxWidth: 220,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: colors.white,
   },
   bubbleLeft: {
-    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
   },
   bubbleRight: {
-    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
   },
   bubbleText: {
     fontSize: 15,
@@ -179,11 +218,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnText: {
-    fontSize: 28,
-    color: colors.primary,
-    fontWeight: '700',
-  },
 
   // Tab bar
   tabBar: {
@@ -203,15 +237,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  tabBtnText: {
-    fontSize: 22,
-    color: colors.white,
-  },
-  avatar: {
-    width: 63,
-    height: 63,
-    borderRadius: 31.5,
-    backgroundColor: 'rgba(255,255,255,0.25)',
   },
 });
