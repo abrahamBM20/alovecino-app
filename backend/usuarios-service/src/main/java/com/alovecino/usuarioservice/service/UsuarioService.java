@@ -33,6 +33,7 @@ public class UsuarioService {
                 .orElseGet(() -> rolRepository.save(new Rol(request.getNombreRol())));
         Usuario usuario = new Usuario();
         usuario.setNombreUsuario(request.getNombreUsuario());
+        usuario.setNombre(request.getNombreUsuario());
         usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
         usuario.setRol(rol);
         Usuario saved = usuarioRepository.save(usuario);

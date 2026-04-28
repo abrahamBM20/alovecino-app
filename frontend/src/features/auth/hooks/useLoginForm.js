@@ -13,7 +13,7 @@ export function useLoginForm() {
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
@@ -25,7 +25,11 @@ export function useLoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     clearError();
-    await login(values);
+    try {
+      await login(values);
+    } catch {
+      // The auth store maps and exposes the API error for the screen.
+    }
   });
 
   return useMemo(
@@ -35,8 +39,8 @@ export function useLoginForm() {
       isLoading,
       authError,
       onSubmit,
-      canSubmit: isValid && !isLoading,
+      canSubmit: !isLoading,
     }),
-    [authError, control, errors, isLoading, isValid, onSubmit],
+    [authError, control, errors, isLoading, onSubmit],
   );
 }

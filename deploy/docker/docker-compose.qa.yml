@@ -1,0 +1,14 @@
+services:
+  usuarios-service:
+    build:
+      context: ../../backend/usuarios-service
+      dockerfile: Dockerfile
+    container_name: alovecino-usuarios-service-qa
+    environment:
+      SPRING_PROFILES_ACTIVE: qa
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${NEON_DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${NEON_DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DATABASE_PASSWORD}
+    ports:
+      - "${USUARIOS_SERVICE_PORT:-8081}:8080"

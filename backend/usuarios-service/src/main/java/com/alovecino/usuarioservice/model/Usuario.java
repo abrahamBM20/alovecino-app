@@ -23,6 +23,9 @@ public class Usuario {
     @Column(name = "nombre_usuario", nullable = false, unique = true)
     private String nombreUsuario;
 
+    @Column(name = "nombre", nullable = false)
+    private String nombre;
+
     @Column(name = "contrasena", nullable = false)
     private String contrasena;
 
@@ -47,6 +50,14 @@ public class Usuario {
 
     public void setNombreUsuario(String nombreUsuario) {
         this.nombreUsuario = nombreUsuario;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 
     public String getContrasena() {
