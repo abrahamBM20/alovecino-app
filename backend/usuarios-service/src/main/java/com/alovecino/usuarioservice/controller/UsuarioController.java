@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.controller;
+package com.alovecino.usuarioservice.controller;
 
 import java.util.List;
 
@@ -20,9 +20,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.alovecino.usuarioservice.usuario.dto.UsuarioRequest;
-import com.alovecino.usuarioservice.usuario.dto.UsuarioResponse;
-import com.alovecino.usuarioservice.usuario.service.UsuarioService;
+import com.alovecino.usuarioservice.dto.UsuarioRequest;
+import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.service.UsuarioService;
 
 @RestController
 @RequestMapping("/api/usuarios")

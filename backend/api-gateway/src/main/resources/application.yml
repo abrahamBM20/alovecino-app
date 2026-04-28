@@ -1,0 +1,27 @@
+server:
+  port: ${GATEWAY_PORT:8082}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+gateway:
+  services:
+    usuarios:
+      base-url: ${USUARIOS_SERVICE_URL:http://localhost:8080}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-secret-change}

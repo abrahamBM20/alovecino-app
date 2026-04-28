@@ -1,10 +1,10 @@
-package com.alovecino.usuarioservice.usuario.repository;
+package com.alovecino.usuarioservice.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.alovecino.usuarioservice.usuario.model.Usuario;
+import com.alovecino.usuarioservice.model.Usuario;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByNombreUsuario(String nombreUsuario);

@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.service;
+package com.alovecino.usuarioservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.alovecino.usuarioservice.usuario.dto.UsuarioRequest;
-import com.alovecino.usuarioservice.usuario.dto.UsuarioResponse;
-import com.alovecino.usuarioservice.usuario.repository.UsuarioRepository;
-import com.alovecino.usuarioservice.usuario.service.UsuarioService;
+import com.alovecino.usuarioservice.dto.UsuarioRequest;
+import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.repository.UsuarioRepository;
+import com.alovecino.usuarioservice.service.UsuarioService;
 
 @SpringBootTest
 class UsuarioServiceTests {

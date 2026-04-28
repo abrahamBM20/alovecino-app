@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.model;
+package com.alovecino.usuarioservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
