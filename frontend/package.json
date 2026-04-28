@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
+    "start:dev-client": "expo start --dev-client",
     "android": "expo start --android",
+    "android:dev-client": "expo start --android --dev-client",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
@@ -25,6 +27,7 @@
     "expo-dev-client": "~6.0.20",
     "expo-linear-gradient": "~15.0.8",
     "expo-status-bar": "~3.0.9",
+    "expo-updates": "~29.0.16",
     "react": "19.1.0",
     "react-hook-form": "^7.73.1",
     "react-native": "0.81.5",

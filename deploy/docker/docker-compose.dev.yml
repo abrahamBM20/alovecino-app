@@ -1,0 +1,20 @@
+services:
+  usuarios-service:
+    build:
+      context: ../../backend/usuarios-service
+      dockerfile: Dockerfile.dev
+    container_name: alovecino-usuarios-service-dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${NEON_DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${NEON_DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DATABASE_PASSWORD}
+    ports:
+      - "${USUARIOS_SERVICE_PORT:-8080}:8080"
+    volumes:
+      - ../../backend/usuarios-service:/workspace
+      - maven_cache_dev:/root/.m2
+
+volumes:
+  maven_cache_dev:

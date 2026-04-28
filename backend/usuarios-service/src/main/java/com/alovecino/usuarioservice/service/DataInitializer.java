@@ -31,10 +31,13 @@ public class DataInitializer implements ApplicationRunner {
             rolRepository.save(new Rol("USER"));
         }
 
-        if (usuarioRepository.count() == 0) {
-            Rol adminRol = rolRepository.findByNombreRol("ADMIN").orElseThrow();
+        Rol adminRol = rolRepository.findByNombreRol("ADMIN")
+                .orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
+
+        if (usuarioRepository.findByNombreUsuario("admin@alovecino.com").isEmpty()) {
             Usuario admin = new Usuario();
-            admin.setNombreUsuario("admin");
+            admin.setNombreUsuario("admin@alovecino.com");
+            admin.setNombre("Administrador");
             admin.setContrasena(passwordEncoder.encode("admin1234"));
             admin.setRol(adminRol);
             usuarioRepository.save(admin);
