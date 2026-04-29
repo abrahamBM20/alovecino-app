@@ -62,18 +62,23 @@ docker compose --env-file deploy/docker/.env.dev -f deploy/docker/docker-compose
 docker compose --env-file deploy/docker/.env.qa -f deploy/docker/docker-compose.qa.yml down
 ```
 
-## Swagger y mapeo Front (login)
+## Auth service y JWT
 
-Con el microservicio de usuarios arriba, la documentación OpenAPI queda disponible en:
+El login debe ser emitido por `auth-service`, que autentica contra las tablas `usuario`/`rol`, firma un access token JWT con RS256 y almacena refresh tokens hasheados en la tabla `refresh_token`.
 
-- `http://localhost:8080/swagger-ui/index.html`
-- `http://localhost:8080/v3/api-docs`
+En desarrollo:
 
-Endpoint de login para el frontend:
+- Swagger auth: `http://localhost:8081/swagger-ui/index.html`
+- JWKS para API Gateway: `http://localhost:8081/.well-known/jwks.json`
+- Dentro de Docker, el Gateway debe validar con `http://auth-service:8080/.well-known/jwks.json`
+
+Endpoints:
 
 - `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
 
-Request:
+Login request:
 
 ```json
 {
@@ -82,15 +87,31 @@ Request:
 }
 ```
 
-Response:
+Login/refresh response:
 
 ```json
 {
-	"token": "session-token",
+	"token": "access-jwt",
+	"accessToken": "access-jwt",
+	"refreshToken": "opaque-refresh-token",
+	"tokenType": "Bearer",
+	"accessTokenExpiresAt": "2026-04-28T12:15:00Z",
+	"refreshTokenExpiresAt": "2026-05-28T12:00:00Z",
 	"user": {
 		"id": "1",
-		"name": "admin@alovecino.com",
+		"name": "Administrador",
 		"email": "admin@alovecino.com"
 	}
 }
 ```
+
+El campo `token` se mantiene como alias de `accessToken` para compatibilidad con el frontend actual.
+
+Configuración base para Spring Cloud Gateway como resource server:
+
+```properties
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://auth-service:8080/.well-known/jwks.json
+spring.security.oauth2.resourceserver.jwt.issuer-uri=
+```
+
+Si el Gateway corre fuera de Docker en desarrollo, usa `http://localhost:8081/.well-known/jwks.json`.
