@@ -12,7 +12,7 @@ export default class AppErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error) {
-    // Keep it simple for now. This can be replaced by Sentry or another logger.
+    // Replace this with Sentry or another logger when observability is added.
     // eslint-disable-next-line no-console
     console.error(error);
   }
