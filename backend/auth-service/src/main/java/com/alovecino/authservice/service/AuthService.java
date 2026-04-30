@@ -51,7 +51,7 @@ public class AuthService {
         return issueTokens(usuario);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
     public TokenResponse refresh(RefreshTokenRequest request) {
         String tokenHash = refreshTokenService.hash(request.getRefreshToken());
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(tokenHash)

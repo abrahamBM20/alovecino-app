@@ -3,9 +3,12 @@ package com.alovecino.authservice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.Instant;
 
 import jakarta.persistence.EntityManager;
 
@@ -26,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.alovecino.authservice.model.Rol;
 import com.alovecino.authservice.model.Usuario;
+import com.alovecino.authservice.repository.RefreshTokenRepository;
+import com.alovecino.authservice.service.RefreshTokenService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -39,14 +44,19 @@ class AuthServiceApplicationTests {
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
     private final TransactionTemplate transactionTemplate;
+    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     AuthServiceApplicationTests(MockMvc mockMvc, PasswordEncoder passwordEncoder,
-            EntityManager entityManager, PlatformTransactionManager transactionManager) {
+            EntityManager entityManager, PlatformTransactionManager transactionManager,
+            RefreshTokenService refreshTokenService, RefreshTokenRepository refreshTokenRepository) {
         this.mockMvc = mockMvc;
         this.passwordEncoder = passwordEncoder;
         this.entityManager = entityManager;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.refreshTokenService = refreshTokenService;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @BeforeEach
@@ -97,5 +107,134 @@ class AuthServiceApplicationTests {
 
         assertThat(accessToken).isEqualTo(token);
         assertThat(accessToken.split("\\.")).hasSize(3);
+    }
+
+    @Test
+    void loginReturnsUnauthorizedForInvalidPassword() throws Exception {
+        String request = """
+                {
+                    "email": "%s",
+                    "password": "wrong-password"
+                }
+                """.formatted(TEST_EMAIL);
+
+        mockMvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Credenciales inválidas"));
+    }
+
+    @Test
+    void refreshRotatesRefreshTokenAndRejectsOldToken() throws Exception {
+        JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String oldRefreshToken = loginResponse.get("refreshToken").asText();
+
+        String refreshRequest = """
+                {
+                    "refreshToken": "%s"
+                }
+                """.formatted(oldRefreshToken);
+
+        MvcResult refreshResult = mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(refreshRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
+                .andReturn();
+
+        JsonNode refreshResponse = objectMapper.readTree(refreshResult.getResponse().getContentAsString());
+        String newRefreshToken = refreshResponse.get("refreshToken").asText();
+
+        assertThat(newRefreshToken).isNotEqualTo(oldRefreshToken);
+        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(oldRefreshToken))).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(newRefreshToken))).isPresent();
+
+        mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(refreshRequest))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Refresh token inválido"));
+    }
+
+    @Test
+    void refreshReturnsUnauthorizedForExpiredRefreshToken() throws Exception {
+        JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String refreshToken = loginResponse.get("refreshToken").asText();
+        String refreshTokenHash = refreshTokenService.hash(refreshToken);
+
+        transactionTemplate.executeWithoutResult(status -> refreshTokenRepository
+                .findByTokenHashAndRevokedAtIsNull(refreshTokenHash)
+                .ifPresent(token -> token.setExpiresAt(Instant.now().minusSeconds(1))));
+
+        String refreshRequest = """
+                {
+                    "refreshToken": "%s"
+                }
+                """.formatted(refreshToken);
+
+        mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(refreshRequest))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Refresh token inválido"));
+
+        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(refreshTokenHash)).isEmpty();
+    }
+
+    @Test
+    void logoutRevokesRefreshToken() throws Exception {
+        JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String refreshToken = loginResponse.get("refreshToken").asText();
+        String refreshTokenHash = refreshTokenService.hash(refreshToken);
+        String logoutRequest = """
+                {
+                    "refreshToken": "%s"
+                }
+                """.formatted(refreshToken);
+
+        mockMvc.perform(post("/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(logoutRequest))
+                .andExpect(status().isNoContent());
+
+        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(refreshTokenHash)).isEmpty();
+
+        mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(logoutRequest))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void jwksExposesPublicSigningKey() throws Exception {
+        mockMvc.perform(get("/.well-known/jwks.json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keys[0].kty").value("RSA"))
+                .andExpect(jsonPath("$.keys[0].use").value("sig"))
+                .andExpect(jsonPath("$.keys[0].alg").value("RS256"))
+                .andExpect(jsonPath("$.keys[0].kid").value("auth-key-1"))
+                .andExpect(jsonPath("$.keys[0].n", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.keys[0].e", not(emptyOrNullString())));
+    }
+
+    private JsonNode login(String email, String password) throws Exception {
+        String request = """
+                {
+                    "email": "%s",
+                    "password": "%s"
+                }
+                """.formatted(email, password);
+
+        MvcResult result = mockMvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 }
