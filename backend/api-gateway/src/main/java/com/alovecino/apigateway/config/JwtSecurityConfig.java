@@ -17,7 +17,16 @@ public class JwtSecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/", "/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/actuator/**")
+                        .pathMatchers(
+                                "/",
+                                "/auth/login",
+                                "/auth/refresh",
+                                "/auth/logout",
+                                "/.well-known/jwks.json",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/actuator/health",
+                                "/actuator/info")
                         .permitAll()
                         .anyExchange()
                         .authenticated())

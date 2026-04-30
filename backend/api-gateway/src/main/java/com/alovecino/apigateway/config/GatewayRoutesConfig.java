@@ -10,12 +10,16 @@ public class GatewayRoutesConfig {
 
     @Bean
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder, GatewayProperties properties) {
+        String authUrl = properties.getServices().getAuth().getBaseUrl();
         String usuariosUrl = properties.getServices().getUsuarios().getBaseUrl();
 
         return builder.routes()
-                .route("usuarios-auth", route -> route
+                .route("auth-api", route -> route
                         .path("/auth/**")
-                        .uri(usuariosUrl))
+                        .uri(authUrl))
+                .route("auth-jwks", route -> route
+                        .path("/.well-known/jwks.json")
+                        .uri(authUrl))
                 .route("usuarios-api", route -> route
                         .path("/api/usuarios/**")
                         .uri(usuariosUrl))

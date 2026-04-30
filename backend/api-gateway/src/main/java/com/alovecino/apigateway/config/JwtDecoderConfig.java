@@ -1,12 +1,14 @@
 package com.alovecino.apigateway.config;
 
-import java.nio.charset.StandardCharsets;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 
@@ -15,14 +17,31 @@ public class JwtDecoderConfig {
 
     @Bean
     public ReactiveJwtDecoder reactiveJwtDecoder(GatewayProperties properties) {
-        String secret = properties.getSecurity().getJwt().getSecret();
-        if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("gateway.security.jwt.secret must be configured");
+        GatewayProperties.Jwt jwt = properties.getSecurity().getJwt();
+        if (jwt.getJwkSetUri() == null || jwt.getJwkSetUri().isBlank()) {
+            throw new IllegalStateException("gateway.security.jwt.jwk-set-uri must be configured");
         }
 
-        SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusReactiveJwtDecoder.withSecretKey(key)
-                .macAlgorithm(MacAlgorithm.HS256)
+        NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwt.getJwkSetUri())
+                .jwsAlgorithm(SignatureAlgorithm.RS256)
                 .build();
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(jwt.getIssuer()),
+                audienceValidator(jwt.getAudience())));
+        return decoder;
+    }
+
+    private OAuth2TokenValidator<Jwt> audienceValidator(String expectedAudience) {
+        return jwt -> {
+            if (expectedAudience == null || expectedAudience.isBlank()
+                    || jwt.getAudience().contains(expectedAudience)) {
+                return OAuth2TokenValidatorResult.success();
+            }
+            OAuth2Error error = new OAuth2Error(
+                    "invalid_token",
+                    "The required audience is missing",
+                    null);
+            return OAuth2TokenValidatorResult.failure(error);
+        };
     }
 }

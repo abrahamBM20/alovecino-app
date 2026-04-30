@@ -17,7 +17,12 @@ public class GatewayProperties {
     }
 
     public static class Services {
+        private final Service auth = new Service();
         private final Service usuarios = new Service();
+
+        public Service getAuth() {
+            return auth;
+        }
 
         public Service getUsuarios() {
             return usuarios;
@@ -45,14 +50,32 @@ public class GatewayProperties {
     }
 
     public static class Jwt {
-        private String secret;
+        private String jwkSetUri;
+        private String issuer;
+        private String audience;
 
-        public String getSecret() {
-            return secret;
+        public String getJwkSetUri() {
+            return jwkSetUri;
         }
 
-        public void setSecret(String secret) {
-            this.secret = secret;
+        public void setJwkSetUri(String jwkSetUri) {
+            this.jwkSetUri = jwkSetUri;
+        }
+
+        public String getIssuer() {
+            return issuer;
+        }
+
+        public void setIssuer(String issuer) {
+            this.issuer = issuer;
+        }
+
+        public String getAudience() {
+            return audience;
+        }
+
+        public void setAudience(String audience) {
+            this.audience = audience;
         }
     }
 }
