@@ -1,4 +1,23 @@
 services:
+  auth-service:
+    build:
+      context: ../../backend/auth-service
+      dockerfile: Dockerfile.dev
+    container_name: alovecino-auth-service-dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${NEON_DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${NEON_DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DATABASE_PASSWORD}
+      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:-}
+      APP_JWT_PUBLIC_KEY: ${APP_JWT_PUBLIC_KEY:-}
+    ports:
+      - "${AUTH_SERVICE_PORT:-8081}:8080"
+    volumes:
+      - ../../backend/auth-service:/workspace
+      - maven_cache_dev:/root/.m2
+
   usuarios-service:
     build:
       context: ../../backend/usuarios-service
