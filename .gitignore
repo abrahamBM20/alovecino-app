@@ -74,6 +74,10 @@ web_modules/
 !deploy/docker/.env.dev.example
 !deploy/docker/.env.qa.example
 
+# Local auth and tooling state
+.neonctl/
+.docker-codex/
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -144,17 +148,19 @@ vite.config.ts.timestamp-*
 backend/usuario-service/msusuariosbs.env
 
 # Mobile build artifacts and EAS logs
+frontend/.expo/
 frontend/eas-log-*.txt
+frontend/eas_phase*.log
+frontend/expo-*.log
 frontend/*.apk
 frontend/*.aab
+frontend/latest-*.apk
 
 # Backend secrets
 backend/**/msusuariosbs.env
-.neonctl/
 
-# Local tooling caches generated during backend tests
+# Backend build outputs and local Maven caches
 .m2/
 .m2-*/
-.docker-codex/
 backend/**/target/
 .claude/
