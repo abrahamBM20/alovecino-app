@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.service;
+package com.alovecino.usuarioservice.service;
 
 import java.util.Collections;
 
@@ -10,8 +10,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.alovecino.usuarioservice.usuario.model.Usuario;
-import com.alovecino.usuarioservice.usuario.repository.UsuarioRepository;
+import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @Service
 public class UsuarioDetailsService implements UserDetailsService {

@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.model;
+package com.alovecino.usuarioservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import com.alovecino.usuarioservice.usuario.model.Rol;
+import com.alovecino.usuarioservice.model.Rol;
 
 @Entity
 @Table(name = "usuario")

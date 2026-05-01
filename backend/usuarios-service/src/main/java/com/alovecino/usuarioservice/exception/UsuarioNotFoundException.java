@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.exception;
+package com.alovecino.usuarioservice.exception;
 
 public class UsuarioNotFoundException extends RuntimeException {
 

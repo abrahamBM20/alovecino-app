@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.dto;
+package com.alovecino.usuarioservice.dto;
 
 public class LoginResponse {
 
