@@ -22,9 +22,10 @@ module.exports = ({ config }) => {
     owner: 'alovecino',
     name: selected.appName,
     slug: 'alovecino-app',
+    scheme: 'alovecino',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/app-icon.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
@@ -38,13 +39,19 @@ module.exports = ({ config }) => {
     android: {
       package: selected.androidPackage,
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
+        foregroundImage: './assets/adaptive-icon-foreground.png',
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
     },
     web: {
+      bundler: 'metro',
       favicon: './assets/favicon.png',
+    },
+    plugins: [...(config.plugins || []), 'expo-router'],
+    experiments: {
+      ...(config.experiments || {}),
+      typedRoutes: true,
     },
     extra: {
       ...config.extra,

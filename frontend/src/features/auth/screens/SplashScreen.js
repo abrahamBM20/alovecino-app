@@ -1,17 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import { ASSETS } from '../../../shared/constants/assets';
 
-export default function SplashScreen({ navigation }) {
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      navigation.replace('AuthSelection');
-    }, 1500);
-
-    return () => clearTimeout(timeoutId);
-  }, [navigation]);
-
+export default function SplashScreen() {
   return (
     <ScreenContainer>
       <View style={styles.container}>

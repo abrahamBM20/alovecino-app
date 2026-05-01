@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.service;
+package com.alovecino.usuarioservice.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -6,13 +6,13 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.alovecino.usuarioservice.usuario.dto.UsuarioRequest;
-import com.alovecino.usuarioservice.usuario.dto.UsuarioResponse;
-import com.alovecino.usuarioservice.usuario.exception.UsuarioNotFoundException;
-import com.alovecino.usuarioservice.usuario.model.Rol;
-import com.alovecino.usuarioservice.usuario.model.Usuario;
-import com.alovecino.usuarioservice.usuario.repository.RolRepository;
-import com.alovecino.usuarioservice.usuario.repository.UsuarioRepository;
+import com.alovecino.usuarioservice.dto.UsuarioRequest;
+import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.exception.UsuarioNotFoundException;
+import com.alovecino.usuarioservice.model.Rol;
+import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.RolRepository;
+import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @Service
 public class UsuarioService {

@@ -1,14 +1,14 @@
-package com.alovecino.usuarioservice.usuario.service;
+package com.alovecino.usuarioservice.service;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import com.alovecino.usuarioservice.usuario.model.Rol;
-import com.alovecino.usuarioservice.usuario.model.Usuario;
-import com.alovecino.usuarioservice.usuario.repository.RolRepository;
-import com.alovecino.usuarioservice.usuario.repository.UsuarioRepository;
+import com.alovecino.usuarioservice.model.Rol;
+import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.RolRepository;
+import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @Component
 public class DataInitializer implements ApplicationRunner {
