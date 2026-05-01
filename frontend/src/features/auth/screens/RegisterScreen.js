@@ -5,6 +5,13 @@ import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import AppButton from '../../../shared/ui/AppButton';
 import { useRegisterForm } from '../hooks/useRegisterForm';
 
+function formatDate(text) {
+  const digits = text.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
 function FieldInput({ label, error, ...props }) {
   return (
     <View style={styles.fieldWrapper}>
@@ -56,7 +63,7 @@ export default function RegisterScreen({ navigation }) {
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               onBlur={onBlur}
-              onChangeText={onChange}
+              onChangeText={(text) => onChange(formatDate(text))}
               value={value}
               error={errors.fechaNacimiento?.message}
             />
