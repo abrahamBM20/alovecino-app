@@ -6,27 +6,29 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      httpclient:
-        connect-timeout: 5000
-        response-timeout: 30s
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowed-origins: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:19006,http://localhost:8081,http://localhost:8082,http://localhost:3000}
-            allowed-methods:
-              - GET
-              - POST
-              - PUT
-              - PATCH
-              - DELETE
-              - OPTIONS
-            allowed-headers: '*'
-            exposed-headers:
-              - Authorization
-              - X-Request-Id
-            allow-credentials: false
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 5000
+            response-timeout: 30s
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:19006,http://localhost:8081,http://localhost:8082,http://localhost:3000}
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowed-headers: '*'
+                exposed-headers:
+                  - Authorization
+                  - X-Request-Id
+                allow-credentials: false
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
   security:
     oauth2:
       resourceserver:

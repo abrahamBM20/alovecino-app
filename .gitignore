@@ -150,3 +150,11 @@ frontend/*.aab
 
 # Backend secrets
 backend/**/msusuariosbs.env
+.neonctl/
+
+# Local tooling caches generated during backend tests
+.m2/
+.m2-*/
+.docker-codex/
+backend/**/target/
+.claude/
