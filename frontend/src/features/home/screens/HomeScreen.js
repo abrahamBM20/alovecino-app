@@ -1,47 +1,75 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, StatusBar, Text } from 'react-native';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
-import AppButton from '../../../shared/ui/AppButton';
-import { useAuthStore } from '../../../store/authStore';
+import HomeBottomNav from '../components/HomeBottomNav';
 
 export default function HomeScreen() {
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const [MapPreview, setMapPreview] = useState(null);
+  const [mapError, setMapError] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    import('../components/HomeMapPreview')
+      .then((module) => {
+        if (isMounted) {
+          setMapPreview(() => module.default);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setMapError(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleNavigate = (sectionId) => {
+    // Aquí se pueden conectar las rutas reales del app más adelante.
+  };
 
   return (
     <ScreenContainer>
-      <View style={styles.container}>
-        <Text style={styles.title}>Bienvenido a AloVecino</Text>
-        <Text style={styles.subtitle}>{user?.email || 'Sesion iniciada'}</Text>
-        <View style={styles.actions}>
-          <AppButton title="Cerrar sesion" onPress={logout} variant="secondary" />
+      <StatusBar barStyle="light-content" translucent={false} />
+      <View style={styles.screen}>
+        <View style={styles.mapContainer}>
+          {mapError ? (
+            <Text style={styles.mapErrorText}>
+              No se pudo cargar el mapa. Revisa la configuración nativa del módulo.
+            </Text>
+          ) : MapPreview ? (
+            <MapPreview />
+          ) : (
+            <Text style={styles.mapLoadingText}>Cargando mapa...</Text>
+          )}
         </View>
+        <HomeBottomNav onNavigate={handleNavigate} />
       </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    justifyContent: 'space-between',
+    paddingTop: 16,
   },
-  title: {
-    fontSize: 26,
+  mapContainer: {
+    flex: 1,
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  mapLoadingText: {
     color: '#ffffff',
-    fontWeight: '700',
     textAlign: 'center',
+    marginTop: 20,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#e2e8f0',
-    marginTop: 10,
+  mapErrorText: {
+    color: '#ffdddd',
     textAlign: 'center',
-  },
-  actions: {
-    marginTop: 28,
-    width: '100%',
+    marginTop: 20,
   },
 });

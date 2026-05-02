@@ -1,5 +1,6 @@
 export const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV || 'dev';
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api-dev.example.com';
+export const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 export function isProduction() {
   return APP_ENV === 'prod';

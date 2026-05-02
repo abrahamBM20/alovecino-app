@@ -43,6 +43,11 @@ module.exports = ({ config }) => {
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        },
+      },
     },
     web: {
       bundler: 'metro',
@@ -57,6 +62,7 @@ module.exports = ({ config }) => {
       ...config.extra,
       appEnv: process.env.EXPO_PUBLIC_APP_ENV || 'dev',
       apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api-dev.example.com',
+      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     },
   };
 };
