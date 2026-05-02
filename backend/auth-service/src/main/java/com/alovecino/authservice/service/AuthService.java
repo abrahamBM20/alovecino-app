@@ -9,8 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.alovecino.authservice.config.JwtProperties;
 import com.alovecino.authservice.dto.LoginRequest;
-import com.alovecino.authservice.dto.LogoutRequest;
-import com.alovecino.authservice.dto.RefreshTokenRequest;
 import com.alovecino.authservice.dto.SessionUserResponse;
 import com.alovecino.authservice.dto.TokenResponse;
 import com.alovecino.authservice.model.RefreshToken;
@@ -52,8 +50,8 @@ public class AuthService {
     }
 
     @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
-    public TokenResponse refresh(RefreshTokenRequest request) {
-        String tokenHash = refreshTokenService.hash(request.getRefreshToken());
+    public TokenResponse refresh(String refreshTokenValue) {
+        String tokenHash = refreshTokenService.hash(refreshTokenValue);
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(tokenHash)
                 .orElseThrow(InvalidRefreshTokenException::new);
 
@@ -68,8 +66,8 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(LogoutRequest request) {
-        String tokenHash = refreshTokenService.hash(request.getRefreshToken());
+    public void logout(String refreshTokenValue) {
+        String tokenHash = refreshTokenService.hash(refreshTokenValue);
         refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(tokenHash)
                 .ifPresent(refreshToken -> refreshToken.setRevokedAt(Instant.now()));
     }

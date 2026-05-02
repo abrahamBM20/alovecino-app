@@ -6,12 +6,15 @@ import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.persistence.EntityManager;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +49,7 @@ class AuthServiceApplicationTests {
     private final TransactionTemplate transactionTemplate;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private Cookie currentRefreshTokenCookie;
 
     @Autowired
     AuthServiceApplicationTests(MockMvc mockMvc, PasswordEncoder passwordEncoder,
@@ -62,13 +66,19 @@ class AuthServiceApplicationTests {
     @BeforeEach
     void setUp() {
         transactionTemplate.executeWithoutResult(status -> {
-            entityManager.createQuery("delete from RefreshToken").executeUpdate();
-            entityManager.createQuery("delete from Usuario").executeUpdate();
-            entityManager.createQuery("delete from Rol").executeUpdate();
+            deleteTestUserData();
 
-            Rol rol = new Rol();
-            rol.setNombreRol("USER");
-            entityManager.persist(rol);
+            Rol rol = entityManager
+                    .createQuery("select r from Rol r where r.nombreRol = :nombreRol", Rol.class)
+                    .setParameter("nombreRol", "USER")
+                    .getResultStream()
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Rol newRol = new Rol();
+                        newRol.setNombreRol("USER");
+                        entityManager.persist(newRol);
+                        return newRol;
+                    });
 
             Usuario usuario = new Usuario();
             usuario.setNombreUsuario(TEST_EMAIL);
@@ -78,6 +88,20 @@ class AuthServiceApplicationTests {
             entityManager.persist(usuario);
             entityManager.flush();
         });
+    }
+
+    @AfterEach
+    void tearDown() {
+        transactionTemplate.executeWithoutResult(status -> deleteTestUserData());
+    }
+
+    private void deleteTestUserData() {
+        entityManager.createQuery("delete from RefreshToken rt where rt.usuario.nombreUsuario = :email")
+                .setParameter("email", TEST_EMAIL)
+                .executeUpdate();
+        entityManager.createQuery("delete from Usuario u where u.nombreUsuario = :email")
+                .setParameter("email", TEST_EMAIL)
+                .executeUpdate();
     }
 
     @Test
@@ -93,20 +117,23 @@ class AuthServiceApplicationTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.token").doesNotExist())
                 .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
-                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.user.email").value(TEST_EMAIL))
                 .andExpect(jsonPath("$.user.name").value("Usuario Test"))
                 .andReturn();
 
         JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
-        String token = response.get("token").asText();
         String accessToken = response.get("accessToken").asText();
+        Cookie refreshTokenCookie = result.getResponse().getCookie("refreshToken");
 
-        assertThat(accessToken).isEqualTo(token);
         assertThat(accessToken.split("\\.")).hasSize(3);
+        assertThat(refreshTokenCookie).isNotNull();
+        assertThat(refreshTokenCookie.getValue()).isNotBlank();
+        assertThat(refreshTokenCookie.isHttpOnly()).isTrue();
+        assertThat(result.getResponse().getHeader("Set-Cookie")).contains("SameSite=Lax");
     }
 
     @Test
@@ -128,25 +155,21 @@ class AuthServiceApplicationTests {
     @Test
     void refreshRotatesRefreshTokenAndRejectsOldToken() throws Exception {
         JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
-        String oldRefreshToken = loginResponse.get("refreshToken").asText();
-
-        String refreshRequest = """
-                {
-                    "refreshToken": "%s"
-                }
-                """.formatted(oldRefreshToken);
+        String oldRefreshToken = currentRefreshTokenCookie.getValue();
 
         MvcResult refreshResult = mockMvc.perform(post("/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshRequest))
+                .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
-                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.token").doesNotExist())
                 .andReturn();
 
-        JsonNode refreshResponse = objectMapper.readTree(refreshResult.getResponse().getContentAsString());
-        String newRefreshToken = refreshResponse.get("refreshToken").asText();
+        Cookie newRefreshTokenCookie = refreshResult.getResponse().getCookie("refreshToken");
+        String newRefreshToken = newRefreshTokenCookie.getValue();
 
+        assertThat(newRefreshTokenCookie).isNotNull();
+        assertThat(newRefreshTokenCookie.isHttpOnly()).isTrue();
         assertThat(newRefreshToken).isNotEqualTo(oldRefreshToken);
         assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
                 refreshTokenService.hash(oldRefreshToken))).isEmpty();
@@ -154,8 +177,7 @@ class AuthServiceApplicationTests {
                 refreshTokenService.hash(newRefreshToken))).isPresent();
 
         mockMvc.perform(post("/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshRequest))
+                .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Refresh token inválido"));
     }
@@ -163,22 +185,15 @@ class AuthServiceApplicationTests {
     @Test
     void refreshReturnsUnauthorizedForExpiredRefreshToken() throws Exception {
         JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
-        String refreshToken = loginResponse.get("refreshToken").asText();
+        String refreshToken = currentRefreshTokenCookie.getValue();
         String refreshTokenHash = refreshTokenService.hash(refreshToken);
 
         transactionTemplate.executeWithoutResult(status -> refreshTokenRepository
                 .findByTokenHashAndRevokedAtIsNull(refreshTokenHash)
                 .ifPresent(token -> token.setExpiresAt(Instant.now().minusSeconds(1))));
 
-        String refreshRequest = """
-                {
-                    "refreshToken": "%s"
-                }
-                """.formatted(refreshToken);
-
         mockMvc.perform(post("/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(refreshRequest))
+                .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Refresh token inválido"));
 
@@ -188,24 +203,18 @@ class AuthServiceApplicationTests {
     @Test
     void logoutRevokesRefreshToken() throws Exception {
         JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
-        String refreshToken = loginResponse.get("refreshToken").asText();
+        String refreshToken = currentRefreshTokenCookie.getValue();
         String refreshTokenHash = refreshTokenService.hash(refreshToken);
-        String logoutRequest = """
-                {
-                    "refreshToken": "%s"
-                }
-                """.formatted(refreshToken);
 
         mockMvc.perform(post("/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(logoutRequest))
-                .andExpect(status().isNoContent());
+                .cookie(currentRefreshTokenCookie))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
 
         assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(refreshTokenHash)).isEmpty();
 
         mockMvc.perform(post("/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(logoutRequest))
+                .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -234,6 +243,9 @@ class AuthServiceApplicationTests {
                 .content(request))
                 .andExpect(status().isOk())
                 .andReturn();
+
+        currentRefreshTokenCookie = result.getResponse().getCookie("refreshToken");
+        assertThat(currentRefreshTokenCookie).isNotNull();
 
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }

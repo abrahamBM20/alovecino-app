@@ -11,6 +11,8 @@ public class JwtProperties {
     private String audience = "alovecino-api";
     private Duration accessTokenTtl = Duration.ofMinutes(15);
     private Duration refreshTokenTtl = Duration.ofDays(30);
+    private boolean refreshCookieSecure = false;
+    private String refreshCookieSameSite = "Lax";
     private String keyId = "auth-key-1";
     private String privateKey;
     private String publicKey;
@@ -45,6 +47,22 @@ public class JwtProperties {
 
     public void setRefreshTokenTtl(Duration refreshTokenTtl) {
         this.refreshTokenTtl = refreshTokenTtl;
+    }
+
+    public boolean isRefreshCookieSecure() {
+        return refreshCookieSecure;
+    }
+
+    public void setRefreshCookieSecure(boolean refreshCookieSecure) {
+        this.refreshCookieSecure = refreshCookieSecure;
+    }
+
+    public String getRefreshCookieSameSite() {
+        return refreshCookieSameSite;
+    }
+
+    public void setRefreshCookieSameSite(String refreshCookieSameSite) {
+        this.refreshCookieSameSite = refreshCookieSameSite;
     }
 
     public String getKeyId() {

@@ -32,7 +32,7 @@ describe('loginService', () => {
       password: '123456',
     });
 
-    expect(response.token).toBe('dev-token');
+    expect(response.accessToken).toBe('dev-token');
     expect(response.user.email).toBe('demo@alovecino.com');
     expect(postMock).not.toHaveBeenCalled();
   });
@@ -44,7 +44,7 @@ describe('loginService', () => {
 
     const postMock = jest.fn().mockResolvedValue({
       data: {
-        token: 'session-token',
+        accessToken: 'session-token',
         user: {
           id: '1',
           name: 'admin@alovecino.com',
@@ -70,7 +70,7 @@ describe('loginService', () => {
       password: 'admin1234',
     });
     expect(response).toEqual({
-      token: 'session-token',
+      accessToken: 'session-token',
       user: {
         id: '1',
         name: 'admin@alovecino.com',

@@ -8,7 +8,7 @@ function isMockEnvironment() {
 export async function loginService({ email, password }) {
   if (isMockEnvironment()) {
     return {
-      token: 'dev-token',
+      accessToken: 'dev-token',
       user: {
         id: '1',
         name: 'Usuario Demo',
@@ -23,7 +23,15 @@ export async function loginService({ email, password }) {
   });
 
   return {
-    token: data?.token,
+    accessToken: data?.accessToken,
     user: data?.user,
   };
+}
+
+export async function logoutService() {
+  if (isMockEnvironment()) {
+    return;
+  }
+
+  await httpClient.post('/auth/logout');
 }
