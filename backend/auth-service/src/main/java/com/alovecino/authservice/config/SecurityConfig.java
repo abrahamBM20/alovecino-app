@@ -28,7 +28,9 @@ public class SecurityConfig {
                                 "/.well-known/jwks.json",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html")
+                                "/swagger-ui.html",
+                                "/actuator/health",
+                                "/actuator/info")
                         .permitAll()
                         .anyRequest().authenticated());
         return http.build();

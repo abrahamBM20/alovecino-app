@@ -2,10 +2,12 @@ package com.alovecino.authservice.dto;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class TokenResponse {
 
-    private String token;
     private String accessToken;
+    @JsonIgnore
     private String refreshToken;
     private String tokenType = "Bearer";
     private Instant accessTokenExpiresAt;
@@ -17,20 +19,11 @@ public class TokenResponse {
 
     public TokenResponse(String accessToken, String refreshToken, Instant accessTokenExpiresAt,
             Instant refreshTokenExpiresAt, SessionUserResponse user) {
-        this.token = accessToken;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.accessTokenExpiresAt = accessTokenExpiresAt;
         this.refreshTokenExpiresAt = refreshTokenExpiresAt;
         this.user = user;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 
     public String getAccessToken() {
