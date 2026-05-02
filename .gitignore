@@ -151,3 +151,4 @@ frontend/*.aab
 # Backend secrets
 backend/**/msusuariosbs.env
 .claude/
+eas.json
