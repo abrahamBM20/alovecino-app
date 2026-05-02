@@ -8,5 +8,7 @@ import com.alovecino.usuarioservice.model.Usuario;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByNombreUsuario(String nombreUsuario);
+
+    Optional<Usuario> findByUuid(String uuid);
 }
 

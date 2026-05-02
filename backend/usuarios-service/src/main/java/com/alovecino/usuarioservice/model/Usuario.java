@@ -8,9 +8,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
-import com.alovecino.usuarioservice.model.Rol;
+import java.util.UUID;
 
 @Entity
 @Table(name = "usuario")
@@ -19,6 +20,9 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
+
+    @Column(name = "uuid", unique = true, length = 36)
+    private String uuid;
 
     @Column(name = "nombre_usuario", nullable = false, unique = true)
     private String nombreUsuario;
@@ -36,12 +40,27 @@ public class Usuario {
     public Usuario() {
     }
 
+    @PrePersist
+    public void ensureUuid() {
+        if (uuid == null || uuid.isBlank()) {
+            uuid = UUID.randomUUID().toString();
+        }
+    }
+
     public Long getIdUsuario() {
         return idUsuario;
     }
 
     public void setIdUsuario(Long idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public String getNombreUsuario() {

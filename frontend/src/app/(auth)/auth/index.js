@@ -1,6 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
-import AuthSelectionScreen from '../../features/auth/screens/AuthSelectionScreen';
+import AuthSelectionScreen from '../../../features/auth/screens/AuthSelectionScreen';
 
 export default function AuthSelectionRoute() {
   const navigation = {

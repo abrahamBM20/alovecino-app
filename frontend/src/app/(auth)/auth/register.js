@@ -1,6 +1,6 @@
 import React from 'react';
 import { router } from 'expo-router';
-import RegisterScreen from '../../features/auth/screens/RegisterScreen';
+import RegisterScreen from '../../../features/auth/screens/RegisterScreen';
 
 export default function RegisterRoute() {
   const navigation = {

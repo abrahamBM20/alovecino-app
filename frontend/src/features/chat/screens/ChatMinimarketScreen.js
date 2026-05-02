@@ -14,14 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 const INITIAL_MESSAGES = [
-  { id: '1', from: 'almacen', text: '¡Hola! ¿En qué podemos ayudarte?' },
+  { id: '1', from: 'almacen', text: 'Hola! En que podemos ayudarte?' },
 ];
 
 const TAB_ITEMS = [
-  { id: 'filtro',        icon: 'location-outline' },
-  { id: 'inicio',        icon: 'home-outline' },
+  { id: 'filtro', icon: 'location-outline' },
+  { id: 'inicio', icon: 'home-outline' },
   { id: 'configuracion', icon: 'settings-outline' },
-  { id: 'perfil',        icon: 'person-outline' },
+  { id: 'perfil', icon: 'person-outline' },
 ];
 
 export default function ChatMinimarketScreen({ navigation }) {
@@ -32,7 +32,8 @@ export default function ChatMinimarketScreen({ navigation }) {
   function sendMessage() {
     const text = input.trim();
     if (!text) return;
-    setMessages(prev => [
+
+    setMessages((prev) => [
       ...prev,
       { id: Date.now().toString(), from: 'usuario', text },
     ]);
@@ -58,18 +59,16 @@ export default function ChatMinimarketScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Ionicons name="person-circle-outline" size={40} color={colors.white} />
         </View>
-        <Text style={styles.headerTitle}>Almacén</Text>
+        <Text style={styles.headerTitle}>Almacen</Text>
         <View style={styles.avatar}>
           <Ionicons name="storefront-outline" size={36} color={colors.white} />
         </View>
       </View>
 
-      {/* Mensajes */}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -78,17 +77,16 @@ export default function ChatMinimarketScreen({ navigation }) {
         <FlatList
           ref={listRef}
           data={messages}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         />
 
-        {/* Input */}
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
-            placeholder="Escribe aquí"
+            placeholder="Escribe aqui"
             placeholderTextColor={colors.primaryLight}
             value={input}
             onChangeText={setInput}
@@ -101,7 +99,6 @@ export default function ChatMinimarketScreen({ navigation }) {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Tab bar */}
       <View style={styles.tabBar}>
         {TAB_ITEMS.map(({ id, icon }) => (
           <TouchableOpacity
@@ -123,9 +120,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primary,
   },
-  flex: { flex: 1 },
-
-  // Header
+  flex: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,8 +143,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Mensajes
   messageList: {
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -191,8 +186,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     lineHeight: 21,
   },
-
-  // Input
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -218,8 +211,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Tab bar
   tabBar: {
     height: 87,
     backgroundColor: colors.primary,
