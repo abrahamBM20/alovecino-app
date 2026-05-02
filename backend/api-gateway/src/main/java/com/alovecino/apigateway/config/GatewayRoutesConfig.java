@@ -23,6 +23,9 @@ public class GatewayRoutesConfig {
                 .route("usuarios-api", route -> route
                         .path("/api/usuarios/**")
                         .uri(usuariosUrl))
+                .route("almacenes-api", route -> route
+                        .path("/api/almacenes/**")
+                        .uri(usuariosUrl))
                 .route("usuarios-docs", route -> route
                         .path("/v3/api-docs/**", "/swagger-ui/**")
                         .uri(usuariosUrl))

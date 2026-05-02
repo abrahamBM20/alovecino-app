@@ -40,10 +40,10 @@ public class UsuarioService {
         return toResponse(saved);
     }
 
-    public UsuarioResponse getUsuarioById(Long idUsuario) {
-        return usuarioRepository.findById(idUsuario)
+    public UsuarioResponse getUsuarioByUuid(String uuid) {
+        return usuarioRepository.findByUuid(uuid)
                 .map(this::toResponse)
-                .orElseThrow(() -> new UsuarioNotFoundException(idUsuario));
+                .orElseThrow(() -> new UsuarioNotFoundException(uuid));
     }
 
     public List<UsuarioResponse> listUsuarios() {
@@ -57,7 +57,7 @@ public class UsuarioService {
     }
 
     private UsuarioResponse toResponse(Usuario usuario) {
-        return new UsuarioResponse(usuario.getIdUsuario(), usuario.getNombreUsuario(), usuario.getRol().getNombreRol());
+        return new UsuarioResponse(usuario.getUuid(), usuario.getNombreUsuario(), usuario.getRol().getNombreRol());
     }
 }
 

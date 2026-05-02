@@ -1,10 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import AppButton from '../../../shared/ui/AppButton';
 import { useAuthStore } from '../../../store/authStore';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
@@ -12,9 +14,12 @@ export default function HomeScreen() {
     <ScreenContainer>
       <View style={styles.container}>
         <Text style={styles.title}>Bienvenido a AloVecino</Text>
-        <Text style={styles.subtitle}>{user?.email || 'Sesion iniciada'}</Text>
+        <Text style={styles.subtitle}>{user?.email || 'Sesión iniciada'}</Text>
         <View style={styles.actions}>
-          <AppButton title="Cerrar sesion" onPress={logout} variant="secondary" />
+          <AppButton title="Registrar almacén" onPress={() => router.push('/home/almacen')} />
+          <View style={styles.secondaryAction}>
+            <AppButton title="Cerrar sesión" onPress={logout} variant="secondary" />
+          </View>
         </View>
       </View>
     </ScreenContainer>
@@ -43,5 +48,8 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: 28,
     width: '100%',
+  },
+  secondaryAction: {
+    marginTop: 10,
   },
 });

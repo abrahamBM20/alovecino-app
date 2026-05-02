@@ -6,9 +6,9 @@ function isMockEnvironment() {
 }
 
 export async function registerService({
+  tipoUsuario,
   nombreCompleto,
   fechaNacimiento,
-  nombreUsuario,
   email,
   password,
 }) {
@@ -19,10 +19,10 @@ export async function registerService({
   await httpClient.post('/api/usuarios', {
     nombreCompleto,
     fechaNacimiento,
-    nombreUsuario,
+    nombreUsuario: email,
     email,
     contrasena: password,
-    nombreRol: 'CLIENTE',
+    nombreRol: tipoUsuario === 'almacen' ? 'STORE_OWNER' : 'USER',
   });
 
   return { success: true };

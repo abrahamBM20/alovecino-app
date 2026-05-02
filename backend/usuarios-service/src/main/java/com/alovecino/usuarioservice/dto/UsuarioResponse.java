@@ -2,25 +2,25 @@ package com.alovecino.usuarioservice.dto;
 
 public class UsuarioResponse {
 
-    private Long idUsuario;
+    private String uuid;
     private String nombreUsuario;
     private String nombreRol;
 
     public UsuarioResponse() {
     }
 
-    public UsuarioResponse(Long idUsuario, String nombreUsuario, String nombreRol) {
-        this.idUsuario = idUsuario;
+    public UsuarioResponse(String uuid, String nombreUsuario, String nombreRol) {
+        this.uuid = uuid;
         this.nombreUsuario = nombreUsuario;
         this.nombreRol = nombreRol;
     }
 
-    public Long getIdUsuario() {
-        return idUsuario;
+    public String getUuid() {
+        return uuid;
     }
 
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public String getNombreUsuario() {

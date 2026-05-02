@@ -1,5 +1,8 @@
 package com.alovecino.usuarioservice.service;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,10 +29,9 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (rolRepository.count() == 0) {
-            rolRepository.save(new Rol("ADMIN"));
-            rolRepository.save(new Rol("USER"));
-        }
+        ensureRole("ADMIN");
+        ensureRole("USER");
+        ensureRole("STORE_OWNER");
 
         Rol adminRol = rolRepository.findByNombreRol("ADMIN")
                 .orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
@@ -42,6 +44,17 @@ public class DataInitializer implements ApplicationRunner {
             admin.setRol(adminRol);
             usuarioRepository.save(admin);
         }
+
+        List<Usuario> usuariosSinUuid = usuarioRepository.findAll().stream()
+                .filter(usuario -> usuario.getUuid() == null || usuario.getUuid().isBlank())
+                .peek(usuario -> usuario.setUuid(UUID.randomUUID().toString()))
+                .toList();
+        usuarioRepository.saveAll(usuariosSinUuid);
+    }
+
+    private void ensureRole(String nombreRol) {
+        rolRepository.findByNombreRol(nombreRol)
+                .orElseGet(() -> rolRepository.save(new Rol(nombreRol)));
     }
 }
 

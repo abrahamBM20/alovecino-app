@@ -55,14 +55,14 @@ public class UsuarioController {
         return usuarioService.listUsuarios();
     }
 
-    @Operation(summary = "Obtener usuario por id")
+    @Operation(summary = "Obtener usuario por UUID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Usuario encontrado", content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
     })
-    @GetMapping("/{id}")
-    public UsuarioResponse getUsuario(@PathVariable("id") Long id) {
-        return usuarioService.getUsuarioById(id);
+    @GetMapping("/{uuid}")
+    public UsuarioResponse getUsuario(@PathVariable("uuid") String uuid) {
+        return usuarioService.getUsuarioByUuid(uuid);
     }
 }
 

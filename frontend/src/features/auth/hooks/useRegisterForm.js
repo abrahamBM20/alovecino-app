@@ -16,9 +16,9 @@ export function useRegisterForm(navigation) {
     resolver: zodResolver(registerSchema),
     mode: 'onBlur',
     defaultValues: {
+      tipoUsuario: 'cliente',
       nombreCompleto: '',
       fechaNacimiento: '',
-      nombreUsuario: '',
       email: '',
       password: '',
       confirmarPassword: '',
