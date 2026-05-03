@@ -164,3 +164,4 @@ backend/**/msusuariosbs.env
 .m2-*/
 backend/**/target/
 .claude/
+.codex/
