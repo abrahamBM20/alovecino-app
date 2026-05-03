@@ -26,6 +26,7 @@ public class JwtSecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/actuator/health",
+                                "/actuator/health/**",
                                 "/actuator/info")
                         .permitAll()
                         .anyExchange()
