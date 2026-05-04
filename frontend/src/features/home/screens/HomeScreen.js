@@ -1,9 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, StatusBar } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import BotonFiltro from '../../../../assets/boton_filtro.svg';
+import BotonInicio from '../../../../assets/boton_inicio.svg';
+import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
+import BotonPerfil from '../../../../assets/boton_perfil.svg';
+
+const PRIMARY = '#044E81';
 
 const MOCK_STORES = [
   { id: 1, latitude: -33.4370, longitude: -70.7560, name: 'Minimarket El Rincón' },
@@ -20,9 +27,18 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.025,
 };
 
+const TAB_ITEMS = [
+  { id: 'filtro', Component: BotonFiltro },
+  { id: 'inicio', Component: BotonInicio },
+  { id: 'configuracion', Component: BotonConfiguracion },
+  { id: 'perfil', Component: BotonPerfil },
+];
+
 export default function HomeScreen() {
   const [region, setRegion] = useState(DEFAULT_REGION);
+  const [activeTab, setActiveTab] = useState('inicio');
   const mapRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     (async () => {
@@ -36,70 +52,66 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        region={region}
-        showsUserLocation
-        showsMyLocationButton={false}
-      >
-        {MOCK_STORES.map((store) => (
-          <Marker
-            key={store.id}
-            coordinate={{ latitude: store.latitude, longitude: store.longitude }}
-            title={store.name}
-            pinColor="#1a56db"
-          />
-        ))}
-      </MapView>
+    <LinearGradient
+      colors={['#ffffff', '#044e81']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      <SafeAreaView edges={['bottom']} style={styles.navWrapper}>
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="location-outline" size={26} color="#ffffff" />
+      <View style={[styles.mapWrapper, { marginTop: insets.top + 10 }]}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFillObject}
+          region={region}
+          showsUserLocation
+          showsMyLocationButton={false}
+        >
+          {MOCK_STORES.map((store) => (
+            <Marker
+              key={store.id}
+              coordinate={{ latitude: store.latitude, longitude: store.longitude }}
+              title={store.name}
+              pinColor={PRIMARY}
+            />
+          ))}
+        </MapView>
+      </View>
+
+      <View style={[styles.tabBar, { marginBottom: insets.bottom + 10 }]}>
+        {TAB_ITEMS.map(({ id, Component }) => (
+          <TouchableOpacity
+            key={id}
+            activeOpacity={0.75}
+            onPress={() => setActiveTab(id)}
+          >
+            <Component width={63} height={63} opacity={activeTab === id ? 1 : 0.65} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.navItem, styles.navItemActive]}>
-            <Ionicons name="home" size={26} color="#ffffff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="settings-outline" size={26} color="#ffffff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-outline" size={26} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </View>
+        ))}
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d2d5e',
   },
-  map: {
+  mapWrapper: {
     flex: 1,
+    marginHorizontal: 18,
+    marginBottom: 12,
+    borderRadius: 51,
+    overflow: 'hidden',
   },
-  navWrapper: {
-    backgroundColor: '#0d2d5e',
-  },
-  bottomNav: {
+  tabBar: {
+    height: 87,
+    marginHorizontal: 18,
+    backgroundColor: PRIMARY,
+    borderRadius: 35,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  navItem: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navItemActive: {
-    backgroundColor: '#1a56db',
   },
 });
