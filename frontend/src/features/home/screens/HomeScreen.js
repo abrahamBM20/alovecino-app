@@ -1,55 +1,106 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import ScreenContainer from '../../../shared/ui/ScreenContainer';
-import AppButton from '../../../shared/ui/AppButton';
-import { useAuthStore } from '../../../store/authStore';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const MOCK_STORES = [
+  { id: 1, latitude: -33.4370, longitude: -70.7560, name: 'Minimarket El Rincón' },
+  { id: 2, latitude: -33.4420, longitude: -70.7620, name: 'Almacén Don Juan' },
+  { id: 3, latitude: -33.4340, longitude: -70.7480, name: 'Tienda La Esquina' },
+  { id: 4, latitude: -33.4460, longitude: -70.7530, name: 'Mini Market Vecinos' },
+  { id: 5, latitude: -33.4390, longitude: -70.7650, name: 'Bodega Los Álamos' },
+];
+
+const DEFAULT_REGION = {
+  latitude: -33.4400,
+  longitude: -70.7570,
+  latitudeDelta: 0.025,
+  longitudeDelta: 0.025,
+};
 
 export default function HomeScreen() {
-  const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const [region, setRegion] = useState(DEFAULT_REGION);
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude } = location.coords;
+      setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
+    })();
+  }, []);
 
   return (
-    <ScreenContainer>
-      <View style={styles.container}>
-        <Text style={styles.title}>Bienvenido a AloVecino</Text>
-        <Text style={styles.subtitle}>{user?.email || 'Sesión iniciada'}</Text>
-        <View style={styles.actions}>
-          <AppButton title="Registrar almacén" onPress={() => router.push('/home/almacen')} />
-          <View style={styles.secondaryAction}>
-            <AppButton title="Cerrar sesión" onPress={logout} variant="secondary" />
-          </View>
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        region={region}
+        showsUserLocation
+        showsMyLocationButton={false}
+      >
+        {MOCK_STORES.map((store) => (
+          <Marker
+            key={store.id}
+            coordinate={{ latitude: store.latitude, longitude: store.longitude }}
+            title={store.name}
+            pinColor="#1a56db"
+          />
+        ))}
+      </MapView>
+
+      <SafeAreaView edges={['bottom']} style={styles.navWrapper}>
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="location-outline" size={26} color="#ffffff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.navItem, styles.navItemActive]}>
+            <Ionicons name="home" size={26} color="#ffffff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="settings-outline" size={26} color="#ffffff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="person-outline" size={26} color="#ffffff" />
+          </TouchableOpacity>
         </View>
-      </View>
-    </ScreenContainer>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0d2d5e',
+  },
+  map: {
+    flex: 1,
+  },
+  navWrapper: {
+    backgroundColor: '#0d2d5e',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  navItem: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 26,
-    color: '#ffffff',
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#e2e8f0',
-    marginTop: 10,
-    textAlign: 'center',
-  },
-  actions: {
-    marginTop: 28,
-    width: '100%',
-  },
-  secondaryAction: {
-    marginTop: 10,
+  navItemActive: {
+    backgroundColor: '#1a56db',
   },
 });

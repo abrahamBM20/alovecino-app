@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "AloVecino necesita tu ubicación para mostrarte tiendas cercanas."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +24,16 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.alovecino.app.dev"
+      "package": "com.alovecino.app.dev",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA9L-86Ti7nsyOI6ZkV4bY3CZ8tkdeQv9M"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +44,6 @@
       "eas": {
         "projectId": "6527488c-1ffe-47e4-a535-3bf5b57df25a"
       }
-    },
+    }
   }
 }
