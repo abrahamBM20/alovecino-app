@@ -10,6 +10,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -24,8 +26,8 @@ public class RefreshToken {
     private String tokenHash;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "id_usuario", nullable = false)
-    private Usuario usuario;
+    @JoinColumn(name = "id_sesion_usuario", nullable = false)
+    private SesionUsuario sesionUsuario;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -52,12 +54,12 @@ public class RefreshToken {
         this.tokenHash = tokenHash;
     }
 
-    public Usuario getUsuario() {
-        return usuario;
+    public SesionUsuario getSesionUsuario() {
+        return sesionUsuario;
     }
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+    public void setSesionUsuario(SesionUsuario sesionUsuario) {
+        this.sesionUsuario = sesionUsuario;
     }
 
     public Instant getCreatedAt() {
@@ -82,5 +84,19 @@ public class RefreshToken {
 
     public void setRevokedAt(Instant revokedAt) {
         this.revokedAt = revokedAt;
+    }
+
+    @PrePersist
+    @PreUpdate
+    void validateExpiration() {
+        if (createdAt == null) {
+            throw new IllegalStateException("created_at is required");
+        }
+        if (expiresAt == null) {
+            throw new IllegalStateException("expires_at is required");
+        }
+        if (!expiresAt.isAfter(createdAt)) {
+            throw new IllegalStateException("expires_at must be after created_at");
+        }
     }
 }
