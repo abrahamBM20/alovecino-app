@@ -2,34 +2,40 @@ package com.alovecino.usuarioservice.dto;
 
 public class AlmacenResponse {
 
-    private String uuid;
+    private Long idAlmacen;
     private String nombre;
-    private String direccion;
+    private String calle;
+    private String numero;
     private String comuna;
-    private String telefono;
+    private String region;
+    private String latitud;
+    private String longitud;
     private String estado;
-    private String duenoUuid;
+    private Long idDueno;
 
     public AlmacenResponse() {
     }
 
-    public AlmacenResponse(String uuid, String nombre, String direccion, String comuna, String telefono,
-            String estado, String duenoUuid) {
-        this.uuid = uuid;
+    public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String comuna, String region,
+            String latitud, String longitud, String estado, Long idDueno) {
+        this.idAlmacen = idAlmacen;
         this.nombre = nombre;
-        this.direccion = direccion;
+        this.calle = calle;
+        this.numero = numero;
         this.comuna = comuna;
-        this.telefono = telefono;
+        this.region = region;
+        this.latitud = latitud;
+        this.longitud = longitud;
         this.estado = estado;
-        this.duenoUuid = duenoUuid;
+        this.idDueno = idDueno;
     }
 
-    public String getUuid() {
-        return uuid;
+    public Long getIdAlmacen() {
+        return idAlmacen;
     }
 
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
+    public void setIdAlmacen(Long idAlmacen) {
+        this.idAlmacen = idAlmacen;
     }
 
     public String getNombre() {
@@ -40,12 +46,20 @@ public class AlmacenResponse {
         this.nombre = nombre;
     }
 
-    public String getDireccion() {
-        return direccion;
+    public String getCalle() {
+        return calle;
     }
 
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
+    public void setCalle(String calle) {
+        this.calle = calle;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero;
     }
 
     public String getComuna() {
@@ -56,12 +70,28 @@ public class AlmacenResponse {
         this.comuna = comuna;
     }
 
-    public String getTelefono() {
-        return telefono;
+    public String getRegion() {
+        return region;
     }
 
-    public void setTelefono(String telefono) {
-        this.telefono = telefono;
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
+    public String getLatitud() {
+        return latitud;
+    }
+
+    public void setLatitud(String latitud) {
+        this.latitud = latitud;
+    }
+
+    public String getLongitud() {
+        return longitud;
+    }
+
+    public void setLongitud(String longitud) {
+        this.longitud = longitud;
     }
 
     public String getEstado() {
@@ -72,11 +102,11 @@ public class AlmacenResponse {
         this.estado = estado;
     }
 
-    public String getDuenoUuid() {
-        return duenoUuid;
+    public Long getIdDueno() {
+        return idDueno;
     }
 
-    public void setDuenoUuid(String duenoUuid) {
-        this.duenoUuid = duenoUuid;
+    public void setIdDueno(Long idDueno) {
+        this.idDueno = idDueno;
     }
 }

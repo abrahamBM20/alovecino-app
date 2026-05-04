@@ -55,13 +55,13 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
             String username = authentication.getName();
-            Usuario usuario = usuarioRepository.findByNombreUsuario(username)
+            Usuario usuario = usuarioRepository.findByCorreo(username)
                     .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
 
             SessionUserResponse sessionUser = new SessionUserResponse(
                     String.valueOf(usuario.getIdUsuario()),
-                    usuario.getNombreUsuario(),
-                    usuario.getNombreUsuario());
+                    usuario.getNombre(),
+                    usuario.getCorreo());
 
             LoginResponse response = new LoginResponse(UUID.randomUUID().toString(), sessionUser);
             return ResponseEntity.ok(response);
