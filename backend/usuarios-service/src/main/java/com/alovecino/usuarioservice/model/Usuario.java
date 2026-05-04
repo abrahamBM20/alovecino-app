@@ -8,10 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-
-import java.util.UUID;
 
 @Entity
 @Table(name = "usuario")
@@ -21,14 +18,17 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
 
-    @Column(name = "uuid", unique = true, length = 36)
-    private String uuid;
+    @Column(name = "rut", nullable = false, unique = true, length = 12)
+    private String rut;
 
-    @Column(name = "nombre_usuario", nullable = false, unique = true)
+    @Column(name = "nombre_usuario", nullable = false, unique = true, length = 120)
     private String nombreUsuario;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "nombre", nullable = false, length = 160)
     private String nombre;
+
+    @Column(name = "correo", nullable = false, unique = true, length = 180)
+    private String correo;
 
     @Column(name = "contrasena", nullable = false)
     private String contrasena;
@@ -40,13 +40,6 @@ public class Usuario {
     public Usuario() {
     }
 
-    @PrePersist
-    public void ensureUuid() {
-        if (uuid == null || uuid.isBlank()) {
-            uuid = UUID.randomUUID().toString();
-        }
-    }
-
     public Long getIdUsuario() {
         return idUsuario;
     }
@@ -55,12 +48,12 @@ public class Usuario {
         this.idUsuario = idUsuario;
     }
 
-    public String getUuid() {
-        return uuid;
+    public String getRut() {
+        return rut;
     }
 
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
+    public void setRut(String rut) {
+        this.rut = rut;
     }
 
     public String getNombreUsuario() {
@@ -77,6 +70,14 @@ public class Usuario {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public String getContrasena() {

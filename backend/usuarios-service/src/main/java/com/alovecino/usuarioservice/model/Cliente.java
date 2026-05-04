@@ -1,5 +1,7 @@
 package com.alovecino.usuarioservice.model;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -8,22 +10,23 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "almacen")
-public class Almacen {
+@Table(name = "cliente")
+public class Cliente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idAlmacen;
+    private Long idCliente;
 
-    @Column(name = "nombre", nullable = false, length = 140)
-    private String nombre;
+    @Column(name = "fecha_nacimiento", nullable = false)
+    private LocalDate fechaNacimiento;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_usuario", nullable = false)
-    private Usuario dueno;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_usuario", nullable = false, unique = true)
+    private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_direccion", nullable = false)
@@ -33,20 +36,24 @@ public class Almacen {
     @JoinColumn(name = "id_estado_cuenta", nullable = false)
     private EstadoCuenta estadoCuenta;
 
-    public Long getIdAlmacen() {
-        return idAlmacen;
+    public Long getIdCliente() {
+        return idCliente;
     }
 
-    public void setIdAlmacen(Long idAlmacen) {
-        this.idAlmacen = idAlmacen;
+    public LocalDate getFechaNacimiento() {
+        return fechaNacimiento;
     }
 
-    public String getNombre() {
-        return nombre;
+    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public Direccion getDireccion() {
@@ -55,14 +62,6 @@ public class Almacen {
 
     public void setDireccion(Direccion direccion) {
         this.direccion = direccion;
-    }
-
-    public Usuario getDueno() {
-        return dueno;
-    }
-
-    public void setDueno(Usuario dueno) {
-        this.dueno = dueno;
     }
 
     public EstadoCuenta getEstadoCuenta() {
