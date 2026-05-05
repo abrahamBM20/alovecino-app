@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.List;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.persistence.EntityManager;
@@ -31,9 +32,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.alovecino.authservice.model.Rol;
+import com.alovecino.authservice.model.RefreshToken;
+import com.alovecino.authservice.model.SesionUsuario;
 import com.alovecino.authservice.model.Usuario;
 import com.alovecino.authservice.repository.RefreshTokenRepository;
 import com.alovecino.authservice.service.RefreshTokenService;
+import com.nimbusds.jwt.SignedJWT;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -82,6 +86,7 @@ class AuthServiceApplicationTests {
 
             Usuario usuario = new Usuario();
             usuario.setNombreUsuario(TEST_EMAIL);
+            usuario.setCorreo(TEST_EMAIL);
             usuario.setNombre("Usuario Test");
             usuario.setContrasena(passwordEncoder.encode(TEST_PASSWORD));
             usuario.setRol(rol);
@@ -96,10 +101,13 @@ class AuthServiceApplicationTests {
     }
 
     private void deleteTestUserData() {
-        entityManager.createQuery("delete from RefreshToken rt where rt.usuario.nombreUsuario = :email")
+        entityManager.createQuery("delete from RefreshToken rt where rt.sesionUsuario.usuario.correo = :email")
                 .setParameter("email", TEST_EMAIL)
                 .executeUpdate();
-        entityManager.createQuery("delete from Usuario u where u.nombreUsuario = :email")
+        entityManager.createQuery("delete from SesionUsuario su where su.usuario.correo = :email")
+                .setParameter("email", TEST_EMAIL)
+                .executeUpdate();
+        entityManager.createQuery("delete from Usuario u where u.correo = :email")
                 .setParameter("email", TEST_EMAIL)
                 .executeUpdate();
     }
@@ -128,12 +136,33 @@ class AuthServiceApplicationTests {
         JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
         String accessToken = response.get("accessToken").asText();
         Cookie refreshTokenCookie = result.getResponse().getCookie("refreshToken");
+        SignedJWT jwt = SignedJWT.parse(accessToken);
 
         assertThat(accessToken.split("\\.")).hasSize(3);
+        assertThat(jwt.getHeader().getAlgorithm().getName()).isEqualTo("RS256");
+        assertThat(jwt.getJWTClaimsSet().getSubject()).isNotBlank();
+        assertThat(jwt.getJWTClaimsSet().getStringClaim("sid")).isNotBlank();
+        assertThat(jwt.getJWTClaimsSet().getStringClaim("session_id"))
+                .isEqualTo(jwt.getJWTClaimsSet().getStringClaim("sid"));
+        assertThat(jwt.getJWTClaimsSet().getStringClaim("email")).isEqualTo(TEST_EMAIL);
+        assertThat(jwt.getJWTClaimsSet().getStringListClaim("roles")).containsExactly("ROLE_USER");
         assertThat(refreshTokenCookie).isNotNull();
         assertThat(refreshTokenCookie.getValue()).isNotBlank();
         assertThat(refreshTokenCookie.isHttpOnly()).isTrue();
         assertThat(result.getResponse().getHeader("Set-Cookie")).contains("SameSite=Lax");
+
+        List<SesionUsuario> sesiones = findTestSessions();
+        assertThat(sesiones).hasSize(1);
+        assertThat(sesiones.get(0).getRevokedAt()).isNull();
+
+        RefreshToken persistedRefreshToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(refreshTokenCookie.getValue())).orElseThrow();
+        assertThat(persistedRefreshToken.getTokenHash()).isNotEqualTo(refreshTokenCookie.getValue());
+        assertThat(persistedRefreshToken.getTokenHash()).hasSize(64);
+        assertThat(persistedRefreshToken.getSesionUsuario().getIdSesionUsuario())
+                .isEqualTo(sesiones.get(0).getIdSesionUsuario());
+        assertThat(persistedRefreshToken.getExpiresAt()).isAfter(persistedRefreshToken.getCreatedAt());
+        assertThat(persistedRefreshToken.getTokenHash()).isNotEqualTo(accessToken);
     }
 
     @Test
@@ -156,6 +185,9 @@ class AuthServiceApplicationTests {
     void refreshRotatesRefreshTokenAndRejectsOldToken() throws Exception {
         JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
         String oldRefreshToken = currentRefreshTokenCookie.getValue();
+        RefreshToken oldPersistedToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(oldRefreshToken)).orElseThrow();
+        Long sessionId = oldPersistedToken.getSesionUsuario().getIdSesionUsuario();
 
         MvcResult refreshResult = mockMvc.perform(post("/auth/refresh")
                 .cookie(currentRefreshTokenCookie))
@@ -173,8 +205,10 @@ class AuthServiceApplicationTests {
         assertThat(newRefreshToken).isNotEqualTo(oldRefreshToken);
         assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
                 refreshTokenService.hash(oldRefreshToken))).isEmpty();
-        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
-                refreshTokenService.hash(newRefreshToken))).isPresent();
+        RefreshToken newPersistedToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(newRefreshToken)).orElseThrow();
+        assertThat(newPersistedToken.getSesionUsuario().getIdSesionUsuario()).isEqualTo(sessionId);
+        assertThat(findTestSessions()).hasSize(1);
 
         mockMvc.perform(post("/auth/refresh")
                 .cookie(currentRefreshTokenCookie))
@@ -190,7 +224,10 @@ class AuthServiceApplicationTests {
 
         transactionTemplate.executeWithoutResult(status -> refreshTokenRepository
                 .findByTokenHashAndRevokedAtIsNull(refreshTokenHash)
-                .ifPresent(token -> token.setExpiresAt(Instant.now().minusSeconds(1))));
+                .ifPresent(token -> {
+                    token.setCreatedAt(Instant.now().minusSeconds(120));
+                    token.setExpiresAt(Instant.now().minusSeconds(60));
+                }));
 
         mockMvc.perform(post("/auth/refresh")
                 .cookie(currentRefreshTokenCookie))
@@ -198,6 +235,8 @@ class AuthServiceApplicationTests {
                 .andExpect(jsonPath("$.message").value("Refresh token inválido"));
 
         assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(refreshTokenHash)).isEmpty();
+        assertThat(findTestSessions()).hasSize(1);
+        assertThat(findTestSessions().get(0).getRevokedAt()).isNull();
     }
 
     @Test
@@ -212,6 +251,8 @@ class AuthServiceApplicationTests {
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
 
         assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(refreshTokenHash)).isEmpty();
+        assertThat(findTestSessions()).hasSize(1);
+        assertThat(findTestSessions().get(0).getRevokedAt()).isNotNull();
 
         mockMvc.perform(post("/auth/refresh")
                 .cookie(currentRefreshTokenCookie))
@@ -248,5 +289,12 @@ class AuthServiceApplicationTests {
         assertThat(currentRefreshTokenCookie).isNotNull();
 
         return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private List<SesionUsuario> findTestSessions() {
+        return entityManager
+                .createQuery("select su from SesionUsuario su where su.usuario.correo = :email", SesionUsuario.class)
+                .setParameter("email", TEST_EMAIL)
+                .getResultList();
     }
 }

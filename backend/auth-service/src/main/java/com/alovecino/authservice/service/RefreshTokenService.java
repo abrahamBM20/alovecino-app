@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.alovecino.authservice.config.JwtProperties;
 import com.alovecino.authservice.model.RefreshToken;
-import com.alovecino.authservice.model.Usuario;
+import com.alovecino.authservice.model.SesionUsuario;
 import com.alovecino.authservice.repository.RefreshTokenRepository;
 
 @Service
@@ -26,13 +26,13 @@ public class RefreshTokenService {
         this.jwtProperties = jwtProperties;
     }
 
-    public CreatedRefreshToken create(Usuario usuario, Instant now) {
+    public CreatedRefreshToken create(SesionUsuario sesionUsuario, Instant now) {
         String token = generateToken();
         Instant expiresAt = now.plus(jwtProperties.getRefreshTokenTtl());
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setTokenHash(hash(token));
-        refreshToken.setUsuario(usuario);
+        refreshToken.setSesionUsuario(sesionUsuario);
         refreshToken.setCreatedAt(now);
         refreshToken.setExpiresAt(expiresAt);
         refreshTokenRepository.save(refreshToken);
