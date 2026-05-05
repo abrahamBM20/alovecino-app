@@ -6,17 +6,28 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
 @Component
-public class RequestIdFilter implements GlobalFilter, Ordered {
+public class RequestIdFilter implements GlobalFilter, WebFilter, Ordered {
 
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        return chain.filter(withRequestId(exchange));
+    }
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        return chain.filter(withRequestId(exchange));
+    }
+
+    private ServerWebExchange withRequestId(ServerWebExchange exchange) {
         String requestId = exchange.getRequest().getHeaders().getFirst(REQUEST_ID_HEADER);
         if (requestId == null || requestId.isBlank()) {
             requestId = UUID.randomUUID().toString();
@@ -29,7 +40,7 @@ public class RequestIdFilter implements GlobalFilter, Ordered {
                 .build();
         mutated.getResponse().getHeaders().set(REQUEST_ID_HEADER, finalRequestId);
 
-        return chain.filter(mutated);
+        return mutated;
     }
 
     @Override
