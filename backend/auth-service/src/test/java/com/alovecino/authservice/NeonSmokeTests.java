@@ -186,7 +186,7 @@ class NeonSmokeTests {
                 from refresh_token rt
                 join sesion_usuario su on su.id_sesion_usuario = rt.id_sesion_usuario
                 join usuario u on u.id_usuario = su.id_usuario
-                where u.correo = ? and rt.revoked_at is null
+                where u.correo = ? and rt.fecha_revocacion is null
                 """, Integer.class, email);
     }
 
@@ -196,24 +196,24 @@ class NeonSmokeTests {
                 from refresh_token rt
                 join sesion_usuario su on su.id_sesion_usuario = rt.id_sesion_usuario
                 join usuario u on u.id_usuario = su.id_usuario
-                where u.correo = ? and rt.revoked_at is not null
+                where u.correo = ? and rt.fecha_revocacion is not null
                 """, Integer.class, email);
     }
 
     private Integer countRefreshTokensByHash(String tokenHash) {
-        return jdbcTemplate.queryForObject("select count(*) from refresh_token where token_hash = ?",
+        return jdbcTemplate.queryForObject("select count(*) from refresh_token where hash_token = ?",
                 Integer.class, tokenHash);
     }
 
     private Integer countActiveRefreshTokensByHash(String tokenHash) {
         return jdbcTemplate.queryForObject(
-                "select count(*) from refresh_token where token_hash = ? and revoked_at is null",
+                "select count(*) from refresh_token where hash_token = ? and fecha_revocacion is null",
                 Integer.class, tokenHash);
     }
 
     private Instant latestRevokedAt() {
         return jdbcTemplate.queryForObject("""
-                select max(rt.revoked_at)
+                select max(rt.fecha_revocacion)
                 from refresh_token rt
                 join sesion_usuario su on su.id_sesion_usuario = rt.id_sesion_usuario
                 join usuario u on u.id_usuario = su.id_usuario

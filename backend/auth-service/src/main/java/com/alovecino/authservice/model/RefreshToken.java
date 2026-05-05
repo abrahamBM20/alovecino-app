@@ -22,20 +22,20 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idRefreshToken;
 
-    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    @Column(name = "hash_token", nullable = false, unique = true, length = 64)
     private String tokenHash;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "id_sesion_usuario", nullable = false)
     private SesionUsuario sesionUsuario;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "fecha_creacion", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "expires_at", nullable = false)
+    @Column(name = "fecha_expiracion", nullable = false)
     private Instant expiresAt;
 
-    @Column(name = "revoked_at")
+    @Column(name = "fecha_revocacion")
     private Instant revokedAt;
 
     public Long getIdRefreshToken() {
@@ -90,13 +90,13 @@ public class RefreshToken {
     @PreUpdate
     void validateExpiration() {
         if (createdAt == null) {
-            throw new IllegalStateException("created_at is required");
+            throw new IllegalStateException("fecha_creacion is required");
         }
         if (expiresAt == null) {
-            throw new IllegalStateException("expires_at is required");
+            throw new IllegalStateException("fecha_expiracion is required");
         }
         if (!expiresAt.isAfter(createdAt)) {
-            throw new IllegalStateException("expires_at must be after created_at");
+            throw new IllegalStateException("fecha_expiracion must be after fecha_creacion");
         }
     }
 }

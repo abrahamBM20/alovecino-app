@@ -76,10 +76,10 @@ erDiagram
     REFRESH_TOKEN {
         bigint id_refresh_token PK
         bigint id_sesion_usuario FK
-        string token_hash UK
-        datetime created_at
-        datetime expires_at
-        datetime revoked_at
+        string hash_token UK
+        datetime fecha_creacion
+        datetime fecha_expiracion
+        datetime fecha_revocacion
     }
 
     CONFIGURACION_USUARIO {
