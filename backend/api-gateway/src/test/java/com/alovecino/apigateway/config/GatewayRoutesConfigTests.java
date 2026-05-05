@@ -37,12 +37,18 @@ class GatewayRoutesConfigTests {
                 "auth-jwks",
                 "usuarios-api",
                 "almacenes-api",
+                "consultas-api",
+                "valoraciones-api",
+                "ofertas-api",
                 "usuarios-docs",
                 "root-redirect");
         assertThat(routes.get("auth-api").getUri().toString()).isEqualTo("http://auth-service:8081");
         assertThat(routes.get("auth-jwks").getUri().toString()).isEqualTo("http://auth-service:8081");
         assertThat(routes.get("usuarios-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("almacenes-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
+        assertThat(routes.get("consultas-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
+        assertThat(routes.get("valoraciones-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
+        assertThat(routes.get("ofertas-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("usuarios-docs").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("root-redirect").getUri().toString()).isEqualTo("no://op");
     }

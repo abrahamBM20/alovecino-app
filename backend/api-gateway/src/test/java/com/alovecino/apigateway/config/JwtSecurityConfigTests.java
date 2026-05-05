@@ -8,6 +8,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,8 @@ import org.springframework.http.HttpStatus;
 })
 class JwtSecurityConfigTests {
 
+    private static final String REQUEST_ID_HEADER = "X-Request-Id";
+
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @LocalServerPort
@@ -34,9 +38,20 @@ class JwtSecurityConfigTests {
         assertThat(get("/actuator/health/readiness").statusCode()).isEqualTo(HttpStatus.OK.value());
     }
 
-    @Test
-    void shouldRequireTokenForProtectedRoutes() throws Exception {
-        assertThat(get("/api/usuarios/me").statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/api/usuarios/me",
+            "/api/almacenes",
+            "/api/consultas",
+            "/api/valoraciones",
+            "/api/ofertas"
+    })
+    void shouldRequireTokenForProtectedRoutes(String path) throws Exception {
+        HttpResponse<String> response = get(path);
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(response.body()).isEqualTo("{\"message\":\"Token requerido o invalido\"}");
+        assertThat(response.headers().firstValue(REQUEST_ID_HEADER)).isPresent();
     }
 
     private HttpResponse<String> get(String path) throws Exception {
