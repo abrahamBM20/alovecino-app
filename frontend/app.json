@@ -28,10 +28,10 @@
     },
     "extra": {
       "appEnv": "dev",
-      "apiUrl": "https://api-dev.example.com",
+      "apiUrl": "https://alovecino-api-gateway-dev.onrender.com",
       "eas": {
         "projectId": "6527488c-1ffe-47e4-a535-3bf5b57df25a"
       }
-    },
+    }
   }
 }
