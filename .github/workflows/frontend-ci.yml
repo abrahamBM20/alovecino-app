@@ -77,10 +77,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install EAS CLI
+        run: npm install --global eas-cli
+
       - name: Run EAS dev build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas build --platform android --profile dev --non-interactive
+        run: eas build --platform android --profile dev --non-interactive
 
   eas-build-manual:
     name: EAS Android manual build
@@ -105,7 +108,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install EAS CLI
+        run: npm install --global eas-cli
+
       - name: Run EAS build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas build --platform android --profile ${{ inputs.build_profile }} --non-interactive
+        run: eas build --platform android --profile ${{ inputs.build_profile }} --non-interactive
