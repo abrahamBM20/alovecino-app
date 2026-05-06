@@ -18,14 +18,8 @@ function formatDate(text) {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
-function formatRut(text) {
-  const cleaned = text.replace(/[^\dkK]/g, '').slice(0, 9).toUpperCase();
-  if (cleaned.length <= 1) return cleaned;
-  return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
-}
-
 export default function RegisterScreen({ navigation }) {
-  const { control, errors, tipoUsuario, isLoading, registerError, onSubmit, canSubmit } = useRegisterForm(navigation);
+  const { control, errors, isLoading, registerError, onSubmit, canSubmit } = useRegisterForm(navigation);
 
   return (
     <ScreenContainer scroll keyboard>
@@ -83,149 +77,16 @@ export default function RegisterScreen({ navigation }) {
 
         <Controller
           control={control}
-          name="rut"
+          name="fechaNacimiento"
           render={({ field: { onChange, onBlur, value } }) => (
             <AppInput
-              label="RUT"
-              placeholder="12345678-5"
-              autoCapitalize="characters"
-              autoCorrect={false}
+              label="Fecha de nacimiento"
+              placeholder="DD/MM/AAAA"
+              keyboardType="numeric"
               onBlur={onBlur}
-              onChangeText={(text) => onChange(formatRut(text))}
+              onChangeText={(text) => onChange(formatDate(text))}
               value={value}
-              error={errors.rut?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="nombreUsuario"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
-              label="Nombre de usuario"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.nombreUsuario?.message}
-            />
-          )}
-        />
-
-        {tipoUsuario === 'almacen' && (
-          <Controller
-            control={control}
-            name="nombreAlmacen"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <AppInput
-                label="Nombre del almacén"
-                autoCapitalize="words"
-                autoCorrect={false}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={errors.nombreAlmacen?.message}
-              />
-            )}
-          />
-        )}
-
-        {tipoUsuario === 'cliente' && (
-          <Controller
-            control={control}
-            name="fechaNacimiento"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <AppInput
-                label="Fecha de nacimiento"
-                placeholder="DD/MM/AAAA"
-                keyboardType="numeric"
-                onBlur={onBlur}
-                onChangeText={(text) => onChange(formatDate(text))}
-                value={value}
-                error={errors.fechaNacimiento?.message}
-              />
-            )}
-          />
-        )}
-
-        <Controller
-          control={control}
-          name="calle"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
-              label="Calle"
-              autoCapitalize="words"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.calle?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="numero"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
-              label="Número"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.numero?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="comuna"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
-              label="Comuna"
-              autoCapitalize="words"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.comuna?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="region"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
-              label="Región"
-              autoCapitalize="words"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.region?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="codigoPostal"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
-              label="Código postal"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.codigoPostal?.message}
+              error={errors.fechaNacimiento?.message}
             />
           )}
         />
