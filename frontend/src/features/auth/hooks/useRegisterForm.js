@@ -11,14 +11,24 @@ export function useRegisterForm(navigation) {
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isValid },
   } = useForm({
     resolver: zodResolver(registerSchema),
-    mode: 'onBlur',
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       tipoUsuario: 'cliente',
+      rut: '',
+      nombreUsuario: '',
       nombreCompleto: '',
       fechaNacimiento: '',
+      nombreAlmacen: '',
+      calle: '',
+      numero: '',
+      comuna: '',
+      region: '',
+      codigoPostal: '',
       email: '',
       password: '',
       confirmarPassword: '',
@@ -31,8 +41,8 @@ export function useRegisterForm(navigation) {
     try {
       await registerService(data);
       navigation.navigate('Login');
-    } catch {
-      setRegisterError('No se pudo crear la cuenta. Intenta nuevamente.');
+    } catch (error) {
+      setRegisterError(error?.message || 'No se pudo crear la cuenta. Intenta nuevamente.');
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +51,7 @@ export function useRegisterForm(navigation) {
   return {
     control,
     errors,
+    tipoUsuario: watch('tipoUsuario'),
     isLoading,
     registerError,
     onSubmit,
