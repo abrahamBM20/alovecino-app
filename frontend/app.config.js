@@ -56,7 +56,7 @@ module.exports = ({ config }) => {
     extra: {
       ...config.extra,
       appEnv: process.env.EXPO_PUBLIC_APP_ENV || 'dev',
-      apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api-dev.example.com',
+      apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://alovecino-api-gateway-dev.onrender.com',
     },
   };
 };
