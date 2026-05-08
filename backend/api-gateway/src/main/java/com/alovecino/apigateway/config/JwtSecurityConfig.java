@@ -44,6 +44,7 @@ public class JwtSecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/info")
                         .permitAll()
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
                         .anyExchange()
                         .authenticated())

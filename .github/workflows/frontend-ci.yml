@@ -22,6 +22,7 @@ on:
         type: choice
         options:
           - dev
+          - dev-preview
           - qa
           - prod
 
@@ -54,8 +55,8 @@ jobs:
       - name: Run tests
         run: npm test -- --runInBand
 
-  eas-build-dev:
-    name: EAS Android dev build
+  eas-build-dev-preview:
+    name: EAS Android dev preview build
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
@@ -80,10 +81,10 @@ jobs:
       - name: Install EAS CLI
         run: npm install --global eas-cli
 
-      - name: Run EAS dev build
+      - name: Run EAS dev preview build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile dev --non-interactive
+        run: eas build --platform android --profile dev-preview --non-interactive
 
   eas-build-manual:
     name: EAS Android manual build
