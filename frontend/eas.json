@@ -26,7 +26,8 @@
       "env": {
         "APP_VARIANT": "qa",
         "EXPO_PUBLIC_APP_ENV": "qa",
-        "EXPO_PUBLIC_API_URL": "https://api-qa.example.com"
+        "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-qa.onrender.com",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
       }
     },
     "prod": {
