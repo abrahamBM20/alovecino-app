@@ -16,6 +16,7 @@ mvn spring-boot:run
 - AUTH_JWT_ISSUER (default: alovecino-auth)
 - AUTH_JWT_AUDIENCE (default: alovecino-api)
 - USUARIOS_SERVICE_URL (default: http://localhost:8080)
+- GEOLOCATION_SERVICE_URL (default: http://localhost:8084)
 - GATEWAY_CORS_ALLOWED_ORIGINS
 
 ## Routes
@@ -27,6 +28,7 @@ mvn spring-boot:run
 - /api/consultas/** -> usuarios-service
 - /api/valoraciones/** -> usuarios-service
 - /api/ofertas/** -> usuarios-service
+- /api/geolocalizacion/** -> geolocation-service
 - /v3/api-docs/** -> usuarios-service
 - /swagger-ui/** -> usuarios-service
 - / -> redirect to /swagger-ui/index.html

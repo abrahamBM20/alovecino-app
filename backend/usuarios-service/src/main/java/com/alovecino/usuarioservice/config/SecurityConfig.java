@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/actuator/info")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+                        .requestMatchers("/api/internal/geolocalizacion/**").permitAll()
                         .requestMatchers("/api/usuarios/**").authenticated()
                         .requestMatchers("/api/almacenes/**").authenticated()
                         .anyRequest().permitAll())
