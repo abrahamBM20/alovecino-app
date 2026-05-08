@@ -42,6 +42,7 @@ class JwtSecurityConfigTests {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            "/api/usuarios",
             "/api/usuarios/me",
             "/api/almacenes",
             "/api/consultas",
@@ -68,8 +69,16 @@ class JwtSecurityConfigTests {
     }
 
     @Test
+    void shouldRequireTokenForNestedUserPostRoutes() throws Exception {
+        HttpResponse<String> response = post("/api/usuarios/me");
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(response.body()).isEqualTo("{\"message\":\"Token requerido o invalido\"}");
+    }
+
+    @Test
     void shouldAllowUserRegistrationWithoutToken() throws Exception {
-        HttpResponse<String> response = postJson("/api/usuarios", "{}");
+        HttpResponse<String> response = post("/api/usuarios");
 
         assertThat(response.statusCode()).isNotEqualTo(HttpStatus.UNAUTHORIZED.value());
     }
@@ -95,11 +104,11 @@ class JwtSecurityConfigTests {
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    private HttpResponse<String> postJson(String path, String body) throws Exception {
+    private HttpResponse<String> post(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + path))
-                .POST(HttpRequest.BodyPublishers.ofString(body))
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .POST(HttpRequest.BodyPublishers.ofString("{}"))
                 .build();
 
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
