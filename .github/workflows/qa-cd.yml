@@ -1,0 +1,193 @@
+name: QA CI/CD
+
+on:
+  pull_request:
+    branches:
+      - qa
+  push:
+    branches:
+      - qa
+  workflow_dispatch:
+
+concurrency:
+  group: qa-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  JAVA_VERSION: "21"
+  RENDER_AUTH_SERVICE_ID: srv-d7unku3tqb8s73coavd0
+  RENDER_USUARIOS_SERVICE_ID: srv-d7unl4n7f7vs73cqrmi0
+  RENDER_API_GATEWAY_SERVICE_ID: srv-d7unl3rtqb8s73cob4hg
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - backend/api-gateway
+          - backend/auth-service
+          - backend/usuarios-service
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Run tests
+        run: mvn test
+
+  frontend-tests:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm test -- --runInBand --coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+
+  sonarqube:
+    name: SonarQube analysis
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - frontend-tests
+    if: ${{ vars.SONAR_ENABLED == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Compile api-gateway
+        working-directory: backend/api-gateway
+        run: mvn -q -DskipTests compile
+
+      - name: Compile auth-service
+        working-directory: backend/auth-service
+        run: mvn -q -DskipTests compile
+
+      - name: Compile usuarios-service
+        working-directory: backend/usuarios-service
+        run: mvn -q -DskipTests compile
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  render-qa-deploy:
+    name: Render QA deploy
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - frontend-tests
+      - sonarqube
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && (needs.sonarqube.result == 'success' || needs.sonarqube.result == 'skipped') }}
+
+    steps:
+      - name: Trigger auth-service deploy
+        run: |
+          curl --fail --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_AUTH_SERVICE_ID}/deploys" \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            --data '{"clearCache":"do_not_clear"}'
+
+      - name: Trigger usuarios-service deploy
+        run: |
+          curl --fail --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_USUARIOS_SERVICE_ID}/deploys" \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            --data '{"clearCache":"do_not_clear"}'
+
+      - name: Trigger api-gateway deploy
+        run: |
+          curl --fail --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_API_GATEWAY_SERVICE_ID}/deploys" \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            --data '{"clearCache":"do_not_clear"}'
+
+  eas-qa-build:
+    name: EAS Android QA build
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - frontend-tests
+      - sonarqube
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && (needs.sonarqube.result == 'success' || needs.sonarqube.result == 'skipped') }}
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install --global eas-cli
+
+      - name: Run EAS QA build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform android --profile qa --non-interactive
