@@ -24,7 +24,7 @@ Se configura el ambiente QA de AloVecino con servicios backend en Render, perfil
 - [x] Pruebas backend ejecutadas localmente.
 - [x] Pruebas frontend ejecutadas localmente.
 - [ ] Primer deploy QA validado en Render. Bloqueado hasta promover `dev` hacia `qa`; la rama `qa` actual no contiene los Dockerfiles de los servicios.
-- [x] Build EAS QA generado. Build URL: https://expo.dev/accounts/alovecino/projects/alovecino-app/builds/4088332c-5728-4d3a-8ae0-d2935f696f96
+- [x] Build EAS QA iniciado con perfil `qa` y estado `IN_PROGRESS`. Build URL: https://expo.dev/accounts/alovecino/projects/alovecino-app/builds/4088332c-5728-4d3a-8ae0-d2935f696f96
 
 # Checklist Tecnico
 - [x] El titulo del PR sigue el formato: `AV80 HU-23 - configurar ambiente QA`.
