@@ -13,6 +13,7 @@
     "test:watch": "jest --watch",
     "eas:whoami": "npx eas-cli whoami",
     "eas:build:dev": "npx eas-cli build --platform android --profile dev",
+    "eas:build:dev-preview": "npx eas-cli build --platform android --profile dev-preview",
     "eas:build:qa": "npx eas-cli build --platform android --profile qa",
     "eas:build:prod": "npx eas-cli build --platform android --profile prod"
   },

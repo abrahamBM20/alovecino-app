@@ -12,7 +12,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "gateway.services.auth.base-url=http://auth-service:8081",
@@ -54,10 +56,50 @@ class JwtSecurityConfigTests {
         assertThat(response.headers().firstValue(REQUEST_ID_HEADER)).isPresent();
     }
 
+    @Test
+    void shouldAllowRegistrationPreflightFromExpoWebWithoutToken() throws Exception {
+        HttpResponse<String> response = options("/api/usuarios", "http://localhost:8081", "POST");
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.headers().firstValue(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN))
+                .contains("http://localhost:8081");
+        assertThat(response.headers().firstValue(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS))
+                .hasValueSatisfying(methods -> assertThat(methods).contains("POST"));
+    }
+
+    @Test
+    void shouldAllowUserRegistrationWithoutToken() throws Exception {
+        HttpResponse<String> response = postJson("/api/usuarios", "{}");
+
+        assertThat(response.statusCode()).isNotEqualTo(HttpStatus.UNAUTHORIZED.value());
+    }
+
     private HttpResponse<String> get(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + path))
                 .GET()
+                .build();
+
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> options(String path, String origin, String method) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + path))
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .header(HttpHeaders.ORIGIN, origin)
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, method)
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "content-type")
+                .build();
+
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> postJson(String path, String body) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + path))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());

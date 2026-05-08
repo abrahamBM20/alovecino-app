@@ -17,6 +17,19 @@
         "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
       }
     },
+    "dev-preview": {
+      "distribution": "internal",
+      "channel": "development",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "dev",
+        "EXPO_PUBLIC_APP_ENV": "dev",
+        "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-dev.onrender.com",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
+      }
+    },
     "qa": {
       "distribution": "internal",
       "channel": "qa",
