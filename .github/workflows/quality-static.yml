@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sonar:
-    name: Sonar analysis
+  static-quality:
+    name: Static quality and optional Sonar
     runs-on: ubuntu-latest
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -55,6 +55,13 @@ jobs:
         run: npm run test:coverage -- --silent
         working-directory: frontend
 
+      - name: Prepare static evidence
+        run: mkdir -p qa-evidence
+
+      - name: Run Semgrep free static analysis
+        run: |
+          docker run --rm -v "${PWD}:/src" -w /src semgrep/semgrep semgrep scan --config p/ci --sarif --output qa-evidence/semgrep.sarif
+
       - name: Run Sonar analysis
         if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != ''
         uses: SonarSource/sonarqube-scan-action@v5
@@ -68,3 +75,16 @@ jobs:
       - name: Explain skipped Sonar analysis
         if: env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' || env.SONAR_PROJECT_KEY == ''
         run: echo "Sonar was skipped because SONAR_TOKEN, SONAR_HOST_URL or SONAR_PROJECT_KEY is not configured."
+
+      - name: Upload static quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-quality-evidence
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            qa-evidence/**
+            backend/**/target/surefire-reports/**
+            backend/**/target/site/jacoco/**
+            frontend/coverage/**

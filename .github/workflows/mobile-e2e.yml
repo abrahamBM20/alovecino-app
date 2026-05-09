@@ -56,6 +56,16 @@ jobs:
           target: google_apis
           arch: x86_64
           script: |
-            appium --base-path / --log-level warn &
+            mkdir -p qa-evidence
+            appium --base-path / --log-level warn > qa-evidence/appium.log 2>&1 &
             sleep 10
             node tests/e2e/appium/alovecino-smoke.test.js
+
+      - name: Upload mobile E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-e2e-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: qa-evidence/**

@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   code-quality:
-    name: Unit coverage and SonarQube
+    name: Unit coverage and static analysis
     runs-on: ubuntu-latest
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -60,6 +60,13 @@ jobs:
         run: npm run test:coverage -- --silent
         working-directory: frontend
 
+      - name: Prepare static evidence directory
+        run: mkdir -p qa-evidence
+
+      - name: Run Semgrep free static analysis
+        run: |
+          docker run --rm -v "${PWD}:/src" -w /src semgrep/semgrep semgrep scan --config p/ci --sarif --output qa-evidence/semgrep.sarif
+
       - name: Run SonarQube analysis
         if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != ''
         uses: SonarSource/sonarqube-scan-action@v5
@@ -75,8 +82,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-code-quality-evidence
+          retention-days: 14
           if-no-files-found: warn
           path: |
+            qa-evidence/**
             backend/**/target/surefire-reports/**
             backend/**/target/site/jacoco/**
             frontend/coverage/**
@@ -134,6 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-api-performance-evidence
+          retention-days: 14
           if-no-files-found: warn
           path: qa-evidence/**
 
@@ -189,5 +199,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-mobile-e2e-evidence
+          retention-days: 7
           if-no-files-found: warn
           path: qa-evidence/**

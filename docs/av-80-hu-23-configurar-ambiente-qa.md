@@ -6,14 +6,14 @@ Como equipo de desarrollo de AloVecino, quiero contar con un ambiente QA indepen
 
 ## Objetivo
 
-Configurar el ambiente QA con servicios backend en Render, base de datos NeonDB en branch `qa`, build Android de Expo/EAS con perfil `qa`, y un pipeline CI/CD ejecutado durante la promocion `dev -> qa`.
+Configurar el ambiente QA con servicios backend en Render Free, base de datos NeonDB Free en branch `qa`, build Android de Expo/EAS con perfil `qa`, y un pipeline CI/CD ejecutado durante la promocion `dev -> qa`.
 
 ## Alcance
 
 - Crear servicios Render QA para `api-gateway`, `auth-service` y `usuarios-service`.
 - Conectar los servicios QA a la branch NeonDB `qa`.
 - Configurar el perfil EAS `qa` para consumir el gateway QA.
-- Agregar workflow GitHub Actions para pruebas, analisis SonarQube opcional, deploy Render QA y build Android QA.
+- Agregar workflow GitHub Actions para pruebas, analisis estatico gratuito con Semgrep, SonarQube opcional, deploy Render QA y build Android QA.
 - Documentar secretos requeridos para operar el pipeline.
 
 ## Criterios de aceptacion
@@ -25,15 +25,16 @@ Configurar el ambiente QA con servicios backend en Render, base de datos NeonDB 
 - [ ] El workflow `QA CI/CD` corre al abrir PR hacia `qa` y al hacer push en `qa`.
 - [ ] En PR hacia `qa`, el workflow ejecuta tests backend y frontend.
 - [ ] En push a `qa`, el workflow gatilla deploy Render QA y build Android EAS `qa`.
-- [ ] SonarQube se ejecuta si `vars.SONAR_ENABLED` esta configurado en `true`.
+- [ ] Semgrep genera evidencia estatica gratuita en los artifacts de QA.
+- [ ] SonarQube se ejecuta solo si existen `SONAR_TOKEN`, `SONAR_HOST_URL` y `SONAR_PROJECT_KEY`.
 
 ## Secretos y variables requeridas
 
 - `EXPO_TOKEN`: token de Expo/EAS para ejecutar builds no interactivos.
 - `RENDER_API_KEY`: API key de Render para gatillar deploys por API.
-- `SONAR_TOKEN`: token de SonarQube o SonarQube Cloud.
-- `SONAR_HOST_URL`: URL del servidor SonarQube.
-- `SONAR_ENABLED`: variable de repositorio. Usar `true` para activar SonarQube.
+- `SONAR_TOKEN`: opcional, token de SonarQube o SonarQube Cloud si existe una instancia externa.
+- `SONAR_HOST_URL`: opcional, URL del servidor SonarQube.
+- `SONAR_PROJECT_KEY`: opcional, project key de SonarQube.
 
 ## Servicios Render QA
 

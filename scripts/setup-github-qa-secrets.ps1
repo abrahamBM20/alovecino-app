@@ -61,13 +61,16 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "Configuring GitHub Actions variables for $Repo"
-Set-GitHubVariable "SONAR_HOST_URL" "SonarQube Render URL, for example https://alovecino-sonarqube-qa.onrender.com"
-Set-GitHubVariable "SONAR_PROJECT_KEY" "SonarQube project key" "alovecino-app"
 Set-GitHubVariable "QA_BASE_URL" "QA API Gateway URL, for example https://alovecino-api-gateway-qa.onrender.com"
+
+$configureSonar = Read-Host "Configure optional SonarQube/SonarCloud values? (y/N)"
+if ($configureSonar -match '^(y|Y|yes|YES|s|S|si|SI)$') {
+    Set-GitHubVariable "SONAR_HOST_URL" "SonarQube/SonarCloud URL"
+    Set-GitHubVariable "SONAR_PROJECT_KEY" "SonarQube project key" "alovecino-app"
+}
 
 Write-Host ""
 Write-Host "Configuring GitHub Actions secrets for $Repo"
-Set-GitHubSecret "SONAR_TOKEN" "SonarQube token"
 Set-GitHubSecret "NEON_DATABASE_URL" "Neon QA JDBC URL"
 Set-GitHubSecret "NEON_DATABASE_USERNAME" "Neon QA database username"
 Set-GitHubSecret "NEON_DATABASE_PASSWORD" "Neon QA database password"
@@ -75,6 +78,9 @@ Set-GitHubSecret "APP_JWT_PRIVATE_KEY" "Auth-service RSA private key"
 Set-GitHubSecret "APP_JWT_PUBLIC_KEY" "Auth-service RSA public key"
 Set-GitHubSecret "APPIUM_APK_URL" "APK URL for Appium E2E (optional)" -Optional
 Set-GitHubSecret "EXPO_TOKEN" "Expo/EAS token (optional)" -Optional
+if ($configureSonar -match '^(y|Y|yes|YES|s|S|si|SI)$') {
+    Set-GitHubSecret "SONAR_TOKEN" "SonarQube/SonarCloud token"
+}
 
 Write-Host ""
 Write-Host "Done. GitHub Actions QA configuration has been updated."

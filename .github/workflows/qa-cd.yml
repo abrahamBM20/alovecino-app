@@ -77,52 +77,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
+          retention-days: 14
           path: frontend/coverage
-
-  sonarqube:
-    name: SonarQube analysis
-    runs-on: ubuntu-latest
-    needs:
-      - backend-tests
-      - frontend-tests
-    if: ${{ vars.SONAR_ENABLED == 'true' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-
-      - name: Compile api-gateway
-        working-directory: backend/api-gateway
-        run: mvn -q -DskipTests compile
-
-      - name: Compile auth-service
-        working-directory: backend/auth-service
-        run: mvn -q -DskipTests compile
-
-      - name: Compile usuarios-service
-        working-directory: backend/usuarios-service
-        run: mvn -q -DskipTests compile
-
-      - name: Download frontend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-coverage
-          path: frontend/coverage
-
-      - name: SonarQube scan
-        uses: SonarSource/sonarqube-scan-action@v7.1.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   render-qa-deploy:
     name: Render QA deploy
@@ -130,8 +86,7 @@ jobs:
     needs:
       - backend-tests
       - frontend-tests
-      - sonarqube
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && (needs.sonarqube.result == 'success' || needs.sonarqube.result == 'skipped') }}
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
 
     steps:
       - name: Trigger auth-service deploy
@@ -164,8 +119,7 @@ jobs:
     needs:
       - backend-tests
       - frontend-tests
-      - sonarqube
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && (needs.sonarqube.result == 'success' || needs.sonarqube.result == 'skipped') }}
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
     defaults:
       run:
         working-directory: frontend
