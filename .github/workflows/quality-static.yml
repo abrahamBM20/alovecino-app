@@ -1,0 +1,70 @@
+name: Static Quality
+
+on:
+  pull_request:
+    branches:
+      - dev
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: static-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonar:
+    name: Sonar analysis
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run backend coverage
+        run: |
+          mvn -f backend/api-gateway/pom.xml test
+          mvn -f backend/auth-service/pom.xml test
+          mvn -f backend/usuarios-service/pom.xml test
+
+      - name: Run frontend coverage
+        run: npm run test:coverage -- --silent
+        working-directory: frontend
+
+      - name: Run Sonar analysis
+        if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != ''
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+
+      - name: Explain skipped Sonar analysis
+        if: env.SONAR_TOKEN == '' || env.SONAR_HOST_URL == '' || env.SONAR_PROJECT_KEY == ''
+        run: echo "Sonar was skipped because SONAR_TOKEN, SONAR_HOST_URL or SONAR_PROJECT_KEY is not configured."

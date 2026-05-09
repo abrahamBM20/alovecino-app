@@ -1,0 +1,52 @@
+name: Performance
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "QA base URL for K6. Leave empty to use QA_BASE_URL variable."
+        required: false
+        type: string
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  k6:
+    name: K6 smoke load
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate target URL
+        if: env.BASE_URL == ''
+        run: |
+          echo "Set the base_url input or QA_BASE_URL repository variable."
+          exit 1
+
+      - name: Prepare evidence directory
+        run: mkdir -p qa-evidence
+
+      - name: Set up K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run K6 smoke load
+        run: k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
+
+      - name: Store K6 target
+        if: always()
+        run: |
+          echo "BASE_URL=${BASE_URL}" > qa-evidence/qa-target.txt
+          date -u +"UTC=%Y-%m-%dT%H:%M:%SZ" >> qa-evidence/qa-target.txt
+
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-evidence
+          if-no-files-found: warn
+          path: qa-evidence/**
