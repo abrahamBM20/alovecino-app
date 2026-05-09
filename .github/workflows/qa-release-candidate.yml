@@ -97,11 +97,13 @@ jobs:
       INPUT_BASE_URL: ${{ inputs.base_url }}
       QA_BASE_URL: ${{ vars.QA_BASE_URL }}
       BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
+      LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Node
+        if: env.LIVE_QA_TARGET == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -109,16 +111,29 @@ jobs:
       - name: Prepare evidence directory
         run: mkdir -p qa-evidence
 
+      - name: Defer live API and K6 evidence
+        if: env.LIVE_QA_TARGET != 'true'
+        run: |
+          {
+            echo "status=deferred"
+            echo "reason=Live API/K6 evidence runs after qa deploy via workflow_dispatch."
+            echo "event=${{ github.event_name }}"
+            echo "base_url=${BASE_URL}"
+            date -u +"UTC=%Y-%m-%dT%H:%M:%SZ"
+          } > qa-evidence/api-k6-deferred.txt
+
       - name: Validate QA target
-        if: env.BASE_URL == ''
+        if: env.LIVE_QA_TARGET == 'true' && env.BASE_URL == ''
         run: |
           echo "QA_BASE_URL is not configured and no base_url input was provided." | tee qa-evidence/qa-target.txt
           exit 1
 
       - name: Install Newman
+        if: env.LIVE_QA_TARGET == 'true'
         run: npm install --global newman
 
       - name: Run Postman collection
+        if: env.LIVE_QA_TARGET == 'true'
         run: >
           newman run tests/postman/alovecino-api.postman_collection.json
           --env-var baseUrl=${{ env.BASE_URL }}
@@ -127,9 +142,11 @@ jobs:
           --reporter-junit-export qa-evidence/newman-junit.xml
 
       - name: Set up K6
+        if: env.LIVE_QA_TARGET == 'true'
         uses: grafana/setup-k6-action@v1
 
       - name: Run K6 smoke load
+        if: env.LIVE_QA_TARGET == 'true'
         run: k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
 
       - name: Store QA target
