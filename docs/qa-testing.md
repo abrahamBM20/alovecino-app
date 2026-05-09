@@ -100,14 +100,14 @@ Las pruebas de Appium requieren un emulador Android, Appium Server y un APK inst
 .\scripts\open-dev-to-qa-pr.ps1 -Repo abrahamBM20/alovecino-app
 ```
 
-3. Esperar el workflow `QA Release Candidate`.
+3. Esperar los workflows `QA CI/CD` y `QA Release Candidate`.
 4. Descargar artefactos:
    - `qa-code-quality-evidence`
    - `qa-api-performance-evidence`
    - `qa-mobile-e2e-evidence`
-5. Revisar que Semgrep, JUnit, Jest, Newman y K6 hayan terminado correctamente.
+5. En PR hacia `qa`, `qa-api-performance-evidence` documenta que la prueba viva queda diferida hasta que Render QA despliegue el codigo de `qa`.
 6. Si todo esta correcto, aprobar y mergear `dev` hacia `qa`.
-7. Ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` si se quiere una evidencia post-merge.
+7. Cuando `QA CI/CD` termine el deploy de Render QA, ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` para generar evidencia viva de Newman y K6.
 
 ## Limites free tier
 
