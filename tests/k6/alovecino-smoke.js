@@ -21,6 +21,8 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 
 export default function () {
+  http.setResponseCallback(http.expectedStatuses({ min: 200, max: 399 }, 401, 403));
+
   const responses = http.batch([
     ['GET', `${BASE_URL}/`],
     ['GET', `${BASE_URL}/v3/api-docs`],
