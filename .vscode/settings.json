@@ -1,0 +1,13 @@
+{
+    "java.project.sourcePaths": [
+        "src/main/java",
+        "src/test/java"
+    ],
+    "java.project.outputPath": "target/classes",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar"
+    ],
+    "chat.tools.terminal.autoApprove": {
+        ".\\mvnw.cmd": true
+    }
+}
