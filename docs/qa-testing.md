@@ -62,6 +62,15 @@ Para preparar o leer la rama QA de Neon y cargar los secrets `NEON_DATABASE_*`:
 .\scripts\setup-neon-qa.ps1 -Repo abrahamBM20/alovecino-app -ProjectId <neon-project-id> -Branch qa -Database neondb -Role neondb_owner
 ```
 
+Para configurar las variables runtime de los tres servicios Render QA sin usar el dashboard:
+
+```powershell
+$env:RENDER_API_KEY = "<render-api-key>"
+.\scripts\setup-render-qa-env.ps1 -ProjectId super-poetry-34181860 -Branch qa
+```
+
+El script usa `neonctl` para obtener la connection string QA, genera llaves RSA para `auth-service` y actualiza variables directamente con la Render API. La CLI de Render v2.16.0 permite listar/validar servicios, pero no expone un comando no interactivo para modificar env vars.
+
 ## Uso local
 
 ```powershell

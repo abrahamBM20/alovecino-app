@@ -12,6 +12,7 @@ Configurar el ambiente QA con servicios backend en Render Free, base de datos Ne
 
 - Crear servicios Render QA para `api-gateway`, `auth-service` y `usuarios-service`.
 - Conectar los servicios QA a la branch NeonDB `qa`.
+- Configurar variables runtime de Render QA mediante `scripts/setup-render-qa-env.ps1`.
 - Configurar el perfil EAS `qa` para consumir el gateway QA.
 - Agregar workflow GitHub Actions para pruebas, analisis estatico gratuito con Semgrep, SonarQube opcional, deploy Render QA y build Android QA.
 - Documentar secretos requeridos para operar el pipeline.
@@ -21,6 +22,7 @@ Configurar el ambiente QA con servicios backend en Render Free, base de datos Ne
 - [ ] Existe ambiente Render `qa` con los tres servicios backend.
 - [ ] Los servicios QA despliegan desde branch Git `qa`.
 - [ ] Los servicios QA usan NeonDB branch `qa`.
+- [ ] Existe script para cargar variables runtime en Render QA sin dashboard.
 - [ ] El perfil EAS `qa` apunta a `https://alovecino-api-gateway-qa.onrender.com`.
 - [ ] El workflow `QA CI/CD` corre al abrir PR hacia `qa` y al hacer push en `qa`.
 - [ ] En PR hacia `qa`, el workflow ejecuta tests backend y frontend.
