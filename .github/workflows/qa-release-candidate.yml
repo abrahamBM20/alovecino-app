@@ -1,0 +1,204 @@
+name: QA Release Candidate
+
+on:
+  pull_request:
+    branches:
+      - qa
+  push:
+    branches:
+      - qa
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "QA base URL. Leave empty to use QA_BASE_URL variable."
+        required: false
+        type: string
+
+concurrency:
+  group: qa-release-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-quality:
+    name: Unit coverage and static analysis
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'alovecino-app' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run backend coverage
+        run: |
+          mvn -f backend/api-gateway/pom.xml test
+          mvn -f backend/auth-service/pom.xml test
+          mvn -f backend/usuarios-service/pom.xml test
+
+      - name: Run frontend coverage
+        run: npm run test:coverage -- --silent
+        working-directory: frontend
+
+      - name: Prepare static evidence directory
+        run: mkdir -p qa-evidence
+
+      - name: Run Semgrep free static analysis
+        run: |
+          docker run --rm -v "${PWD}:/src" -w /src semgrep/semgrep semgrep scan --config p/ci --sarif --output qa-evidence/semgrep.sarif
+
+      - name: Run SonarQube analysis
+        if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != ''
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+
+      - name: Upload code quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-code-quality-evidence
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            qa-evidence/**
+            backend/**/target/surefire-reports/**
+            backend/**/target/site/jacoco/**
+            frontend/coverage/**
+
+  api-and-performance:
+    name: API and K6 evidence
+    runs-on: ubuntu-latest
+    env:
+      INPUT_BASE_URL: ${{ inputs.base_url }}
+      QA_BASE_URL: ${{ vars.QA_BASE_URL }}
+      BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prepare evidence directory
+        run: mkdir -p qa-evidence
+
+      - name: Validate QA target
+        if: env.BASE_URL == ''
+        run: |
+          echo "QA_BASE_URL is not configured and no base_url input was provided." | tee qa-evidence/qa-target.txt
+          exit 1
+
+      - name: Install Newman
+        run: npm install --global newman
+
+      - name: Run Postman collection
+        run: >
+          newman run tests/postman/alovecino-api.postman_collection.json
+          --env-var baseUrl=${{ env.BASE_URL }}
+          --reporters cli,json,junit
+          --reporter-json-export qa-evidence/newman-report.json
+          --reporter-junit-export qa-evidence/newman-junit.xml
+
+      - name: Set up K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run K6 smoke load
+        run: k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
+
+      - name: Store QA target
+        if: always()
+        run: |
+          echo "BASE_URL=${BASE_URL}" > qa-evidence/qa-target.txt
+          date -u +"UTC=%Y-%m-%dT%H:%M:%SZ" >> qa-evidence/qa-target.txt
+
+      - name: Upload API and performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-api-performance-evidence
+          retention-days: 14
+          if-no-files-found: warn
+          path: qa-evidence/**
+
+  mobile-e2e:
+    name: Mobile E2E smoke
+    runs-on: ubuntu-latest
+    env:
+      APPIUM_APK_URL: ${{ secrets.APPIUM_APK_URL }}
+    steps:
+      - name: Skip when APK URL is missing
+        if: env.APPIUM_APK_URL == ''
+        run: echo "APPIUM_APK_URL is not configured; skipping mobile E2E smoke."
+
+      - name: Checkout
+        if: env.APPIUM_APK_URL != ''
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        if: env.APPIUM_APK_URL != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download APK
+        if: env.APPIUM_APK_URL != ''
+        run: |
+          mkdir -p qa-evidence
+          curl --location --fail "$APPIUM_APK_URL" --output "$RUNNER_TEMP/alovecino.apk"
+          echo "APPIUM_APP_PATH=$RUNNER_TEMP/alovecino.apk" >> "$GITHUB_ENV"
+
+      - name: Install Appium
+        if: env.APPIUM_APK_URL != ''
+        run: |
+          npm install --global appium
+          appium driver install uiautomator2
+          npm install webdriverio
+        working-directory: tests/e2e/appium
+
+      - name: Run Appium smoke on emulator
+        if: env.APPIUM_APK_URL != ''
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: |
+            appium --base-path / --log-level warn > qa-evidence/appium.log 2>&1 &
+            sleep 10
+            node tests/e2e/appium/alovecino-smoke.test.js
+
+      - name: Upload mobile E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-mobile-e2e-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: qa-evidence/**

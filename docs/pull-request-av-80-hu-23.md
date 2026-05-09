@@ -1,5 +1,5 @@
 # Resumen
-Se configura el ambiente QA de AloVecino con servicios backend en Render, perfil EAS Android QA y pipeline CI/CD para la promocion desde `dev` hacia `qa`. El flujo ejecuta pruebas backend/frontend, permite analisis SonarQube y dispara deploys QA mas build Android con el perfil `qa`.
+Se configura el ambiente QA de AloVecino con servicios backend en Render Free, NeonDB Free para QA, perfil EAS Android QA y pipeline CI/CD para la promocion desde `dev` hacia `qa`. El flujo ejecuta pruebas backend/frontend, analisis estatico gratuito con Semgrep, evidencia de API/rendimiento y deja SonarQube solo como integracion opcional si existe una instancia externa sin costo.
 
 # Trazabilidad
 - **Jira ID:** AV-80
@@ -18,7 +18,9 @@ Se configura el ambiente QA de AloVecino con servicios backend en Render, perfil
 - [x] CA-03: Perfil EAS `qa` apunta al gateway QA.
 - [x] CA-04: Workflow `QA CI/CD` ejecuta pruebas en PR hacia `qa`.
 - [x] CA-05: Workflow `QA CI/CD` gatilla deploy Render QA y build Android EAS QA en push a `qa`.
-- [x] CA-06: SonarQube queda integrado como paso opcional mediante secretos/variables.
+- [x] CA-06: Semgrep queda integrado como analisis estatico free tier.
+- [x] CA-07: SonarQube queda integrado solo como paso opcional mediante secretos/variables.
+- [x] CA-08: `QA CI/CD` carga variables runtime en Render QA via API antes del deploy; `scripts/setup-render-qa-env.ps1` queda como respaldo local.
 
 # Evidencia y QA
 - [x] Pruebas backend ejecutadas localmente.
@@ -33,4 +35,4 @@ Se configura el ambiente QA de AloVecino con servicios backend en Render, perfil
 - [x] Variables/secretos requeridos documentados.
 
 # Notas de Despliegue
-Configurar en GitHub los secretos `EXPO_TOKEN`, `RENDER_API_KEY`, `SONAR_TOKEN`, `SONAR_HOST_URL` y la variable `SONAR_ENABLED=true` si se quiere activar SonarQube. Los servicios Render QA ya existen y apuntan a la branch Git `qa`.
+Configurar en GitHub los secretos `EXPO_TOKEN`, `RENDER_API_KEY`, `NEON_DATABASE_URL`, `NEON_DATABASE_USERNAME`, `NEON_DATABASE_PASSWORD`, `APP_JWT_PRIVATE_KEY`, `APP_JWT_PUBLIC_KEY` y la variable `QA_BASE_URL`. El workflow `QA CI/CD` usa esos secrets para cargar variables runtime en Render QA antes del deploy. SonarQube no requiere Render ni billing; si existe una instancia externa, agregar `SONAR_TOKEN`, `SONAR_HOST_URL` y `SONAR_PROJECT_KEY`.
