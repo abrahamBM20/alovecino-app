@@ -89,6 +89,62 @@ jobs:
     if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
 
     steps:
+      - name: Configure Render QA environment variables
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_DATABASE_USERNAME: ${{ secrets.NEON_DATABASE_USERNAME }}
+          NEON_DATABASE_PASSWORD: ${{ secrets.NEON_DATABASE_PASSWORD }}
+          APP_JWT_PRIVATE_KEY: ${{ secrets.APP_JWT_PRIVATE_KEY }}
+          APP_JWT_PUBLIC_KEY: ${{ secrets.APP_JWT_PUBLIC_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          set_render_env() {
+            local service_id="$1"
+            local key="$2"
+            local value="$3"
+
+            jq -n --arg value "$value" '{value: $value}' |
+              curl --fail --silent --show-error --request PUT \
+                --url "https://api.render.com/v1/services/${service_id}/env-vars/${key}" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                --header "Accept: application/json" \
+                --header "Content-Type: application/json" \
+                --data @- >/dev/null
+          }
+
+          configure_backend_database() {
+            local service_id="$1"
+
+            set_render_env "$service_id" SERVER_PORT "10000"
+            set_render_env "$service_id" SPRING_PROFILES_ACTIVE "qa"
+            set_render_env "$service_id" SPRING_DATASOURCE_URL "$NEON_DATABASE_URL"
+            set_render_env "$service_id" SPRING_DATASOURCE_USERNAME "$NEON_DATABASE_USERNAME"
+            set_render_env "$service_id" SPRING_DATASOURCE_PASSWORD "$NEON_DATABASE_PASSWORD"
+            set_render_env "$service_id" AUTH_JWT_ISSUER "alovecino-auth"
+            set_render_env "$service_id" AUTH_JWT_AUDIENCE "alovecino-api"
+          }
+
+          configure_backend_database "$RENDER_AUTH_SERVICE_ID"
+          set_render_env "$RENDER_AUTH_SERVICE_ID" APP_JWT_PRIVATE_KEY "$APP_JWT_PRIVATE_KEY"
+          set_render_env "$RENDER_AUTH_SERVICE_ID" APP_JWT_PUBLIC_KEY "$APP_JWT_PUBLIC_KEY"
+          set_render_env "$RENDER_AUTH_SERVICE_ID" APP_JWT_REFRESH_COOKIE_SECURE "true"
+          set_render_env "$RENDER_AUTH_SERVICE_ID" APP_JWT_REFRESH_COOKIE_SAME_SITE "None"
+
+          configure_backend_database "$RENDER_USUARIOS_SERVICE_ID"
+          set_render_env "$RENDER_USUARIOS_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" SERVER_PORT "10000"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" SPRING_PROFILES_ACTIVE "qa"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_SERVICE_URL "https://alovecino-auth-service-qa.onrender.com"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" USUARIOS_SERVICE_URL "https://alovecino-usuarios-service-qa.onrender.com"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_JWT_ISSUER "alovecino-auth"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_JWT_AUDIENCE "alovecino-api"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" GATEWAY_CORS_ALLOWED_ORIGINS "http://localhost:19006,http://localhost:3000"
+
       - name: Trigger auth-service deploy
         run: |
           curl --fail --request POST \

@@ -71,6 +71,8 @@ $env:RENDER_API_KEY = "<render-api-key>"
 
 El script usa `neonctl` para obtener la connection string QA, genera llaves RSA para `auth-service` y actualiza variables directamente con la Render API. La CLI de Render v2.16.0 permite listar/validar servicios, pero no expone un comando no interactivo para modificar env vars.
 
+En el flujo normal no deberias necesitar ejecutar ese script: `.github/workflows/qa-cd.yml` configura esas mismas variables automaticamente antes del deploy cuando se hace push a `qa`, usando los secrets de GitHub.
+
 ## Uso local
 
 ```powershell
