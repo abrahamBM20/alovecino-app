@@ -132,11 +132,30 @@ jobs:
         if: env.LIVE_QA_TARGET == 'true'
         run: npm install --global newman
 
+      - name: Wait for QA gateway
+        if: env.LIVE_QA_TARGET == 'true'
+        shell: bash
+        run: |
+          for attempt in {1..40}; do
+            status="$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 20 "${BASE_URL}/actuator/health" || true)"
+            if [ "$status" = "200" ]; then
+              echo "QA gateway is healthy."
+              exit 0
+            fi
+
+            echo "Waiting for QA gateway (${attempt}/40), status=${status}"
+            sleep 15
+          done
+
+          echo "QA gateway did not become healthy in time." | tee qa-evidence/qa-health-timeout.txt
+          exit 1
+
       - name: Run Postman collection
         if: env.LIVE_QA_TARGET == 'true'
         run: >
           newman run tests/postman/alovecino-api.postman_collection.json
           --env-var baseUrl=${{ env.BASE_URL }}
+          --timeout-request 30000
           --reporters cli,json,junit
           --reporter-json-export qa-evidence/newman-report.json
           --reporter-junit-export qa-evidence/newman-junit.xml
