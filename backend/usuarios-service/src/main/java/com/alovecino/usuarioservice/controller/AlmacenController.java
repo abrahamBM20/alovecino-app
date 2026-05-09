@@ -1,0 +1,42 @@
+package com.alovecino.usuarioservice.controller;
+
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.alovecino.usuarioservice.dto.AlmacenRequest;
+import com.alovecino.usuarioservice.dto.AlmacenResponse;
+import com.alovecino.usuarioservice.service.AlmacenService;
+
+@RestController
+@RequestMapping("/api/almacenes")
+public class AlmacenController {
+
+    private final AlmacenService almacenService;
+
+    public AlmacenController(AlmacenService almacenService) {
+        this.almacenService = almacenService;
+    }
+
+    @PostMapping
+    public ResponseEntity<AlmacenResponse> createAlmacen(@AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody AlmacenRequest request) {
+        AlmacenResponse response = almacenService.createAlmacen(jwt.getSubject(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/mis-almacenes")
+    public List<AlmacenResponse> listMisAlmacenes(@AuthenticationPrincipal Jwt jwt) {
+        return almacenService.listAlmacenesByDueno(jwt.getSubject());
+    }
+}

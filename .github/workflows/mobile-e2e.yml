@@ -1,0 +1,71 @@
+name: Mobile E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "Public or signed URL to an Android APK. Leave empty to use APPIUM_APK_URL secret."
+        required: false
+        type: string
+
+concurrency:
+  group: mobile-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  appium-android:
+    name: Appium Android smoke
+    runs-on: ubuntu-latest
+    env:
+      INPUT_APK_URL: ${{ inputs.apk_url }}
+      SECRET_APK_URL: ${{ secrets.APPIUM_APK_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download APK
+        shell: bash
+        run: |
+          APK_URL="$INPUT_APK_URL"
+          if [ -z "$APK_URL" ]; then
+            APK_URL="$SECRET_APK_URL"
+          fi
+          if [ -z "$APK_URL" ]; then
+            echo "Set workflow input apk_url or secret APPIUM_APK_URL."
+            exit 1
+          fi
+          curl --location --fail "$APK_URL" --output "$RUNNER_TEMP/alovecino.apk"
+          echo "APPIUM_APP_PATH=$RUNNER_TEMP/alovecino.apk" >> "$GITHUB_ENV"
+
+      - name: Install Appium
+        run: |
+          npm install --global appium
+          appium driver install uiautomator2
+          npm install webdriverio
+        working-directory: tests/e2e/appium
+
+      - name: Run Appium smoke on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: |
+            mkdir -p qa-evidence
+            appium --base-path / --log-level warn > qa-evidence/appium.log 2>&1 &
+            sleep 10
+            node tests/e2e/appium/alovecino-smoke.test.js
+
+      - name: Upload mobile E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-e2e-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: qa-evidence/**
