@@ -5,24 +5,31 @@ mkdir -p qa-evidence
 
 adb devices -l | tee qa-evidence/adb-devices.txt
 
-for attempt in $(seq 1 60); do
-  if adb shell service check settings 2>/dev/null | grep -q "found"; then
-    echo "Android settings service is ready."
+ready_checks=0
+for attempt in $(seq 1 90); do
+  if adb shell service check settings 2>/dev/null | grep -q "found" \
+    && adb shell service check package 2>/dev/null | grep -q "found" \
+    && adb shell cmd package list packages --show-versioncode >/dev/null 2>&1 \
+    && adb shell pm path android >/dev/null 2>&1; then
+    ready_checks=$((ready_checks + 1))
+    echo "Android framework readiness check ${ready_checks}/3 passed."
+  else
+    ready_checks=0
+    echo "Waiting for Android framework services (${attempt}/90)"
+  fi
+
+  if [ "$ready_checks" -ge 3 ]; then
+    echo "Android framework services are ready."
     break
   fi
 
-  if [ "$attempt" -eq 60 ]; then
-    echo "Android settings service did not become ready." >&2
+  if [ "$attempt" -eq 90 ]; then
+    echo "Android framework services did not become ready." >&2
     exit 1
   fi
 
-  echo "Waiting for Android settings service (${attempt}/60)"
   sleep 2
 done
-
-adb shell settings put global window_animation_scale 0 || true
-adb shell settings put global transition_animation_scale 0 || true
-adb shell settings put global animator_duration_scale 0 || true
 
 appium --base-path / --log-level info > qa-evidence/appium.log 2>&1 &
 appium_pid="$!"
