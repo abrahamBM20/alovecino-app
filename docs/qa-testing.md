@@ -19,8 +19,8 @@ El flujo recomendado para aprobar el paso a produccion es abrir un PR de `dev` h
 - reporte Jest/lcov frontend;
 - reporte SARIF de Semgrep;
 - reporte JSON/JUnit de Newman;
-- resumen JSON de K6;
-- log Appium cuando existe APK configurado.
+- codigos de salida de Newman/K6 y resumen JSON de K6, incluso cuando Newman falla;
+- log Appium, estado del servidor y listado ADB cuando existe APK configurado;
 - pruebas QA frontend, incluyendo validacion de que los logos se empaquetan como assets locales en el APK QA.
 
 Herramientas posibles para QA frontend movil:
@@ -55,6 +55,8 @@ Como colaborador, la ruta mas practica es usar `workflow_dispatch` para las prue
 | `APP_JWT_PRIVATE_KEY` | Secret | Llave privada RSA para auth-service QA. |
 | `APP_JWT_PUBLIC_KEY` | Secret | Llave publica RSA para auth-service QA. |
 | `QA_BASE_URL` | Variable | URL de un ambiente QA ya desplegado, si no se levanta localmente. |
+| `QA_AUTH_SERVICE_URL` | Variable opcional | URL directa del auth-service QA para warm-up en Render Free. |
+| `QA_USUARIOS_SERVICE_URL` | Variable opcional | URL directa del usuarios-service QA para warm-up en Render Free. |
 | `APPIUM_APK_URL` | Secret | URL publica o firmada para descargar el APK usado por Appium. |
 | `EXPO_TOKEN` | Secret | Token EAS para compilar APKs Android. |
 | `SONAR_TOKEN` | Secret opcional | Token de SonarQube/SonarCloud si se habilita fuera de Render. |
@@ -114,13 +116,38 @@ Las pruebas de Appium requieren un emulador Android, Appium Server y un APK inst
 ```
 
 3. Esperar los workflows `QA CI/CD` y `QA Release Candidate`.
-4. Descargar artefactos:
+4. Descargar artefactos desde la pagina del run en GitHub Actions, seccion **Artifacts**, o con `gh`:
+
+```powershell
+gh run download <run-id> --name qa-code-quality-evidence
+gh run download <run-id> --name qa-api-performance-evidence
+gh run download <run-id> --name qa-mobile-e2e-evidence
+```
+
+5. Artefactos esperados:
    - `qa-code-quality-evidence`
    - `qa-api-performance-evidence`
    - `qa-mobile-e2e-evidence`
-5. En PR hacia `qa`, `qa-api-performance-evidence` documenta que la prueba viva queda diferida hasta que Render QA despliegue el codigo de `qa`.
-6. Si todo esta correcto, aprobar y mergear `dev` hacia `qa`.
-7. Cuando `QA CI/CD` termine el deploy de Render QA, ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` para generar evidencia viva de Newman y K6.
+6. En PR hacia `qa`, `qa-api-performance-evidence` documenta que la prueba viva queda diferida hasta que Render QA despliegue el codigo de `qa`.
+7. Si todo esta correcto, aprobar y mergear `dev` hacia `qa`.
+8. Cuando `QA CI/CD` termine el deploy de Render QA, ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` para generar evidencia viva de Newman, K6 y Appium:
+
+```powershell
+gh workflow run "QA Release Candidate" --ref qa -f base_url=https://alovecino-api-gateway-qa.onrender.com
+```
+
+9. Interpretar `qa-api-performance-evidence`:
+   - `newman-report.json` y `newman-junit.xml`: contrato API.
+   - `newman-exit-code.txt`: resultado Newman.
+   - `k6-summary.json`: rendimiento smoke.
+   - `k6-exit-code.txt`: resultado K6.
+   - `api-k6-result.txt`: resumen consolidado.
+   - `downstream-warmup.txt`: evidencia de arranque de auth-service y usuarios-service en Render Free.
+
+10. Interpretar `qa-mobile-e2e-evidence`:
+   - `appium.log`: log del servidor Appium.
+   - `appium-status.json`: respuesta `/status` de Appium.
+   - `adb-devices.txt`: emulador detectado por ADB.
 
 ## Limites free tier
 

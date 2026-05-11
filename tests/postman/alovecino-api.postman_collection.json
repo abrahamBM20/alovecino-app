@@ -5,18 +5,21 @@
   },
   "item": [
     {
-      "name": "Gateway redirects root",
+      "name": "Gateway health is ready",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/"
+        "url": "{{baseUrl}}/actuator/health"
       },
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('root responds with redirect or docs page', function () {",
-              "  pm.expect([200, 302]).to.include(pm.response.code);",
+              "pm.test('gateway health responds successfully', function () {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "pm.test('gateway health is UP', function () {",
+              "  pm.expect(pm.response.json()).to.have.property('status', 'UP');",
               "});"
             ],
             "type": "text/javascript"
