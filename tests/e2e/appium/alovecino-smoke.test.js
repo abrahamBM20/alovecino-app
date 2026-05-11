@@ -2,28 +2,33 @@ const assert = require('node:assert/strict');
 const { remote } = require('webdriverio');
 
 const appPath = process.env.APPIUM_APP_PATH;
-assert.ok(appPath, 'APPIUM_APP_PATH must point to an Android APK');
+const preinstalledApp = process.env.APPIUM_PREINSTALLED_APP === 'true';
+
+if (!preinstalledApp) {
+  assert.ok(appPath, 'APPIUM_APP_PATH must point to an Android APK');
+}
 
 const capabilities = {
   platformName: 'Android',
   'appium:automationName': 'UiAutomator2',
   'appium:deviceName': process.env.APPIUM_DEVICE_NAME || 'Android Emulator',
   'appium:platformVersion': process.env.APPIUM_PLATFORM_VERSION,
-  'appium:app': appPath,
+  'appium:app': preinstalledApp ? undefined : appPath,
   'appium:appPackage': 'com.alovecino.app.qa',
   'appium:appActivity': 'com.alovecino.app.qa.MainActivity',
   'appium:appWaitActivity': '*',
+  'appium:noReset': preinstalledApp,
   'appium:autoGrantPermissions': true,
   'appium:disableWindowAnimation': true,
   'appium:ignoreHiddenApiPolicyError': true,
   'appium:skipDeviceInitialization': true,
   'appium:skipUnlock': true,
   'appium:newCommandTimeout': 180,
-  'appium:adbExecTimeout': 120000,
-  'appium:androidInstallTimeout': 240000,
-  'appium:appWaitDuration': 120000,
-  'appium:uiautomator2ServerInstallTimeout': 120000,
-  'appium:uiautomator2ServerLaunchTimeout': 120000,
+  'appium:adbExecTimeout': 300000,
+  'appium:androidInstallTimeout': 300000,
+  'appium:appWaitDuration': 180000,
+  'appium:uiautomator2ServerInstallTimeout': 300000,
+  'appium:uiautomator2ServerLaunchTimeout': 300000,
 };
 
 Object.keys(capabilities).forEach((key) => {

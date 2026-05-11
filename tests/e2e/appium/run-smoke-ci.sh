@@ -5,24 +5,56 @@ mkdir -p qa-evidence
 
 adb devices -l | tee qa-evidence/adb-devices.txt
 
-for attempt in $(seq 1 60); do
-  if adb shell service check settings 2>/dev/null | grep -q "found"; then
-    echo "Android settings service is ready."
-    break
-  fi
+wait_for_android_framework() {
+  local label="$1"
+  local ready_checks=0
 
-  if [ "$attempt" -eq 60 ]; then
-    echo "Android settings service did not become ready." >&2
-    exit 1
-  fi
+  for attempt in $(seq 1 90); do
+    if adb shell service check settings 2>/dev/null | grep -q "found" \
+      && adb shell service check package 2>/dev/null | grep -q "found" \
+      && adb shell cmd package list packages --show-versioncode >/dev/null 2>&1 \
+      && adb shell pm path android >/dev/null 2>&1; then
+      ready_checks=$((ready_checks + 1))
+      echo "Android framework readiness (${label}) check ${ready_checks}/3 passed."
+    else
+      ready_checks=0
+      echo "Waiting for Android framework services (${label}, ${attempt}/90)"
+    fi
 
-  echo "Waiting for Android settings service (${attempt}/60)"
-  sleep 2
-done
+    if [ "$ready_checks" -ge 3 ]; then
+      echo "Android framework services are ready (${label})."
+      return 0
+    fi
 
-adb shell settings put global window_animation_scale 0 || true
-adb shell settings put global transition_animation_scale 0 || true
-adb shell settings put global animator_duration_scale 0 || true
+    sleep 2
+  done
+
+  echo "Android framework services did not become ready (${label})." >&2
+  return 1
+}
+
+install_app_with_retries() {
+  for attempt in $(seq 1 4); do
+    echo "Installing QA APK (${attempt}/4)"
+    if adb install -r -g --no-incremental "$APPIUM_APP_PATH"; then
+      echo "QA APK installed."
+      return 0
+    fi
+
+    adb devices -l | tee -a qa-evidence/adb-devices.txt || true
+    wait_for_android_framework "after failed APK install ${attempt}"
+    sleep 5
+  done
+
+  echo "QA APK could not be installed." >&2
+  return 1
+}
+
+test -n "${APPIUM_APP_PATH:-}"
+
+wait_for_android_framework "before APK install"
+install_app_with_retries
+wait_for_android_framework "before Appium"
 
 appium --base-path / --log-level info > qa-evidence/appium.log 2>&1 &
 appium_pid="$!"
@@ -37,7 +69,7 @@ trap cleanup EXIT
 for attempt in $(seq 1 60); do
   if curl --silent --fail http://127.0.0.1:4723/status > qa-evidence/appium-status.json; then
     echo "Appium is ready."
-    node tests/e2e/appium/alovecino-smoke.test.js
+    APPIUM_PREINSTALLED_APP=true node tests/e2e/appium/alovecino-smoke.test.js
     exit 0
   fi
 
