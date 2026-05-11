@@ -73,6 +73,7 @@ web_modules/
 !.env.example
 !deploy/docker/.env.dev.example
 !deploy/docker/.env.qa.example
+!deploy/docker/.env.prod.example
 
 # Local auth and tooling state
 .neonctl/
@@ -158,6 +159,7 @@ frontend/latest-*.apk
 
 # Backend secrets
 backend/**/msusuariosbs.env
+*.pem
 
 # Backend build outputs and local Maven caches
 .m2/
