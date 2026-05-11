@@ -128,7 +128,7 @@ gh run download <run-id> --name qa-mobile-e2e-evidence
    - `qa-code-quality-evidence`
    - `qa-api-performance-evidence`
    - `qa-mobile-e2e-evidence`
-6. En PR hacia `qa`, `qa-api-performance-evidence` documenta que la prueba viva queda diferida hasta que Render QA despliegue el codigo de `qa`.
+6. En PR/push hacia `qa`, `qa-api-performance-evidence` y `qa-mobile-e2e-evidence` documentan que las pruebas vivas quedan diferidas hasta que Render QA despliegue el codigo de `qa` y exista un APK QA vigente.
 7. Si todo esta correcto, aprobar y mergear `dev` hacia `qa`.
 8. Cuando `QA CI/CD` termine el deploy de Render QA, ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` para generar evidencia viva de Newman, K6 y Appium:
 
@@ -145,6 +145,7 @@ gh workflow run "QA Release Candidate" --ref qa -f base_url=https://alovecino-ap
    - `downstream-warmup.txt`: evidencia de arranque de auth-service y usuarios-service en Render Free.
 
 10. Interpretar `qa-mobile-e2e-evidence`:
+   - `mobile-e2e-deferred.txt`: evidencia de diferimiento en PR/push hacia `qa`.
    - `appium.log`: log del servidor Appium.
    - `appium-status.json`: respuesta `/status` de Appium.
    - `adb-devices.txt`: emulador detectado por ADB.
