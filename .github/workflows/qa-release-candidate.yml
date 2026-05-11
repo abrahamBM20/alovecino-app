@@ -97,6 +97,8 @@ jobs:
       INPUT_BASE_URL: ${{ inputs.base_url }}
       QA_BASE_URL: ${{ vars.QA_BASE_URL }}
       BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
+      QA_AUTH_SERVICE_URL: ${{ vars.QA_AUTH_SERVICE_URL || 'https://alovecino-auth-service-qa.onrender.com' }}
+      QA_USUARIOS_SERVICE_URL: ${{ vars.QA_USUARIOS_SERVICE_URL || 'https://alovecino-usuarios-service-qa.onrender.com' }}
       LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout
@@ -137,7 +139,7 @@ jobs:
         shell: bash
         run: |
           for attempt in {1..40}; do
-            status="$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 20 "${BASE_URL}/actuator/health" || true)"
+            status="$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 90 "${BASE_URL}/actuator/health" || true)"
             if [ "$status" = "200" ]; then
               echo "QA gateway is healthy."
               exit 0
@@ -150,15 +152,42 @@ jobs:
           echo "QA gateway did not become healthy in time." | tee qa-evidence/qa-health-timeout.txt
           exit 1
 
+      - name: Warm up QA downstream services
+        if: env.LIVE_QA_TARGET == 'true'
+        shell: bash
+        run: |
+          wait_for_service() {
+            local name="$1"
+            local url="$2"
+
+            for attempt in {1..6}; do
+              status="$(curl --silent --output /dev/null --write-out "%{http_code}" --max-time 120 "${url}/actuator/health" || true)"
+              echo "${name} warm-up attempt ${attempt}/6 status=${status}" | tee -a qa-evidence/downstream-warmup.txt
+              if [ "$status" = "200" ]; then
+                return 0
+              fi
+              sleep 10
+            done
+
+            echo "${name} did not become healthy at ${url}" | tee -a qa-evidence/downstream-warmup.txt
+            return 1
+          }
+
+          wait_for_service "auth-service" "${QA_AUTH_SERVICE_URL}"
+          wait_for_service "usuarios-service" "${QA_USUARIOS_SERVICE_URL}"
+
       - name: Run Postman collection
         if: env.LIVE_QA_TARGET == 'true'
-        run: >
-          newman run tests/postman/alovecino-api.postman_collection.json
-          --env-var baseUrl=${{ env.BASE_URL }}
-          --timeout-request 30000
-          --reporters cli,json,junit
-          --reporter-json-export qa-evidence/newman-report.json
-          --reporter-junit-export qa-evidence/newman-junit.xml
+        shell: bash
+        run: |
+          set +e
+          newman run tests/postman/alovecino-api.postman_collection.json \
+            --env-var baseUrl="${BASE_URL}" \
+            --timeout-request 30000 \
+            --reporters cli,json,junit \
+            --reporter-json-export qa-evidence/newman-report.json \
+            --reporter-junit-export qa-evidence/newman-junit.xml
+          echo "$?" > qa-evidence/newman-exit-code.txt
 
       - name: Set up K6
         if: env.LIVE_QA_TARGET == 'true'
@@ -166,7 +195,27 @@ jobs:
 
       - name: Run K6 smoke load
         if: env.LIVE_QA_TARGET == 'true'
-        run: k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
+        shell: bash
+        run: |
+          set +e
+          k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
+          echo "$?" > qa-evidence/k6-exit-code.txt
+
+      - name: Evaluate API and performance evidence
+        if: env.LIVE_QA_TARGET == 'true'
+        shell: bash
+        run: |
+          newman_exit="$(cat qa-evidence/newman-exit-code.txt 2>/dev/null || echo 1)"
+          k6_exit="$(cat qa-evidence/k6-exit-code.txt 2>/dev/null || echo 1)"
+          {
+            echo "newman_exit_code=${newman_exit}"
+            echo "k6_exit_code=${k6_exit}"
+          } > qa-evidence/api-k6-result.txt
+
+          if [ "$newman_exit" -ne 0 ] || [ "$k6_exit" -ne 0 ]; then
+            echo "QA API/K6 evidence failed. Artifacts were still generated."
+            exit 1
+          fi
 
       - name: Store QA target
         if: always()
@@ -186,6 +235,7 @@ jobs:
   mobile-e2e:
     name: Mobile E2E smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     env:
       APPIUM_APK_URL: ${{ secrets.APPIUM_APK_URL }}
     steps:
@@ -222,12 +272,25 @@ jobs:
         if: env.APPIUM_APK_URL != ''
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: |
-            appium --base-path / --log-level warn > qa-evidence/appium.log 2>&1 &
-            sleep 10
+            mkdir -p qa-evidence
+            adb devices -l | tee qa-evidence/adb-devices.txt
+            adb shell settings put global window_animation_scale 0
+            adb shell settings put global transition_animation_scale 0
+            adb shell settings put global animator_duration_scale 0
+            appium --base-path / --log-level info > qa-evidence/appium.log 2>&1 &
+            for attempt in {1..30}; do
+              if curl --silent --fail http://127.0.0.1:4723/status > qa-evidence/appium-status.json; then
+                break
+              fi
+              echo "Waiting for Appium (${attempt}/30)"
+              sleep 2
+            done
             node tests/e2e/appium/alovecino-smoke.test.js
 
       - name: Upload mobile E2E evidence

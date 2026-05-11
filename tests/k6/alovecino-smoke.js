@@ -24,13 +24,13 @@ export default function () {
   http.setResponseCallback(http.expectedStatuses({ min: 200, max: 399 }, 401, 403));
 
   const responses = http.batch([
-    ['GET', `${BASE_URL}/`],
+    ['GET', `${BASE_URL}/actuator/health`],
     ['GET', `${BASE_URL}/v3/api-docs`],
     ['GET', `${BASE_URL}/api/usuarios`],
   ]);
 
   check(responses[0], {
-    'gateway root responds': (response) => [200, 302].includes(response.status),
+    'gateway health responds': (response) => response.status === 200,
   });
   check(responses[1], {
     'openapi is reachable': (response) => response.status === 200,
