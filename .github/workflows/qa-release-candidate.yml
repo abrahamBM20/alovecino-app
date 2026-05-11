@@ -285,11 +285,11 @@ jobs:
         if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 30
           target: google_apis
           arch: x86_64
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -camera-back none
+          disable-animations: false
           emulator-boot-timeout: 1200
           script: bash tests/e2e/appium/run-smoke-ci.sh
 
