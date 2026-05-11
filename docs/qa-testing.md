@@ -122,16 +122,6 @@ Las pruebas de Appium requieren un emulador Android, Appium Server y un APK inst
 6. Si todo esta correcto, aprobar y mergear `dev` hacia `qa`.
 7. Cuando `QA CI/CD` termine el deploy de Render QA, ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` para generar evidencia viva de Newman y K6.
 
-Los artifacts quedan en GitHub Actions, dentro del run que ejecuto cada workflow:
-
-- `Actions` > `QA Release Candidate` > run del PR/push/manual > seccion `Artifacts`.
-- `qa-code-quality-evidence`: `semgrep.sarif`, reportes JUnit/Surefire backend, JaCoCo backend y cobertura Jest frontend.
-- `qa-api-performance-evidence`: `newman-report.json`, `newman-junit.xml`, `k6-summary.json`, `qa-target.txt` o `api-k6-deferred.txt` cuando la prueba viva se posterga.
-- `qa-mobile-e2e-evidence`: `appium.log` y archivos generados por el smoke E2E movil cuando existe `APPIUM_APK_URL`.
-- `frontend-coverage`: artifact del workflow `QA CI/CD`, con cobertura Jest del frontend.
-
-La retencion actual es de 14 dias para evidencia estatica/API/cobertura y 7 dias para Appium. Para documentar la entrega, descarga los ZIP desde el run de GitHub Actions y registra en la HU/PR: numero de run, commit SHA, fecha UTC de `qa-target.txt`, URL QA probada y resultado de Newman/K6.
-
 ## Limites free tier
 
 - GitHub Education/GitHub Pro entrega mas margen que GitHub Free, pero no elimina los limites de Actions ni artifacts.
