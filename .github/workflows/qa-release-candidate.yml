@@ -238,30 +238,43 @@ jobs:
     timeout-minutes: 35
     env:
       APPIUM_APK_URL: ${{ secrets.APPIUM_APK_URL }}
+      LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
+      - name: Prepare mobile evidence directory
+        run: mkdir -p qa-evidence
+
+      - name: Defer mobile E2E smoke
+        if: env.LIVE_QA_TARGET != 'true'
+        run: |
+          {
+            echo "status=deferred"
+            echo "reason=Mobile E2E smoke runs after QA deploy and EAS build via workflow_dispatch."
+            echo "event=${{ github.event_name }}"
+            date -u +"UTC=%Y-%m-%dT%H:%M:%SZ"
+          } > qa-evidence/mobile-e2e-deferred.txt
+
       - name: Skip when APK URL is missing
-        if: env.APPIUM_APK_URL == ''
-        run: echo "APPIUM_APK_URL is not configured; skipping mobile E2E smoke."
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL == ''
+        run: echo "APPIUM_APK_URL is not configured; skipping mobile E2E smoke." | tee qa-evidence/mobile-e2e-skipped.txt
 
       - name: Checkout
-        if: env.APPIUM_APK_URL != ''
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         uses: actions/checkout@v4
 
       - name: Set up Node
-        if: env.APPIUM_APK_URL != ''
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
       - name: Download APK
-        if: env.APPIUM_APK_URL != ''
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         run: |
-          mkdir -p qa-evidence
           curl --location --fail "$APPIUM_APK_URL" --output "$RUNNER_TEMP/alovecino.apk"
           echo "APPIUM_APP_PATH=$RUNNER_TEMP/alovecino.apk" >> "$GITHUB_ENV"
 
       - name: Install Appium
-        if: env.APPIUM_APK_URL != ''
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         run: |
           npm install --global appium
           appium driver install uiautomator2
@@ -269,7 +282,7 @@ jobs:
         working-directory: tests/e2e/appium
 
       - name: Run Appium smoke on emulator
-        if: env.APPIUM_APK_URL != ''
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -277,21 +290,8 @@ jobs:
           arch: x86_64
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            mkdir -p qa-evidence
-            adb devices -l | tee qa-evidence/adb-devices.txt
-            adb shell settings put global window_animation_scale 0
-            adb shell settings put global transition_animation_scale 0
-            adb shell settings put global animator_duration_scale 0
-            appium --base-path / --log-level info > qa-evidence/appium.log 2>&1 &
-            for attempt in {1..30}; do
-              if curl --silent --fail http://127.0.0.1:4723/status > qa-evidence/appium-status.json; then
-                break
-              fi
-              echo "Waiting for Appium (${attempt}/30)"
-              sleep 2
-            done
-            node tests/e2e/appium/alovecino-smoke.test.js
+          emulator-boot-timeout: 1200
+          script: bash tests/e2e/appium/run-smoke-ci.sh
 
       - name: Upload mobile E2E evidence
         if: always()

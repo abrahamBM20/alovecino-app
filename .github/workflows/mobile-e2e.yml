@@ -58,21 +58,8 @@ jobs:
           arch: x86_64
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            mkdir -p qa-evidence
-            adb devices -l | tee qa-evidence/adb-devices.txt
-            adb shell settings put global window_animation_scale 0
-            adb shell settings put global transition_animation_scale 0
-            adb shell settings put global animator_duration_scale 0
-            appium --base-path / --log-level info > qa-evidence/appium.log 2>&1 &
-            for attempt in {1..30}; do
-              if curl --silent --fail http://127.0.0.1:4723/status > qa-evidence/appium-status.json; then
-                break
-              fi
-              echo "Waiting for Appium (${attempt}/30)"
-              sleep 2
-            done
-            node tests/e2e/appium/alovecino-smoke.test.js
+          emulator-boot-timeout: 1200
+          script: bash tests/e2e/appium/run-smoke-ci.sh
 
       - name: Upload mobile E2E evidence
         if: always()
