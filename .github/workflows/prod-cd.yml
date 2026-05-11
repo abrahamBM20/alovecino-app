@@ -173,6 +173,7 @@ jobs:
     needs:
       - backend-tests
       - frontend-tests
+    if: ${{ vars.ENABLE_PROD_EAS_BUILD == 'true' }}
     defaults:
       run:
         working-directory: frontend
