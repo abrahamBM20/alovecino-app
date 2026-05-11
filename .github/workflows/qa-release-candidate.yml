@@ -235,7 +235,7 @@ jobs:
   mobile-e2e:
     name: Mobile E2E smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     env:
       APPIUM_APK_URL: ${{ secrets.APPIUM_APK_URL }}
       LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}

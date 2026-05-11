@@ -16,7 +16,7 @@ jobs:
   appium-android:
     name: Appium Android smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     env:
       INPUT_APK_URL: ${{ inputs.apk_url }}
       SECRET_APK_URL: ${{ secrets.APPIUM_APK_URL }}
