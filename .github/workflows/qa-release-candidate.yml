@@ -281,6 +281,13 @@ jobs:
           npm install webdriverio
         working-directory: tests/e2e/appium
 
+      - name: Enable KVM
+        if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Run Appium smoke on emulator
         if: env.LIVE_QA_TARGET == 'true' && env.APPIUM_APK_URL != ''
         uses: reactivecircus/android-emulator-runner@v2
@@ -288,6 +295,7 @@ jobs:
           api-level: 30
           target: google_apis
           arch: x86_64
+          disable-linux-hw-accel: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -camera-back none
           disable-animations: false
           emulator-boot-timeout: 1200
