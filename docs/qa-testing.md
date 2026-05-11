@@ -4,11 +4,13 @@ Este repositorio deja configuradas cinco capas de validacion priorizando costo c
 
 | Capa | Herramienta | Ejecucion |
 | --- | --- | --- |
-| Estatico | Semgrep + cobertura; Sonar opcional | `.github/workflows/quality-static.yml` |
+| Estatico | Semgrep sobre todo el repositorio + cobertura backend/frontend; Sonar opcional | `.github/workflows/quality-static.yml` |
 | Unitario | JUnit + Jest | `.github/workflows/backend-ci.yml` y `.github/workflows/frontend-ci.yml` |
 | Integracion/API | Postman + Newman | `.github/workflows/api-integration.yml` |
 | E2E movil | Appium | `.github/workflows/mobile-e2e.yml` |
 | Rendimiento | K6 | `.github/workflows/performance.yml` |
+
+Para QA de frontend, la base free tier queda en Jest + React Native Testing Library dentro de `frontend-tests` y `qa-release-candidate`. Estas pruebas validan pantallas, navegacion, formularios, servicios frontend y contratos de assets empaquetados. Para flujos completos en celular, Appium queda disponible como smoke E2E opcional cuando existe `APPIUM_APK_URL`.
 
 El flujo recomendado para aprobar el paso a produccion es abrir un PR de `dev` hacia `qa`. Ese PR dispara `.github/workflows/qa-release-candidate.yml`, que genera artefactos descargables con evidencia de:
 
@@ -19,6 +21,17 @@ El flujo recomendado para aprobar el paso a produccion es abrir un PR de `dev` h
 - reporte JSON/JUnit de Newman;
 - resumen JSON de K6;
 - log Appium cuando existe APK configurado.
+- pruebas QA frontend, incluyendo validacion de que los logos se empaquetan como assets locales en el APK QA.
+
+Herramientas posibles para QA frontend movil:
+
+- `Jest + React Native Testing Library`: recomendado para free tier; rapido, ya corre en CI y valida render, formularios, navegacion y contratos visuales simples.
+- `Appium`: recomendado para smoke E2E real sobre APK; ya esta configurado como opcional porque consume mas minutos de Actions.
+- `Detox`: buena alternativa E2E para React Native, pero requiere mas setup nativo y suele ser mas fragil/costosa en CI.
+- `Maestro`: simple para flujos moviles declarativos; buena opcion futura si queremos smoke tests mas legibles.
+- `Playwright`: util si se estabiliza una salida web de Expo; no reemplaza pruebas reales en Android.
+
+La revision estatica si incluye backend. En `quality-static.yml` y `qa-release-candidate.yml`, Semgrep corre desde la raiz del repositorio con `docker run ... -v "${PWD}:/src" -w /src semgrep/semgrep semgrep scan --config p/ci`, por lo que analiza `backend/api-gateway`, `backend/auth-service`, `backend/usuarios-service`, `frontend`, `tests`, `scripts` y el resto de archivos versionados. Ademas, antes de subir evidencia se ejecutan los tests Maven de cada microservicio y se adjuntan los reportes `target/surefire-reports` y `target/site/jacoco`.
 
 ## SonarQube y costo cero
 
@@ -108,6 +121,16 @@ Las pruebas de Appium requieren un emulador Android, Appium Server y un APK inst
 5. En PR hacia `qa`, `qa-api-performance-evidence` documenta que la prueba viva queda diferida hasta que Render QA despliegue el codigo de `qa`.
 6. Si todo esta correcto, aprobar y mergear `dev` hacia `qa`.
 7. Cuando `QA CI/CD` termine el deploy de Render QA, ejecutar manualmente `QA Release Candidate` contra `QA_BASE_URL` para generar evidencia viva de Newman y K6.
+
+Los artifacts quedan en GitHub Actions, dentro del run que ejecuto cada workflow:
+
+- `Actions` > `QA Release Candidate` > run del PR/push/manual > seccion `Artifacts`.
+- `qa-code-quality-evidence`: `semgrep.sarif`, reportes JUnit/Surefire backend, JaCoCo backend y cobertura Jest frontend.
+- `qa-api-performance-evidence`: `newman-report.json`, `newman-junit.xml`, `k6-summary.json`, `qa-target.txt` o `api-k6-deferred.txt` cuando la prueba viva se posterga.
+- `qa-mobile-e2e-evidence`: `appium.log` y archivos generados por el smoke E2E movil cuando existe `APPIUM_APK_URL`.
+- `frontend-coverage`: artifact del workflow `QA CI/CD`, con cobertura Jest del frontend.
+
+La retencion actual es de 14 dias para evidencia estatica/API/cobertura y 7 dias para Appium. Para documentar la entrega, descarga los ZIP desde el run de GitHub Actions y registra en la HU/PR: numero de run, commit SHA, fecha UTC de `qa-target.txt`, URL QA probada y resultado de Newman/K6.
 
 ## Limites free tier
 

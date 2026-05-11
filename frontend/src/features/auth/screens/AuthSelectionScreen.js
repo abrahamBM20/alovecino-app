@@ -8,7 +8,7 @@ export default function AuthSelectionScreen({ navigation }) {
   return (
     <ScreenContainer>
       <View style={styles.container}>
-        <Image source={{ uri: ASSETS.logoCompact }} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
+        <Image source={ASSETS.logoCompact} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
         <Text accessibilityRole="header" style={styles.title}>Bienvenido</Text>
         <Text style={styles.subtitle}>Selecciona como quieres continuar</Text>
 
