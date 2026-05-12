@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, StatusBar } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import { StyleSheet, View, TouchableOpacity, StatusBar, ActivityIndicator, Text } from 'react-native';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 import BotonFiltro from '../../../../assets/boton_filtro.svg';
 import BotonInicio from '../../../../assets/boton_inicio.svg';
@@ -70,7 +71,7 @@ const DEFAULT_REGION = {
 };
 
 const TAB_ITEMS = [
-  { id: 'filtro', Component: BotonFiltro },
+  { id: 'ubicacion', Component: BotonFiltro },
   { id: 'inicio', Component: BotonInicio },
   { id: 'configuracion', Component: BotonConfiguracion },
   { id: 'perfil', Component: BotonPerfil },
@@ -79,21 +80,70 @@ const TAB_ITEMS = [
 export default function HomeScreen() {
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [userLocation, setUserLocation] = useState(null);
-  const [activeTab, setActiveTab] = useState('inicio');
+  const [activeTab, setActiveTab] = useState('ubicacion');
+  const [loading, setLoading] = useState(true);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setPermissionDenied(true);
+          setLoading(false);
+          return;
+        }
 
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { latitude, longitude } = location.coords;
-      setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
-      setUserLocation({ latitude, longitude });
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const { latitude, longitude } = location.coords;
+        setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
+        setUserLocation({ latitude, longitude });
+      } catch {
+        setNetworkError(true);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
+
+  const handleMarkerPress = (storeId) => {
+    router.push(`/home/negocio/${storeId}`);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={PRIMARY} />
+        <Text style={styles.loadingText}>Obteniendo tu ubicación...</Text>
+      </View>
+    );
+  }
+
+  if (permissionDenied) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorTitle}>Permiso de ubicación denegado</Text>
+        <Text style={styles.errorText}>
+          Para ver los negocios cercanos, activa el permiso de ubicación en la configuración de tu dispositivo.
+        </Text>
+      </View>
+    );
+  }
+
+  if (networkError) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorTitle}>Error de conexión</Text>
+        <Text style={styles.errorText}>
+          No se pudo obtener tu ubicación. Verifica tu conexión e intenta nuevamente.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <LinearGradient
@@ -107,6 +157,7 @@ export default function HomeScreen() {
       <View style={[styles.mapWrapper, { marginTop: insets.top + 10 }]}>
         <MapView
           ref={mapRef}
+          provider={PROVIDER_GOOGLE}
           style={StyleSheet.absoluteFillObject}
           region={region}
           showsUserLocation
@@ -116,7 +167,7 @@ export default function HomeScreen() {
           {userLocation && (
             <Circle
               center={userLocation}
-              radius={3000}
+              radius={1000}
               fillColor="rgba(255, 140, 0, 0.15)"
               strokeColor={MANGO}
               strokeWidth={2}
@@ -128,6 +179,7 @@ export default function HomeScreen() {
               coordinate={{ latitude: store.latitude, longitude: store.longitude }}
               title={store.name}
               pinColor={PRIMARY}
+              onPress={() => handleMarkerPress(store.id)}
             />
           ))}
         </MapView>
@@ -167,5 +219,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 32,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: PRIMARY,
+    fontSize: 14,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: PRIMARY,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
