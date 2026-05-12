@@ -175,7 +175,7 @@ jobs:
     needs:
       - backend-tests
       - frontend-tests
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && vars.ENABLE_QA_EAS_BUILD == 'true' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
     defaults:
       run:
         working-directory: frontend

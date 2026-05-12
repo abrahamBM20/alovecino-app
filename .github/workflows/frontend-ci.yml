@@ -59,7 +59,7 @@ jobs:
     name: EAS Android dev preview build
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.ENABLE_DEV_EAS_BUILD == 'true'
     defaults:
       run:
         working-directory: frontend
