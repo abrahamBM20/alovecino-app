@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, StatusBar } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,48 @@ import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
 
 const PRIMARY = '#044E81';
+const MANGO = '#FF8C00';
+
+const CUSTOM_MAP_STYLE = [
+  {
+    featureType: 'landscape',
+    elementType: 'geometry',
+    stylers: [{ color: '#C8E6F5' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'geometry',
+    stylers: [{ color: '#C8E6F5' }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#B3D9F2' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#FFFFFF' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#D8EEF8' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#1E88E5' }],
+  },
+  {
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#2C5F7A' }],
+  },
+  {
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: '#FFFFFF' }],
+  },
+];
 
 const MOCK_STORES = [
   { id: 1, latitude: -33.4370, longitude: -70.7560, name: 'Minimarket El Rincón' },
@@ -36,6 +78,7 @@ const TAB_ITEMS = [
 
 export default function HomeScreen() {
   const [region, setRegion] = useState(DEFAULT_REGION);
+  const [userLocation, setUserLocation] = useState(null);
   const [activeTab, setActiveTab] = useState('inicio');
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
@@ -48,6 +91,7 @@ export default function HomeScreen() {
       const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = location.coords;
       setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
+      setUserLocation({ latitude, longitude });
     })();
   }, []);
 
@@ -67,7 +111,17 @@ export default function HomeScreen() {
           region={region}
           showsUserLocation
           showsMyLocationButton={false}
+          customMapStyle={CUSTOM_MAP_STYLE}
         >
+          {userLocation && (
+            <Circle
+              center={userLocation}
+              radius={3000}
+              fillColor="rgba(255, 140, 0, 0.15)"
+              strokeColor={MANGO}
+              strokeWidth={2}
+            />
+          )}
           {MOCK_STORES.map((store) => (
             <Marker
               key={store.id}
