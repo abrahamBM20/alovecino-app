@@ -1,4 +1,4 @@
-package main.java.com.alovecino.consultaservice.model;
+package com.alovecino.consultaservice.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

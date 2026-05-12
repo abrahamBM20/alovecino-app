@@ -1,8 +1,8 @@
-package main.java.com.alovecino.consultaservice.controller;
+package com.alovecino.consultaservice.controller;
 
-import main.java.com.alovecino.consultaservice.dto.ConsultaRequest;
-import main.java.com.alovecino.consultaservice.dto.ConsultaResponse;
-import main.java.com.alovecino.consultaservice.service.ConsultaService;
+import com.alovecino.consultaservice.dto.ConsultaRequest;
+import com.alovecino.consultaservice.dto.ConsultaResponse;
+import com.alovecino.consultaservice.service.ConsultaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

@@ -1,6 +1,6 @@
-package main.java.com.alovecino.consultaservice.repository;
+package com.alovecino.consultaservice.repository;
 
-import main.java.com.alovecino.consultaservice.model.Consulta;
+import com.alovecino.consultaservice.model.Consulta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

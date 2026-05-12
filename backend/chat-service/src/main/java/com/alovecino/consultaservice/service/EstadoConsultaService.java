@@ -1,9 +1,9 @@
-package main.java.com.alovecino.consultaservice.service;
+package com.alovecino.consultaservice.service;
 
-import main.java.com.alovecino.consultaservice.dto.EstadoConsultaRequest;
-import main.java.com.alovecino.consultaservice.dto.EstadoConsultaResponse;
-import main.java.com.alovecino.consultaservice.model.EstadoConsulta;
-import main.java.com.alovecino.consultaservice.repository.EstadoConsultaRepository;
+import com.alovecino.consultaservice.dto.EstadoConsultaRequest;
+import com.alovecino.consultaservice.dto.EstadoConsultaResponse;
+import com.alovecino.consultaservice.model.EstadoConsulta;
+import com.alovecino.consultaservice.repository.EstadoConsultaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
