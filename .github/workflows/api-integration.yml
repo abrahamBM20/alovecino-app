@@ -1,0 +1,100 @@
+name: API Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Existing QA base URL. Leave empty to start Docker Compose QA."
+        required: false
+        type: string
+
+concurrency:
+  group: api-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  newman:
+    name: Postman collection
+    runs-on: ubuntu-latest
+    env:
+      INPUT_BASE_URL: ${{ inputs.base_url }}
+      QA_BASE_URL: ${{ vars.QA_BASE_URL }}
+      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      NEON_DATABASE_USERNAME: ${{ secrets.NEON_DATABASE_USERNAME }}
+      NEON_DATABASE_PASSWORD: ${{ secrets.NEON_DATABASE_PASSWORD }}
+      APP_JWT_PRIVATE_KEY: ${{ secrets.APP_JWT_PRIVATE_KEY }}
+      APP_JWT_PUBLIC_KEY: ${{ secrets.APP_JWT_PUBLIC_KEY }}
+      AUTH_JWT_ISSUER: alovecino-auth
+      AUTH_JWT_AUDIENCE: alovecino-api
+      GATEWAY_SERVICE_PORT: 8080
+      AUTH_SERVICE_PORT: 8082
+      USUARIOS_SERVICE_PORT: 8081
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Newman
+        run: npm install --global newman
+
+      - name: Prepare evidence directory
+        run: mkdir -p qa-evidence
+
+      - name: Start QA stack
+        if: env.INPUT_BASE_URL == '' && env.QA_BASE_URL == ''
+        run: docker compose -f deploy/docker/docker-compose.qa.yml up --build -d
+
+      - name: Resolve base URL
+        id: target
+        shell: bash
+        run: |
+          if [ -n "$INPUT_BASE_URL" ]; then
+            echo "base_url=$INPUT_BASE_URL" >> "$GITHUB_OUTPUT"
+          elif [ -n "$QA_BASE_URL" ]; then
+            echo "base_url=$QA_BASE_URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_url=http://localhost:8080" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for API
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            if curl --silent --show-error --max-time 5 "${{ steps.target.outputs.base_url }}/" >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose -f deploy/docker/docker-compose.qa.yml logs
+          exit 1
+
+      - name: Run Postman collection
+        run: >
+          newman run tests/postman/alovecino-api.postman_collection.json
+          --env-var baseUrl=${{ steps.target.outputs.base_url }}
+          --reporters cli,json,junit
+          --reporter-json-export qa-evidence/newman-report.json
+          --reporter-junit-export qa-evidence/newman-junit.xml
+
+      - name: Store API target
+        if: always()
+        run: |
+          echo "BASE_URL=${{ steps.target.outputs.base_url }}" > qa-evidence/qa-target.txt
+          date -u +"UTC=%Y-%m-%dT%H:%M:%SZ" >> qa-evidence/qa-target.txt
+
+      - name: Upload API evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-integration-evidence
+          retention-days: 14
+          if-no-files-found: warn
+          path: qa-evidence/**
+
+      - name: Stop QA stack
+        if: always() && env.INPUT_BASE_URL == '' && env.QA_BASE_URL == ''
+        run: docker compose -f deploy/docker/docker-compose.qa.yml down --volumes
