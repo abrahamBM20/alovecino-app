@@ -147,6 +147,11 @@ dnf update -y
 dnf install -y docker git
 systemctl enable --now docker
 usermod -aG docker ec2-user
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl --fail --location --show-error --silent \
+  https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 \
+  --output /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 mkdir -p /opt/alovecino/prod/current
 chown -R ec2-user:ec2-user /opt/alovecino
 "@ | Set-Content -LiteralPath $userDataPath -Encoding ascii

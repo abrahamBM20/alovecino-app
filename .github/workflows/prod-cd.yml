@@ -141,6 +141,33 @@ jobs:
           ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "mkdir -p /opt/alovecino/prod/current"
           scp -i ~/.ssh/prod_ec2_key prod-deploy.tar.gz "$PROD_EC2_USER@$PROD_EC2_HOST:/opt/alovecino/prod/prod-deploy.tar.gz"
 
+      - name: Ensure Docker Compose on EC2
+        run: |
+          ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" '
+            set -euo pipefail
+
+            if docker compose version >/dev/null 2>&1; then
+              docker compose version
+              exit 0
+            fi
+
+            arch="$(uname -m)"
+            case "$arch" in
+              x86_64|aarch64) ;;
+              *)
+                echo "Unsupported architecture for Docker Compose plugin: $arch" >&2
+                exit 1
+                ;;
+            esac
+
+            sudo mkdir -p /usr/local/lib/docker/cli-plugins
+            sudo curl --fail --location --show-error --silent \
+              "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-${arch}" \
+              --output /usr/local/lib/docker/cli-plugins/docker-compose
+            sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            docker compose version
+          '
+
       - name: Deploy with Docker Compose
         run: |
           private_key_escaped="${PROD_APP_JWT_PRIVATE_KEY//$'\n'/\\n}"
