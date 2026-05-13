@@ -71,10 +71,13 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${NEON_DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${NEON_DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DATABASE_PASSWORD}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       AUTH_JWK_SET_URI: http://auth-service:8080/.well-known/jwks.json
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
-      USUARIOS_SERVICE_URL: http://usuarios-service:8080
     ports:
       - "${GEOLOCATION_SERVICE_PORT:-8084}:8080"
     volumes:

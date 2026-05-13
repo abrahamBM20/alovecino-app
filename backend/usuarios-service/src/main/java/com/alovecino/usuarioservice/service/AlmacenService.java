@@ -19,7 +19,6 @@ import com.alovecino.usuarioservice.repository.AlmacenRepository;
 import com.alovecino.usuarioservice.repository.EstadoCuentaRepository;
 import com.alovecino.usuarioservice.repository.TipoContactoRepository;
 import com.alovecino.usuarioservice.repository.UsuarioRepository;
-import com.alovecino.usuarioservice.dto.DireccionResponse;
 
 @Service
 public class AlmacenService {
@@ -74,25 +73,6 @@ public class AlmacenService {
         return almacenRepository.findByDuenoIdUsuarioOrderByIdAlmacenDesc(dueno.getIdUsuario()).stream()
                 .map(this::toResponse)
                 .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public DireccionResponse getDireccionResponseById(Long idAlmacen) {
-        return almacenRepository.findById(idAlmacen)
-                .map(this::toDireccionResponse)
-                .orElseThrow(() -> new UsuarioNotFoundException("almacen " + idAlmacen));
-    }
-
-    private DireccionResponse toDireccionResponse(Almacen almacen) {
-        var direccion = almacen.getDireccion();
-        return new DireccionResponse(
-                direccion.getCalle(),
-                direccion.getNumero(),
-                direccion.getComuna().getNombre(),
-                direccion.getComuna().getRegion().getNombre(),
-                direccion.getCodigoPostal(),
-                direccion.getLatitud() != null ? direccion.getLatitud().toPlainString() : null,
-                direccion.getLongitud() != null ? direccion.getLongitud().toPlainString() : null);
     }
 
     private Usuario findUsuarioByPrincipal(String identifier) {

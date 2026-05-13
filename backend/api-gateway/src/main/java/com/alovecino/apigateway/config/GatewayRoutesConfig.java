@@ -39,6 +39,9 @@ public class GatewayRoutesConfig {
                 .route("geolocalizacion-api", route -> route
                         .path("/api/geolocalizacion/**")
                         .uri(geolocationUrl))
+                .route("geolocalizacion-almacenes-api", route -> route
+                        .path("/api/v1/almacenes/**")
+                        .uri(geolocationUrl))
                 .route("usuarios-docs", route -> route
                         .path("/v3/api-docs/**", "/swagger-ui/**")
                         .uri(usuariosUrl))
