@@ -13,7 +13,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <ScreenContainer scroll keyboard>
       <View style={styles.container}>
-        <Image source={{ uri: ASSETS.logoCompact }} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
+        <Image source={ASSETS.logoCompact} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
 
         <Controller
           control={control}
