@@ -53,7 +53,7 @@ module.exports = ({ config }) => {
       ],
       config: {
         googleMaps: {
-          apiKey: 'AIzaSyA9L-86Ti7nsyOI6ZkV4bY3CZ8tkdeQv9M',
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
         },
       },
     },

@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 
 import BotonFiltro from '../../../../assets/boton_filtro.svg';
 import BotonInicio from '../../../../assets/boton_inicio.svg';
@@ -12,6 +13,7 @@ import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
 
 const PRIMARY = '#044E81';
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
 const MANGO = '#FF8C00';
 
 const CUSTOM_MAP_STYLE = [
@@ -157,7 +159,7 @@ export default function HomeScreen() {
       <View style={[styles.mapWrapper, { marginTop: insets.top + 10 }]}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
+          provider={IS_EXPO_GO ? undefined : PROVIDER_GOOGLE}
           style={StyleSheet.absoluteFillObject}
           region={region}
           showsUserLocation
