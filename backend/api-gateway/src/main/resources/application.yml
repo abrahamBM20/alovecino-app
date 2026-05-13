@@ -52,6 +52,8 @@ gateway:
       base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
     usuarios:
       base-url: ${USUARIOS_SERVICE_URL:http://localhost:8080}
+    chat:
+      base-url: ${CHAT_SERVICE_URL:http://localhost:8083}
   security:
     jwt:
       jwk-set-uri: ${AUTH_JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}

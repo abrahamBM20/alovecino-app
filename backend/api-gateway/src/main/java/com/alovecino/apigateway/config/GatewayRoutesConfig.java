@@ -12,6 +12,7 @@ public class GatewayRoutesConfig {
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder, GatewayProperties properties) {
         String authUrl = properties.getServices().getAuth().getBaseUrl();
         String usuariosUrl = properties.getServices().getUsuarios().getBaseUrl();
+        String chatUrl = properties.getServices().getChat().getBaseUrl();
 
         return builder.routes()
                 .route("auth-api", route -> route
@@ -28,7 +29,7 @@ public class GatewayRoutesConfig {
                         .uri(usuariosUrl))
                 .route("consultas-api", route -> route
                         .path("/api/consultas/**")
-                        .uri(usuariosUrl))
+                        .uri(chatUrl))
                 .route("valoraciones-api", route -> route
                         .path("/api/valoraciones/**")
                         .uri(usuariosUrl))
