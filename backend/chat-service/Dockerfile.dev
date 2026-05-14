@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
 FROM maven:3.9.9-eclipse-temurin-21
-WORKDIR /workspace
+WORKDIR /app
 
 COPY pom.xml .
 RUN mvn -q -DskipTests dependency:go-offline
 
 COPY src ./src
 
-EXPOSE 8081
-CMD ["mvn", "-DskipTests", "spring-boot:run"]
+EXPOSE 8083
+CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.profiles=docker"]
