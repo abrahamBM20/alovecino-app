@@ -24,6 +24,7 @@ on:
           - dev
           - dev-preview
           - qa
+          - prod-preview
           - prod
 
 concurrency:

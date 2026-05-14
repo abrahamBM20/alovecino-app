@@ -20,7 +20,7 @@ El flujo recomendado para aprobar el paso a produccion es abrir un PR de `dev` h
 - reporte SARIF de Semgrep;
 - reporte JSON/JUnit de Newman;
 - codigos de salida de Newman/K6 y resumen JSON de K6, incluso cuando Newman falla;
-- log Appium, estado del servidor y listado ADB cuando existe APK configurado;
+- log Appium, estado del servidor, listado ADB, capturas PNG y page source XML cuando existe APK configurado;
 - pruebas QA frontend, incluyendo validacion de que los logos se empaquetan como assets locales en el APK QA.
 
 Herramientas posibles para QA frontend movil:
@@ -149,6 +149,10 @@ gh workflow run "QA Release Candidate" --ref qa -f base_url=https://alovecino-ap
    - `appium.log`: log del servidor Appium.
    - `appium-status.json`: respuesta `/status` de Appium.
    - `adb-devices.txt`: emulador detectado por ADB.
+   - `01-app-launched.png`: captura despues de abrir el APK en el emulador.
+   - `02-smoke-validated.png`: captura despues de validar que la pantalla esperada cargo.
+   - `99-failure.png`: captura generada si el smoke falla antes de cerrar la sesion Appium.
+   - `appium-page-source.xml`: jerarquia de UI obtenida por Appium para diagnostico.
 
 ## Limites free tier
 
