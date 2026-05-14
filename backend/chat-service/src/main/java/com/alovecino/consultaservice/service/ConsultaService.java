@@ -2,8 +2,13 @@ package com.alovecino.consultaservice.service;
 
 import com.alovecino.consultaservice.dto.ConsultaRequest;
 import com.alovecino.consultaservice.dto.ConsultaResponse;
+import com.alovecino.consultaservice.dto.ResponderConsultaRequest;
 import com.alovecino.consultaservice.model.Consulta;
+import com.alovecino.consultaservice.model.EstadoConsulta;
+import com.alovecino.consultaservice.repository.AlmacenRepository;
+import com.alovecino.consultaservice.repository.ClienteRepository;
 import com.alovecino.consultaservice.repository.ConsultaRepository;
+import com.alovecino.consultaservice.repository.EstadoConsultaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,16 +22,29 @@ import java.util.stream.Collectors;
 @Transactional
 public class ConsultaService {
 
+    private static final String ESTADO_PENDIENTE = "PENDIENTE";
+
     private final ConsultaRepository consultaRepository;
+    private final EstadoConsultaRepository estadoConsultaRepository;
+    private final ClienteRepository clienteRepository;
+    private final AlmacenRepository almacenRepository;
 
     public ConsultaResponse crearConsulta(ConsultaRequest request) {
+        validarClienteYAlmacen(request.getIdCliente(), request.getIdAlmacen());
+
+        EstadoConsulta estadoPendiente = estadoConsultaRepository.findByNombre(ESTADO_PENDIENTE);
+        if (estadoPendiente == null) {
+            throw new IllegalArgumentException("El estado PENDIENTE no está configurado en el sistema");
+        }
+
         Consulta consulta = new Consulta();
         consulta.setDescripcion(request.getDescripcion());
         consulta.setCantidad(request.getCantidad());
         consulta.setIdCliente(request.getIdCliente());
         consulta.setIdAlmacen(request.getIdAlmacen());
-        consulta.setRespuesta(request.getRespuesta());
-        consulta.setIdEstadoConsulta(request.getIdEstadoConsulta());
+        consulta.setRespuesta(null);
+        consulta.setFechaRespuesta(null);
+        consulta.setIdEstadoConsulta(estadoPendiente.getIdEstadoConsulta());
 
         Consulta savedConsulta = consultaRepository.save(consulta);
         return mapToResponse(savedConsulta);
@@ -55,13 +73,20 @@ public class ConsultaService {
                 .collect(Collectors.toList());
     }
 
-    public ConsultaResponse responderConsulta(Long id, String respuesta, Long idEstadoConsulta) {
+    public ConsultaResponse responderConsulta(Long id, ResponderConsultaRequest request) {
+        if (request.getRespuesta() == null || request.getRespuesta().isBlank()) {
+            throw new IllegalArgumentException("La respuesta no puede estar vacía");
+        }
+
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Consulta no encontrada"));
 
-        consulta.setRespuesta(respuesta);
+        EstadoConsulta estado = estadoConsultaRepository.findById(request.getIdEstadoConsulta())
+                .orElseThrow(() -> new IllegalArgumentException("El estado de consulta no existe"));
+
+        consulta.setRespuesta(request.getRespuesta().trim());
         consulta.setFechaRespuesta(LocalDateTime.now());
-        consulta.setIdEstadoConsulta(idEstadoConsulta);
+        consulta.setIdEstadoConsulta(estado.getIdEstadoConsulta());
 
         Consulta updatedConsulta = consultaRepository.save(consulta);
         return mapToResponse(updatedConsulta);
@@ -71,9 +96,22 @@ public class ConsultaService {
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Consulta no encontrada"));
 
-        consulta.setIdEstadoConsulta(idEstadoConsulta);
+        EstadoConsulta estado = estadoConsultaRepository.findById(idEstadoConsulta)
+                .orElseThrow(() -> new IllegalArgumentException("El estado de consulta no existe"));
+
+        consulta.setIdEstadoConsulta(estado.getIdEstadoConsulta());
         Consulta updatedConsulta = consultaRepository.save(consulta);
         return mapToResponse(updatedConsulta);
+    }
+
+    private void validarClienteYAlmacen(Long idCliente, Long idAlmacen) {
+        if (!clienteRepository.existsById(idCliente)) {
+            throw new IllegalArgumentException("El cliente no existe");
+        }
+
+        if (!almacenRepository.existsById(idAlmacen)) {
+            throw new IllegalArgumentException("El almacén no existe");
+        }
     }
 
     private ConsultaResponse mapToResponse(Consulta consulta) {

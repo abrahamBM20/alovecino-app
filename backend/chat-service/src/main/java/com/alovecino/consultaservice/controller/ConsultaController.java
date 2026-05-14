@@ -2,6 +2,7 @@ package com.alovecino.consultaservice.controller;
 
 import com.alovecino.consultaservice.dto.ConsultaRequest;
 import com.alovecino.consultaservice.dto.ConsultaResponse;
+import com.alovecino.consultaservice.dto.ResponderConsultaRequest;
 import com.alovecino.consultaservice.service.ConsultaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,9 +60,8 @@ public class ConsultaController {
     @PreAuthorize("hasRole('ALMACEN')")
     public ResponseEntity<ConsultaResponse> responderConsulta(
             @PathVariable Long id,
-            @RequestParam String respuesta,
-            @RequestParam Long idEstadoConsulta) {
-        ConsultaResponse response = consultaService.responderConsulta(id, respuesta, idEstadoConsulta);
+            @Valid @RequestBody ResponderConsultaRequest request) {
+        ConsultaResponse response = consultaService.responderConsulta(id, request);
         return ResponseEntity.ok(response);
     }
 

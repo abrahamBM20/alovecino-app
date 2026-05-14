@@ -30,6 +30,9 @@ public class GatewayRoutesConfig {
                 .route("consultas-api", route -> route
                         .path("/api/consultas/**")
                         .uri(chatUrl))
+                .route("estados-consulta-api", route -> route
+                        .path("/api/estados-consulta/**")
+                        .uri(chatUrl))
                 .route("valoraciones-api", route -> route
                         .path("/api/valoraciones/**")
                         .uri(usuariosUrl))

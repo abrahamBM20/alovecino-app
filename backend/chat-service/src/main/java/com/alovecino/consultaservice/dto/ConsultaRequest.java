@@ -1,8 +1,10 @@
 package com.alovecino.consultaservice.dto;
 
 import lombok.Data;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 @Data
@@ -13,16 +15,28 @@ public class ConsultaRequest {
     private String descripcion;
 
     @NotNull(message = "La cantidad es obligatoria")
+    @Min(value = 1, message = "La cantidad debe ser mayor a 0")
     private Integer cantidad;
 
     @NotNull(message = "El ID del cliente es obligatorio")
+    @Positive(message = "El ID del cliente debe ser mayor a 0")
     private Long idCliente;
 
     @NotNull(message = "El ID del almacén es obligatorio")
+    @Positive(message = "El ID del almacén debe ser mayor a 0")
     private Long idAlmacen;
 
+    /**
+     * Campo mantenido solo por compatibilidad con clientes antiguos.
+     * La respuesta se registra únicamente desde el endpoint /responder.
+     */
+    @Deprecated
     private String respuesta;
 
-    @NotNull(message = "El ID del estado de consulta es obligatorio")
+    /**
+     * Campo mantenido solo por compatibilidad con clientes antiguos.
+     * Al crear una consulta, el backend asigna automáticamente el estado PENDIENTE.
+     */
+    @Deprecated
     private Long idEstadoConsulta;
 }
