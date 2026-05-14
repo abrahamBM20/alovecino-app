@@ -8,7 +8,7 @@ Esta guia esta basada en el flujo real que se aplico en este proyecto.
 ## 2) Que logramos en este proyecto
 Se dejo configurado:
 
-- Build profiles EAS para 3 ambientes: `dev`, `qa`, `prod`.
+- Build profiles EAS para ambientes `dev`, `qa`, `prod` y un `prod-preview` instalable.
 - Config dinamica por ambiente para nombre app y package Android.
 - Dev Client Android generado en EAS e instalado en emulador.
 - Solucion de errores comunes de bundling JS y modulos nativos.
@@ -16,7 +16,7 @@ Se dejo configurado:
 ## 3) Conceptos clave para equipo junior
 
 ### 3.1 Build Profile (EAS)
-Un profile define como se compila la app (`dev`, `qa`, `prod`), incluyendo variables de entorno, tipo de build y distribucion.
+Un profile define como se compila la app (`dev`, `qa`, `prod`, `prod-preview`), incluyendo variables de entorno, tipo de build y distribucion.
 
 ### 3.2 Development Client
 No es Expo Go. Es una app nativa compilada para tu proyecto y sus modulos nativos. Si agregas un modulo nativo nuevo, debes recompilar e instalar un nuevo Dev Client.
@@ -56,6 +56,11 @@ Se definieron perfiles:
   - `android.buildType: app-bundle`
   - canal production
   - variables production
+- `prod-preview`
+  - `distribution: internal`
+  - `android.buildType: apk`
+  - canal production
+  - variables production
 
 ### 5.2 Owner y config dinamica
 Archivo: `frontend/app.config.js`
@@ -75,6 +80,7 @@ Scripts agregados:
 
 - `eas:build:dev`
 - `eas:build:qa`
+- `eas:build:prod-preview`
 - `eas:build:prod`
 
 ## 6) Por que se necesitan PNG en assets (aunque tengas SVG)
@@ -260,6 +266,14 @@ npm run eas:build:prod
 
 - AAB para Play Store.
 
+## 9.4 Prod Preview
+
+```bash
+npm run eas:build:prod-preview
+```
+
+- APK interno con configuracion production para revision visual antes de publicar.
+
 ## 10) Checklist rapido para juniors
 
 1. Estoy en `frontend/`.
@@ -275,7 +289,7 @@ npm run eas:build:prod
 - Mantener PNG requeridos por Expo en repo o generar en CI antes de build.
 - Evitar imagenes Android preview para desarrollo diario.
 - Documentar cada error nativo y su solucion en este archivo.
-- Mantener estandar de perfiles `dev/qa/prod` para todo el equipo.
+- Mantener estandar de perfiles `dev/qa/prod/prod-preview` para todo el equipo.
 
 ## 12) Comandos resumen (copiar/pegar)
 
