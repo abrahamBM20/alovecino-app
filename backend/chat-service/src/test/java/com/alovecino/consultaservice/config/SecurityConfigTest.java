@@ -1,9 +1,10 @@
 package com.alovecino.consultaservice.config;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +21,7 @@ class SecurityConfigTest {
     @Test
     void jwtAuthenticationConverter_noDebeDuplicarPrefijoRoleCuandoElTokenYaTraeRole() {
         SecurityConfig securityConfig = new SecurityConfig();
-        JwtAuthenticationConverter converter = securityConfig.jwtAuthenticationConverter();
+        Converter<Jwt, AbstractAuthenticationToken> converter = securityConfig.jwtAuthenticationConverter();
 
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
