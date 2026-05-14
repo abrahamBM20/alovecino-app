@@ -126,15 +126,53 @@ jobs:
 
       - name: Configure SSH
         run: |
+          if [[ "$PROD_EC2_HOST" == http://* || "$PROD_EC2_HOST" == https://* ]]; then
+            echo "PROD_EC2_HOST must be only the EC2 public DNS or IPv4, without http:// or https://."
+            exit 1
+          fi
+
           mkdir -p ~/.ssh
           printf '%s\n' "$PROD_EC2_SSH_KEY" > ~/.ssh/prod_ec2_key
           chmod 600 ~/.ssh/prod_ec2_key
-          ssh-keyscan -H "$PROD_EC2_HOST" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -T 30 -H "$PROD_EC2_HOST" >> ~/.ssh/known_hosts; then
+            {
+              echo "Could not reach EC2 SSH endpoint at ${PROD_EC2_HOST}:22."
+              echo "Check that the EC2 instance is running, PROD_EC2_HOST is current, and the security group allows inbound TCP 22 from GitHub Actions runners."
+            } >&2
+            exit 1
+          fi
 
       - name: Upload deployment bundle
         run: |
           ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "mkdir -p /opt/alovecino/prod/current"
           scp -i ~/.ssh/prod_ec2_key prod-deploy.tar.gz "$PROD_EC2_USER@$PROD_EC2_HOST:/opt/alovecino/prod/prod-deploy.tar.gz"
+
+      - name: Ensure Docker Compose on EC2
+        run: |
+          ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" '
+            set -euo pipefail
+
+            if docker compose version >/dev/null 2>&1; then
+              docker compose version
+              exit 0
+            fi
+
+            arch="$(uname -m)"
+            case "$arch" in
+              x86_64|aarch64) ;;
+              *)
+                echo "Unsupported architecture for Docker Compose plugin: $arch" >&2
+                exit 1
+                ;;
+            esac
+
+            sudo mkdir -p /usr/local/lib/docker/cli-plugins
+            sudo curl --fail --location --show-error --silent \
+              "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-${arch}" \
+              --output /usr/local/lib/docker/cli-plugins/docker-compose
+            sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            docker compose version
+          '
 
       - name: Deploy with Docker Compose
         run: |
