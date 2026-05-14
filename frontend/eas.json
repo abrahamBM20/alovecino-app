@@ -53,6 +53,18 @@
         "EXPO_PUBLIC_APP_ENV": "prod",
         "EXPO_PUBLIC_API_URL": "https://api.example.com"
       }
+    },
+    "prod-preview": {
+      "distribution": "internal",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "prod",
+        "EXPO_PUBLIC_APP_ENV": "prod",
+        "EXPO_PUBLIC_API_URL": "https://api.example.com"
+      }
     }
   },
   "submit": {

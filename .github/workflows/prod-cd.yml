@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      build_prod_preview:
+        description: Build Android prod-preview APK
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: production-cd-${{ github.ref }}
@@ -209,3 +215,46 @@ jobs:
 
       - name: Run EAS production build
         run: eas build --platform android --profile prod --non-interactive
+
+  eas-production-preview-build:
+    name: EAS Android production preview APK
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - frontend-tests
+    if: ${{ vars.ENABLE_PROD_PREVIEW_EAS_BUILD == 'true' || (github.event_name == 'workflow_dispatch' && inputs.build_prod_preview) }}
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      PROD_API_BASE_URL: ${{ vars.PROD_API_BASE_URL }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Validate production preview app variables
+        run: |
+          test -n "$EXPO_TOKEN"
+          test -n "$PROD_API_BASE_URL"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install --global eas-cli
+
+      - name: Inject production API URL into EAS preview profile
+        run: |
+          jq '.build["prod-preview"].env.EXPO_PUBLIC_API_URL = env.PROD_API_BASE_URL' eas.json > eas.tmp.json
+          mv eas.tmp.json eas.json
+
+      - name: Run EAS production preview APK build
+        run: eas build --platform android --profile prod-preview --non-interactive
