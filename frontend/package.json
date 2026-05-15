@@ -10,11 +10,14 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest",
+    "test:coverage": "jest --coverage --runInBand",
     "test:watch": "jest --watch",
-    "eas:whoami": "npx eas whoami",
-    "eas:build:dev": "npx eas build --platform android --profile dev",
-    "eas:build:qa": "npx eas build --platform android --profile qa",
-    "eas:build:prod": "npx eas build --platform android --profile prod"
+    "eas:whoami": "npx eas-cli whoami",
+    "eas:build:dev": "npx eas-cli build --platform android --profile dev",
+    "eas:build:dev-preview": "npx eas-cli build --platform android --profile dev-preview",
+    "eas:build:qa": "npx eas-cli build --platform android --profile qa",
+    "eas:build:prod-preview": "npx eas-cli build --platform android --profile prod-preview",
+    "eas:build:prod": "npx eas-cli build --platform android --profile prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

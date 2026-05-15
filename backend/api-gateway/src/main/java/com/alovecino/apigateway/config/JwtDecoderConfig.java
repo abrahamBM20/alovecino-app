@@ -25,13 +25,17 @@ public class JwtDecoderConfig {
         NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwt.getJwkSetUri())
                 .jwsAlgorithm(SignatureAlgorithm.RS256)
                 .build();
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                JwtValidators.createDefaultWithIssuer(jwt.getIssuer()),
-                audienceValidator(jwt.getAudience())));
+        decoder.setJwtValidator(jwtValidator(jwt));
         return decoder;
     }
 
-    private OAuth2TokenValidator<Jwt> audienceValidator(String expectedAudience) {
+    OAuth2TokenValidator<Jwt> jwtValidator(GatewayProperties.Jwt jwt) {
+        return new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(jwt.getIssuer()),
+                audienceValidator(jwt.getAudience()));
+    }
+
+    OAuth2TokenValidator<Jwt> audienceValidator(String expectedAudience) {
         return jwt -> {
             if (expectedAudience == null || expectedAudience.isBlank()
                     || jwt.getAudience().contains(expectedAudience)) {

@@ -7,8 +7,8 @@ export default function SplashScreen() {
   return (
     <ScreenContainer>
       <View style={styles.container}>
-        <Image source={{ uri: ASSETS.logoMain }} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
-        <Image source={{ uri: ASSETS.logoText }} style={styles.logoText} resizeMode="contain" accessibilityLabel="Texto AloVecino" />
+        <Image source={ASSETS.logoMain} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
+        <Image source={ASSETS.logoText} style={styles.logoText} resizeMode="contain" accessibilityLabel="Texto AloVecino" />
       </View>
     </ScreenContainer>
   );

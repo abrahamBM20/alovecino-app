@@ -24,11 +24,12 @@ public class UsuarioDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByNombreUsuario(username)
+        Usuario usuario = usuarioRepository.findByCorreo(username)
+                .or(() -> usuarioRepository.findByNombreUsuario(username))
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + usuario.getRol().getNombreRol());
-        return User.withUsername(usuario.getNombreUsuario())
+        return User.withUsername(usuario.getCorreo())
                 .password(usuario.getContrasena())
                 .authorities(Collections.singleton(authority))
                 .build();

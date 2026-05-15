@@ -13,7 +13,21 @@
       "env": {
         "APP_VARIANT": "dev",
         "EXPO_PUBLIC_APP_ENV": "dev",
-        "EXPO_PUBLIC_API_URL": "https://api-dev.example.com"
+        "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-dev.onrender.com",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
+      }
+    },
+    "dev-preview": {
+      "distribution": "internal",
+      "channel": "development",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "dev",
+        "EXPO_PUBLIC_APP_ENV": "dev",
+        "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-dev.onrender.com",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
       }
     },
     "qa": {
@@ -25,13 +39,26 @@
       "env": {
         "APP_VARIANT": "qa",
         "EXPO_PUBLIC_APP_ENV": "qa",
-        "EXPO_PUBLIC_API_URL": "https://api-qa.example.com"
+        "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-qa.onrender.com",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
       }
     },
     "prod": {
       "channel": "production",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "APP_VARIANT": "prod",
+        "EXPO_PUBLIC_APP_ENV": "prod",
+        "EXPO_PUBLIC_API_URL": "https://api.example.com"
+      }
+    },
+    "prod-preview": {
+      "distribution": "internal",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
       },
       "env": {
         "APP_VARIANT": "prod",
