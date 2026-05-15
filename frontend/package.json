@@ -5,9 +5,9 @@
   "scripts": {
     "start": "expo start",
     "start:dev-client": "expo start --dev-client",
-    "android": "expo run:android",
+    "android": "expo start --android",
     "android:dev-client": "expo start --android --dev-client",
-    "ios": "expo run:ios",
+    "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
     "test:coverage": "jest --coverage --runInBand",
