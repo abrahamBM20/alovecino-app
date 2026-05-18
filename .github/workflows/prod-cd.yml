@@ -31,6 +31,7 @@ jobs:
           - backend/api-gateway
           - backend/auth-service
           - backend/usuarios-service
+          - backend/geo-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -87,6 +88,7 @@ jobs:
       PROD_APP_JWT_PRIVATE_KEY: ${{ secrets.PROD_APP_JWT_PRIVATE_KEY }}
       PROD_APP_JWT_PUBLIC_KEY: ${{ secrets.PROD_APP_JWT_PUBLIC_KEY }}
       PROD_CORS_ALLOWED_ORIGINS: ${{ vars.PROD_CORS_ALLOWED_ORIGINS }}
+      PROD_GOOGLE_MAPS_API_KEY: ${{ secrets.PROD_GOOGLE_MAPS_API_KEY }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -115,6 +117,7 @@ jobs:
           mvn -f backend/api-gateway/pom.xml -DskipTests package
           mvn -f backend/auth-service/pom.xml -DskipTests package
           mvn -f backend/usuarios-service/pom.xml -DskipTests package
+          mvn -f backend/geo-service/pom.xml -DskipTests package
 
       - name: Create deployment bundle
         run: |
@@ -122,7 +125,8 @@ jobs:
             deploy/docker/docker-compose.prod.yml \
             backend/api-gateway/Dockerfile.prod backend/api-gateway/target/*.jar \
             backend/auth-service/Dockerfile.prod backend/auth-service/target/*.jar \
-            backend/usuarios-service/Dockerfile.prod backend/usuarios-service/target/*.jar
+            backend/usuarios-service/Dockerfile.prod backend/usuarios-service/target/*.jar \
+            backend/geo-service/Dockerfile.prod backend/geo-service/target/*.jar
 
       - name: Configure SSH
         run: |
@@ -153,6 +157,7 @@ jobs:
           PROD_APP_JWT_REFRESH_COOKIE_SAME_SITE=None
           AUTH_JWT_ISSUER=alovecino-auth
           AUTH_JWT_AUDIENCE=alovecino-api
+          GOOGLE_MAPS_API_KEY=${PROD_GOOGLE_MAPS_API_KEY}
           JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60
           EOF
           ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "cd /opt/alovecino/prod/current && docker compose -f deploy/docker/docker-compose.prod.yml --env-file .env up -d --build --remove-orphans"

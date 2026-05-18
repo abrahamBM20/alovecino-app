@@ -10,6 +10,18 @@ export const httpClient = axios.create({
   },
 });
 
+httpClient.interceptors.request.use((config) => {
+  const { useAuthStore } = require('../../store/authStore');
+  const token = useAuthStore.getState().accessToken;
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {

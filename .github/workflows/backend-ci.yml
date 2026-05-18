@@ -68,3 +68,23 @@ jobs:
 
       - name: Run tests
         run: mvn test
+
+  geo-service:
+    name: geo-service tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/geo-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run tests
+        run: mvn test

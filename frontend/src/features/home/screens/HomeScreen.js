@@ -11,6 +11,7 @@ import BotonFiltro from '../../../../assets/boton_filtro.svg';
 import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
+import { DEFAULT_RADIUS_METERS, fetchNearbyStores } from '../services/geoService';
 
 const PRIMARY = '#044E81';
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
@@ -57,14 +58,6 @@ const CUSTOM_MAP_STYLE = [
   },
 ];
 
-const MOCK_STORES = [
-  { id: 1, latitude: -33.4370, longitude: -70.7560, name: 'Minimarket El Rincón' },
-  { id: 2, latitude: -33.4420, longitude: -70.7620, name: 'Almacén Don Juan' },
-  { id: 3, latitude: -33.4340, longitude: -70.7480, name: 'Tienda La Esquina' },
-  { id: 4, latitude: -33.4460, longitude: -70.7530, name: 'Mini Market Vecinos' },
-  { id: 5, latitude: -33.4390, longitude: -70.7650, name: 'Bodega Los Álamos' },
-];
-
 const DEFAULT_REGION = {
   latitude: -33.4400,
   longitude: -70.7570,
@@ -84,8 +77,12 @@ export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState(null);
   const [activeTab, setActiveTab] = useState('ubicacion');
   const [loading, setLoading] = useState(true);
+  const [loadingStores, setLoadingStores] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [storesError, setStoresError] = useState(false);
+  const [stores, setStores] = useState([]);
+  const [radiusMeters] = useState(DEFAULT_RADIUS_METERS);
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -112,8 +109,53 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  const handleMarkerPress = (storeId) => {
-    router.push(`/home/negocio/${storeId}`);
+  useEffect(() => {
+    if (!userLocation) return;
+
+    let isMounted = true;
+
+    (async () => {
+      setLoadingStores(true);
+      setStoresError(false);
+
+      try {
+        const nearbyStores = await fetchNearbyStores({
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          radiusMeters,
+        });
+
+        if (isMounted) {
+          setStores(nearbyStores);
+        }
+      } catch {
+        if (isMounted) {
+          setStores([]);
+          setStoresError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingStores(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [radiusMeters, userLocation]);
+
+  const handleMarkerPress = (store) => {
+    router.push({
+      pathname: '/home/negocio/[id]',
+      params: {
+        id: String(store.id),
+        nombre: store.name,
+        comuna: store.comuna || '',
+        region: store.region || '',
+        distancia: store.distanceMeters ? String(store.distanceMeters) : '',
+      },
+    });
   };
 
   if (loading) {
@@ -169,22 +211,32 @@ export default function HomeScreen() {
           {userLocation && (
             <Circle
               center={userLocation}
-              radius={1000}
+              radius={radiusMeters}
               fillColor="rgba(255, 140, 0, 0.15)"
               strokeColor={MANGO}
               strokeWidth={2}
             />
           )}
-          {MOCK_STORES.map((store) => (
+          {stores.map((store) => (
             <Marker
               key={store.id}
               coordinate={{ latitude: store.latitude, longitude: store.longitude }}
               title={store.name}
+              description={store.distanceMeters ? `${store.distanceMeters} m` : undefined}
               pinColor={PRIMARY}
-              onPress={() => handleMarkerPress(store.id)}
+              onPress={() => handleMarkerPress(store)}
             />
           ))}
         </MapView>
+        {(loadingStores || storesError) && (
+          <View style={styles.mapStatus}>
+            {loadingStores ? (
+              <ActivityIndicator size="small" color={PRIMARY} />
+            ) : (
+              <Text style={styles.mapStatusText}>No se pudieron cargar los negocios cercanos.</Text>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={[styles.tabBar, { marginBottom: insets.bottom + 10 }]}>
@@ -212,6 +264,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 51,
     overflow: 'hidden',
+  },
+  mapStatus: {
+    position: 'absolute',
+    top: 16,
+    alignSelf: 'center',
+    minHeight: 36,
+    minWidth: 36,
+    maxWidth: '82%',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  mapStatusText: {
+    color: PRIMARY,
+    fontSize: 12,
+    textAlign: 'center',
   },
   tabBar: {
     height: 87,

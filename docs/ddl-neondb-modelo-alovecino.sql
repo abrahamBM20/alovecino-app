@@ -262,6 +262,8 @@ CREATE TABLE IF NOT EXISTS cliente_categoria_interes (
 
 CREATE INDEX IF NOT EXISTS idx_usuario_rol ON usuario(id_rol);
 CREATE INDEX IF NOT EXISTS idx_direccion_comuna ON direccion(id_comuna);
+CREATE INDEX IF NOT EXISTS idx_direccion_geo_coords ON direccion(latitud, longitud)
+    WHERE latitud IS NOT NULL AND longitud IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_almacen_usuario ON almacen(id_usuario);
 CREATE INDEX IF NOT EXISTS idx_almacen_direccion ON almacen(id_direccion);
 CREATE INDEX IF NOT EXISTS idx_sesion_usuario_usuario ON sesion_usuario(id_usuario);
