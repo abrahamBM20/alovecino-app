@@ -1,4 +1,8 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   datasource:
     url: jdbc:postgresql://ep-billowing-math-amfel3fm-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channelBinding=require
     username: neondb_owner

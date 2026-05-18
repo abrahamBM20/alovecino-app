@@ -657,6 +657,372 @@ curl -X GET "http://localhost:8082/api/v1/almacenes/busqueda-espacial?direccion=
 
 ---
 
+##  Consumo local desde el frontend
+
+El frontend en `frontend/eas.json` apunta por defecto a Render para los perfiles `dev`, `qa` y `prod` mediante `EXPO_PUBLIC_API_URL`.
+Esto significa que, en un build normal, la app está intentando consumir el gateway desplegado en Render.
+
+Si todavía no tienes desplegado el microservicio de geolocalización en Render, puedes probar localmente con tu gateway local.
+
+### Cómo funciona
+
+- El microservicio de geolocalización corre localmente en `8084`.
+- El gateway local corre en `8082` y enruta hacia el servicio geo.
+- Para pruebas desde la app Expo/React Native debes usar la URL local del gateway.
+
+### URL de prueba
+
+- En un dispositivo físico o en Expo Go: `http://<IP_DE_TU_PC>:8082`
+- En un emulador de Android: `http://10.0.2.2:8082`
+- En un emulador de iOS: `http://localhost:8082`
+
+### Archivo auxiliar para pruebas locales
+
+Se creó un archivo en el frontend:
+
+`frontend/src/features/home/services/geoService.local.js`
+
+Que contiene funciones para llamar al endpoint local:
+
+```js
+import { fetchNearbyAlmacenesLocal } from '../services/geoService.local';
+```
+
+### Ejemplo de uso local desde el frontend
+
+```bash
+# Windows CMD
+set EXPO_PUBLIC_API_URL=http://10.0.2.2:8082 && expo start
+
+# PowerShell
+$env:EXPO_PUBLIC_API_URL = 'http://10.0.2.2:8082'; expo start
+```
+
+O bien configura `EXPO_PUBLIC_GEO_LOCAL_URL` si quieres separar la URL local solo para geo:
+
+```bash
+set EXPO_PUBLIC_GEO_LOCAL_URL=http://10.0.2.2:8082 && expo start
+```
+
+### Endpoints locales con gateway
+
+```bash
+curl -X GET "http://localhost:8082/api/v1/almacenes/busqueda-espacial?lat=-33.4377&lng=-70.6705&radioKm=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Cómo dejar el ambiente listo
+
+1. Ejecuta tu gateway local en `8082`.
+2. Ejecuta el microservicio de geolocalización local en `8084`.
+3. Asegúrate de tener una sesión activa en el frontend para que haya JWT.
+4. Abre Expo con la variable local habilitada:
+
+```bash
+# Windows CMD
+set EXPO_PUBLIC_USE_LOCAL_GEO=true
+set EXPO_PUBLIC_GEO_LOCAL_URL=http://10.0.2.2:8082
+expo start
+
+# PowerShell
+$env:EXPO_PUBLIC_USE_LOCAL_GEO = 'true'
+$env:EXPO_PUBLIC_GEO_LOCAL_URL = 'http://10.0.2.2:8082'
+expo start
+```
+
+### Qué verificar en la prueba
+
+- El mapa de Google debe cargarse en la pantalla principal.
+- Si el mapa se muestra, la clave de Google Maps está bien configurada.
+- Si la app está autenticada, debe aparecer la lista de almacenes desde el servicio geo local.
+- Si no aparecen almacenes, revisa el JWT y que el gateway local enrute correctamente a `geolocation-service`.
+
+### Por qué esto funciona
+
+- `frontend/src/features/home/services/geoService.js` ahora elige entre:
+  - `fetchNearbyAlmacenesLocal()` cuando `EXPO_PUBLIC_USE_LOCAL_GEO=true`
+  - el gateway remoto cuando la variable es `false`
+- `frontend/src/features/home/services/geoService.local.js` usa `EXPO_PUBLIC_GEO_LOCAL_URL` y envía el token JWT si existe.
+
+### Ejemplo de comprobación manual
+
+1. Abre el navegador o Postman:
+
+```bash
+curl -X GET "http://localhost:8082/api/v1/almacenes/busqueda-espacial?lat=-33.4377&lng=-70.6705&radioKm=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+2. Si responde correctamente, la conexión local del gateway->geo service está lista.
+3. Después arranca Expo con `EXPO_PUBLIC_USE_LOCAL_GEO=true` y comprueba la pantalla Home.
+
+### Nota importante
+
+- El mapa de Google se prueba independientemente del backend.
+- La lista de almacenes requiere al menos un token JWT válido y el gateway local funcionando.
+
+---
+
+##  Troubleshooting: Celular en Red Local
+
+### Problema 1: "No se conecta desde el celular pero sí desde Windows"
+
+**Síntoma:** El mapa carga pero NO aparecen almacenes. En el celular físico ves el banner naranja de error.
+
+**Causas posibles:**
+1. URL incorrecta (IP de la PC no accesible desde el celular)
+2. CORS no configurado
+3. Firewall bloqueando el puerto 8084
+4. JWT/Token expirado o no enviado
+
+**Solución Paso a Paso:**
+
+#### Paso 1: Verifica tu IP local
+
+En Windows CMD:
+```bash
+ipconfig
+```
+
+Busca la línea que dice "Dirección IPv4" bajo "Adaptador de Ethernet" o "Adaptador de LAN inalámbrica". Ejemplo: `192.168.100.88`
+
+#### Paso 2: Verifica que el geolocation-service esté corriendo
+
+```bash
+# En tu PC donde corre el servicio
+curl http://localhost:8084/actuator/health
+```
+
+Debe responder con JSON (algo como `{"status":"UP"}`).
+
+#### Paso 3: Desde el celular, verifica conectividad a tu PC
+
+En el celular, abre un navegador y ve a:
+```
+http://192.168.100.88:8084/actuator/health
+```
+
+(Reemplaza `192.168.100.88` con tu IP)
+
+**Esperado:** Verás JSON con `"status":"UP"`
+
+**Si NO funciona:**
+- El firewall de Windows está bloqueando
+- El celular no está en la misma red
+- El puerto no está en escucha
+
+#### Paso 4: Abre el puerto en Windows Firewall
+
+**Opción A: Por línea de comandos (como administrador)**
+```bash
+netsh advfirewall firewall add rule name="Allow 8084" dir=in action=allow protocol=tcp localport=8084
+```
+
+**Opción B: Manual**
+1. Abre "Firewall de Windows Defender"
+2. "Permitir que una aplicación atraviese el firewall"
+3. Busca "Java" o "Maven"
+4. Asegúrate que está marcado
+5. O abre el puerto 8084 manualmente
+
+#### Paso 5: Verifica CORS desde el celular
+
+En el navegador del celular, ve a:
+```
+http://192.168.100.88:8084/api/v1/almacenes/busqueda-espacial?lat=-33.4377&lng=-70.6705&radioKm=10
+```
+
+**Esperado:**
+- Sin autenticación: Un JSON con almacenes O un error 401 (Unauthorized)
+- Con autenticación: Un JSON con la lista de almacenes
+
+**Si NO aparece nada o ves un error CORS:**
+- Asegúrate que `CorsConfig.java` existe en el proyecto
+- Reconstruye el proyecto: `mvn clean package`
+- Reinicia el servicio
+
+#### Paso 6: Verifica el JWT
+
+Si obtienes `401 Unauthorized`:
+
+1. En tu PC, obtén un JWT:
+```bash
+curl -X POST http://localhost:8081/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@alovecino.com","password":"password123"}'
+```
+
+Copia el `accessToken`
+
+2. Desde el celular navegador, ve a:
+```
+http://192.168.100.88:8084/api/v1/almacenes/busqueda-espacial?lat=-33.4377&lng=-70.6705&radioKm=10
+```
+
+Y abre "Developer Tools" (botón derecho → Inspeccionar). Ve a la pestaña "Red" y verás el request.
+
+3. La app React Native debe hacer lo mismo automáticamente si está autenticada.
+
+#### Paso 7: Actualiza la URL en la app
+
+En `frontend/eas.json`:
+```json
+"env": {
+  "EXPO_PUBLIC_USE_LOCAL_GEO": "true",
+  "EXPO_PUBLIC_GEO_LOCAL_URL": "http://192.168.100.88:8084"
+}
+```
+
+Reconstruye la app:
+```bash
+cd frontend
+expo run:android
+```
+
+---
+
+### Problema 2: "Funciona en Windows pero sigue sin funcionar en celular"
+
+**Síntoma:** `curl` desde Windows funciona, pero la app en el celular no.
+
+**Causas posibles:**
+1. Token JWT no está siendo enviado
+2. La URL tiene un typo o puerto incorrecto
+3. El celular usa conexión de datos en lugar de WiFi
+
+**Solución:**
+
+1. **Verifica que el celular está en WiFi:**
+   - Abre Configuración → WiFi
+   - Asegúrate que está conectado a la misma red que tu PC
+
+2. **Verifica que el JWT se envía:**
+   - En `frontend/src/features/home/services/geoService.local.js`, agrega logging:
+   ```js
+   export async function fetchNearbyAlmacenesLocal({ lat, lng, radioKm = 5 }) {
+     const headers = getAuthHeader();
+     console.log('🔍 GEO LOCAL - Headers:', headers);
+     console.log('🔍 GEO LOCAL - URL:', LOCAL_GEO_BASE_URL);
+     const { data } = await localGeoClient.get('/api/v1/almacenes/busqueda-espacial', {
+       params: { lat, lng, radioKm },
+       headers,
+     });
+     return data;
+   }
+   ```
+
+3. **Abre la consola de Expo en el celular:**
+   - En la app Expo → Shake el celular → "View Logs"
+   - Busca los logs que acabas de agregar
+
+---
+
+### Problema 3: "CORS error en el navegador del celular"
+
+**Error típico:** 
+```
+Cross-Origin Request Blocked
+```
+
+**Causa:** La clase `CorsConfig.java` no está presente o no se compiló.
+
+**Solución:**
+
+1. **Verifica que existe:**
+   ```
+   backend/geolocation-service/src/main/java/com/alovecino/geolocationservice/config/CorsConfig.java
+   ```
+
+2. **Si no existe, créala** (se proporciona en la siguiente sección)
+
+3. **Reconstruye:**
+   ```bash
+   cd backend/geolocation-service
+   mvn clean package
+   ```
+
+4. **Reinicia el servicio:**
+   ```bash
+   mvn spring-boot:run
+   ```
+
+---
+
+### Problema 4: "La app dice que no hay almacenes"
+
+**Síntoma:** El mapa carga, no hay error naranja, pero los marcadores muestran solo datos de ejemplo.
+
+**Causas posibles:**
+1. No hay datos en la tabla `almacenes` de la BD
+2. El radio de búsqueda es muy pequeño
+3. La ubicación de prueba no coincide con coordenadas en BD
+
+**Solución:**
+
+1. **Verifica que hay almacenes en la BD:**
+   ```sql
+   SELECT COUNT(*) FROM almacenes;
+   ```
+
+   Si retorna 0, inserta datos de prueba.
+
+2. **Prueba con un radio mayor:**
+   ```bash
+   curl "http://192.168.100.88:8084/api/v1/almacenes/busqueda-espacial?lat=-33.4377&lng=-70.6705&radioKm=50" \
+     -H "Authorization: Bearer YOUR_JWT"
+   ```
+
+3. **Verifica coordenadas en BD:**
+   ```sql
+   SELECT idAlmacen, nombre, latitud, longitud FROM almacenes LIMIT 5;
+   ```
+
+   Las coordenadas deben estar cerca de -33.4377, -70.6705 (Santiago, Chile).
+
+---
+
+### Problema 5: "Error 403 Forbidden"
+
+**Síntoma:** Ves un error 403 en lugar de 401.
+
+**Causa:** El JWT está presente pero el usuario no tiene permisos.
+
+**Solución:** En desarrollo, esto no debería ocurrir. Verifica que la clase `DevSecurityConfig.java` tiene `@Profile("dev")`.
+
+---
+
+##  Configuración CORS (CorsConfig.java)
+
+Si no existe, créala en:
+```
+backend/geolocation-service/src/main/java/com/alovecino/geolocationservice/config/CorsConfig.java
+```
+
+Contenido:
+```java
+package com.alovecino.geolocationservice.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+            .allowedOrigins("*")
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
+            .allowedHeaders("*")
+            .maxAge(3600)
+            .allowCredentials(false);
+    }
+}
+```
+
+---
+
 ##  Checklist de Verificación
 
 - [ ] Servicio iniciado exitosamente en puerto 8084

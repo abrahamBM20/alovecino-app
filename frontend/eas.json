@@ -14,7 +14,10 @@
         "APP_VARIANT": "dev",
         "EXPO_PUBLIC_APP_ENV": "dev",
         "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-dev.onrender.com",
-        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyBKEsbqZ5k9JpgEf9w9WoBB-eaFaH85s8Y",
+        "EXPO_PUBLIC_USE_LOCAL_GEO": "true",
+        "EXPO_PUBLIC_GEO_LOCAL_URL": "http://192.168.100.88:8084"
       }
     },
     "dev-preview": {
@@ -27,7 +30,10 @@
         "APP_VARIANT": "dev",
         "EXPO_PUBLIC_APP_ENV": "dev",
         "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-dev.onrender.com",
-        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "<AIzaSyBKEsbqZ5k9JpgEf9w9WoBB-eaFaH85s8Y>",
+        "EXPO_PUBLIC_USE_LOCAL_GEO": "true",
+        "EXPO_PUBLIC_GEO_LOCAL_URL": "http://192.168.100.88:8082"
       }
     },
     "qa": {
@@ -40,7 +46,8 @@
         "APP_VARIANT": "qa",
         "EXPO_PUBLIC_APP_ENV": "qa",
         "EXPO_PUBLIC_API_URL": "https://alovecino-api-gateway-qa.onrender.com",
-        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000"
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "90000",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "<YOUR_GOOGLE_MAPS_API_KEY>"
       }
     },
     "prod": {
@@ -51,7 +58,21 @@
       "env": {
         "APP_VARIANT": "prod",
         "EXPO_PUBLIC_APP_ENV": "prod",
-        "EXPO_PUBLIC_API_URL": "https://api.example.com"
+        "EXPO_PUBLIC_API_URL": "https://api.example.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "<YOUR_GOOGLE_MAPS_API_KEY>"
+      }
+    },
+    "prod-preview": {
+      "distribution": "internal",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "prod",
+        "EXPO_PUBLIC_APP_ENV": "prod",
+        "EXPO_PUBLIC_API_URL": "https://api.example.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "<YOUR_GOOGLE_MAPS_API_KEY>"
       }
     }
   },

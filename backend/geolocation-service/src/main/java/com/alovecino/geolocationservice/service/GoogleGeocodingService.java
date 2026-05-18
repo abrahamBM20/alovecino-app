@@ -12,6 +12,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.alovecino.geolocationservice.exception.GeocodingException;
+import com.alovecino.geolocationservice.model.GeocodeAudit;
+import com.alovecino.geolocationservice.repository.GeocodeAuditRepository;
 
 @Service
 public class GoogleGeocodingService implements GeocodingService {
@@ -20,14 +22,57 @@ public class GoogleGeocodingService implements GeocodingService {
 
     private final RestTemplate restTemplate;
     private final String apiKey;
+    private final GeocodeAuditRepository auditRepository;
+    private final long dailyLimit;
 
-    public GoogleGeocodingService(RestTemplate restTemplate, @Value("${google.maps.api.key}") String apiKey) {
+    public GoogleGeocodingService(RestTemplate restTemplate, 
+            @Value("${google.maps.api.key}") String apiKey,
+            GeocodeAuditRepository auditRepository,
+            @Value("${geocoding.daily-limit:100}") long dailyLimit) {
         this.restTemplate = restTemplate;
         this.apiKey = apiKey;
+        this.auditRepository = auditRepository;
+        this.dailyLimit = dailyLimit;
     }
 
     @Override
     public Coordinates geocode(String address) {
+        // Llama el método interno que maneja auditoría con idUsuario = null
+        return geocodeWithAudit(address, null);
+    }
+
+    /**
+     * Geocodifica una dirección con auditoría de límite diario.
+     * 
+     * @param address La dirección a geocodificar
+     * @param idUsuario El ID del usuario (puede ser null si no hay límite a aplicar)
+     * @return Coordenadas geocodificadas
+     * @throws GeocodingException si el límite diario es alcanzado
+     */
+    public Coordinates geocodeWithAudit(String address, Long idUsuario) {
+        // Validar límite diario si se proporciona idUsuario
+        if (idUsuario != null) {
+            long callsToday = auditRepository.countTodayByUsuario(idUsuario);
+            if (callsToday >= dailyLimit) {
+                auditRepository.save(new GeocodeAudit(idUsuario, address, "LIMIT_EXCEEDED"));
+                throw new GeocodingException(
+                    String.format("Límite diario de %d llamadas a geocodificación alcanzado", dailyLimit)
+                );
+            }
+        }
+
+        // Llamar a Google API
+        Coordinates coordinates = callGoogleGeocodeAPI(address);
+        
+        // Registrar auditoría si se proporciona idUsuario
+        if (idUsuario != null) {
+            auditRepository.save(new GeocodeAudit(idUsuario, address, "SUCCESS"));
+        }
+        
+        return coordinates;
+    }
+
+    private Coordinates callGoogleGeocodeAPI(String address) {
         if (address == null || address.isBlank()) {
             throw new GeocodingException("La dirección de búsqueda no puede estar vacía.");
         }

@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,7 @@ public class AlmacenController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ALMACEN')")
     public ResponseEntity<AlmacenResponse> createAlmacen(@AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody AlmacenRequest request) {
         AlmacenResponse response = almacenService.createAlmacen(jwt.getSubject(), request);

@@ -3,6 +3,7 @@ package com.alovecino.geolocationservice.controller;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -27,7 +28,7 @@ import jakarta.validation.constraints.Positive;
 @Validated
 @Tag(name = "Almacenes", description = "Búsqueda espacial de almacenes registrados")
 public class AlmacenSearchController {
-
+    
     private final GeocodingService geocodingService;
     private final AlmacenRepository almacenRepository;
 

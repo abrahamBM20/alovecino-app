@@ -44,6 +44,15 @@ public class AlmacenService {
     @Transactional
     public AlmacenResponse createAlmacen(String duenoIdentifier, AlmacenRequest request) {
         Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
+        
+        // CA-10: Validar que el usuario tiene rol ALMACEN
+        String rolUsuario = dueno.getRol().getNombreRol();
+        if (!"ALMACEN".equals(rolUsuario)) {
+            throw new IllegalArgumentException(
+                String.format("Solo usuarios con rol ALMACEN pueden crear almacenes. Usuario tiene rol: %s", rolUsuario)
+            );
+        }
+        
         EstadoCuenta estadoCuenta = estadoCuentaRepository.findByCodigo("PENDIENTE")
                 .orElseGet(() -> estadoCuentaRepository.save(new EstadoCuenta("PENDIENTE", "PENDIENTE", null)));
         Direccion direccion = usuarioService.createDireccionForAlmacen(request.getDireccion());

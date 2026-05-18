@@ -35,6 +35,10 @@ module.exports = ({ config }) => {
     },
     ios: {
       supportsTablet: true,
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          'AloVecino necesita tu ubicación para mostrarte tiendas cercanas.',
+      },
     },
     android: {
       package: selected.androidPackage,
@@ -43,6 +47,15 @@ module.exports = ({ config }) => {
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
+      permissions: [
+        'android.permission.ACCESS_FINE_LOCATION',
+        'android.permission.ACCESS_COARSE_LOCATION',
+      ],
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        },
+      },
     },
     web: {
       bundler: 'metro',
