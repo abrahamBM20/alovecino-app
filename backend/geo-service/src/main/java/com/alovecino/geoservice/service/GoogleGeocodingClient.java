@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class GoogleGeocodingClient implements GeocodingClient {
     private final AtomicInteger dailyRequests = new AtomicInteger();
     private volatile LocalDate currentRequestDate;
 
+    @Autowired
     public GoogleGeocodingClient(
             @Value("${geo.google.api-key:}") String apiKey,
             @Value("${geo.google.geocode-url:https://maps.googleapis.com/maps/api/geocode/json}") String geocodeUrl,
