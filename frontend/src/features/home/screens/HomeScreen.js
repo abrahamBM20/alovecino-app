@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, StatusBar, ActivityIndicator, Text } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -12,6 +12,7 @@ import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
 import { DEFAULT_RADIUS_METERS, fetchNearbyStores } from '../services/geoService';
+import { APP_ENV } from '../../../config/environment';
 
 const PRIMARY = '#044E81';
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
@@ -65,6 +66,31 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.025,
 };
 
+const DEFAULT_LOCATION = {
+  latitude: DEFAULT_REGION.latitude,
+  longitude: DEFAULT_REGION.longitude,
+};
+
+const LOCATION_TIMEOUT_MS = 8000;
+
+const withTimeout = (promise, timeoutMs, message) => {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
+
+const formatRadius = (radiusMeters) => {
+  if (radiusMeters >= 1000) {
+    return `${radiusMeters / 1000} km`;
+  }
+
+  return `${radiusMeters} m`;
+};
+
 const TAB_ITEMS = [
   { id: 'ubicacion', Component: BotonFiltro },
   { id: 'inicio', Component: BotonInicio },
@@ -87,6 +113,40 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const applyLocation = (coords) => {
+    const { latitude, longitude } = coords;
+    setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
+    setUserLocation({ latitude, longitude });
+  };
+
+  const loadNearbyStores = useCallback(async (isActive = () => true) => {
+    if (!userLocation) return;
+
+    setLoadingStores(true);
+    setStoresError(false);
+
+    try {
+      const nearbyStores = await fetchNearbyStores({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        radiusMeters,
+      });
+
+      if (isActive()) {
+        setStores(nearbyStores);
+      }
+    } catch {
+      if (isActive()) {
+        setStores([]);
+        setStoresError(true);
+      }
+    } finally {
+      if (isActive()) {
+        setLoadingStores(false);
+      }
+    }
+  }, [radiusMeters, userLocation]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -97,12 +157,33 @@ export default function HomeScreen() {
           return;
         }
 
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const { latitude, longitude } = location.coords;
-        setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
-        setUserLocation({ latitude, longitude });
-      } catch {
-        setNetworkError(true);
+        const lastKnownLocation = await Location.getLastKnownPositionAsync({
+          maxAge: 10 * 60 * 1000,
+          requiredAccuracy: 1000,
+        });
+
+        if (lastKnownLocation?.coords) {
+          applyLocation(lastKnownLocation.coords);
+          return;
+        }
+
+        const location = await withTimeout(
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
+          LOCATION_TIMEOUT_MS,
+          'Timeout al obtener la ubicación actual',
+        );
+
+        applyLocation(location.coords);
+      } catch (error) {
+        console.warn('No se pudo obtener la ubicación actual', error);
+
+        if (APP_ENV === 'dev') {
+          applyLocation(DEFAULT_LOCATION);
+        } else {
+          setNetworkError(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -110,40 +191,16 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (!userLocation) return;
-
     let isMounted = true;
 
     (async () => {
-      setLoadingStores(true);
-      setStoresError(false);
-
-      try {
-        const nearbyStores = await fetchNearbyStores({
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          radiusMeters,
-        });
-
-        if (isMounted) {
-          setStores(nearbyStores);
-        }
-      } catch {
-        if (isMounted) {
-          setStores([]);
-          setStoresError(true);
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingStores(false);
-        }
-      }
+      await loadNearbyStores(() => isMounted);
     })();
 
     return () => {
       isMounted = false;
     };
-  }, [radiusMeters, userLocation]);
+  }, [loadNearbyStores]);
 
   const handleMarkerPress = (store) => {
     router.push({
@@ -157,6 +214,8 @@ export default function HomeScreen() {
       },
     });
   };
+
+  const showEmptyStores = userLocation && !loadingStores && !storesError && stores.length === 0;
 
   if (loading) {
     return (
@@ -228,12 +287,36 @@ export default function HomeScreen() {
             />
           ))}
         </MapView>
-        {(loadingStores || storesError) && (
+        {(loadingStores || storesError || showEmptyStores) && (
           <View style={styles.mapStatus}>
             {loadingStores ? (
               <ActivityIndicator size="small" color={PRIMARY} />
+            ) : showEmptyStores ? (
+              <>
+                <Text style={styles.mapStatusText}>
+                  No hay almacenes cercanos en {formatRadius(radiusMeters)}.
+                </Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  activeOpacity={0.75}
+                  onPress={loadNearbyStores}
+                  style={styles.mapStatusAction}
+                >
+                  <Text style={styles.mapStatusActionText}>Buscar nuevamente</Text>
+                </TouchableOpacity>
+              </>
             ) : (
-              <Text style={styles.mapStatusText}>No se pudieron cargar los negocios cercanos.</Text>
+              <>
+                <Text style={styles.mapStatusText}>No se pudieron cargar los negocios cercanos.</Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  activeOpacity={0.75}
+                  onPress={loadNearbyStores}
+                  style={styles.mapStatusAction}
+                >
+                  <Text style={styles.mapStatusActionText}>Reintentar</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         )}
@@ -282,6 +365,20 @@ const styles = StyleSheet.create({
   mapStatusText: {
     color: PRIMARY,
     fontSize: 12,
+    textAlign: 'center',
+  },
+  mapStatusAction: {
+    marginTop: 6,
+    minHeight: 28,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: PRIMARY,
+  },
+  mapStatusActionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
   },
   tabBar: {

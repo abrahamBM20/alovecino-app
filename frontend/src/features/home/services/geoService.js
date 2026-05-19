@@ -4,6 +4,10 @@ export const DEFAULT_RADIUS_METERS = 500;
 export const RADIUS_OPTIONS = [200, 500, 1000, 2000];
 
 function toNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
