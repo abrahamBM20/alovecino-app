@@ -19,7 +19,7 @@ env:
   RENDER_AUTH_SERVICE_ID: srv-d7unku3tqb8s73coavd0
   RENDER_USUARIOS_SERVICE_ID: srv-d7unl4n7f7vs73cqrmi0
   RENDER_API_GATEWAY_SERVICE_ID: srv-d7unl3rtqb8s73cob4hg
-  RENDER_GEO_SERVICE_ID: ${{ vars.RENDER_GEO_SERVICE_ID }}
+  RENDER_GEO_SERVICE_ID: ${{ vars.RENDER_GEO_SERVICE_ID || 'srv-d85s3ndi849s738dv1m0' }}
 
 jobs:
   backend-tests:

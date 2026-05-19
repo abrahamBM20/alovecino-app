@@ -5,7 +5,8 @@ param(
     [string]$Role = "neondb_owner",
     [string]$AuthServiceId = "srv-d7unku3tqb8s73coavd0",
     [string]$UsuariosServiceId = "srv-d7unl4n7f7vs73cqrmi0",
-    [string]$ApiGatewayServiceId = "srv-d7unl3rtqb8s73cob4hg"
+    [string]$ApiGatewayServiceId = "srv-d7unl3rtqb8s73cob4hg",
+    [string]$GeoServiceId = "srv-d85s3ndi849s738dv1m0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -106,12 +107,21 @@ $authVars["APP_JWT_REFRESH_COOKIE_SAME_SITE"] = "None"
 
 $usuariosVars = $commonBackendVars.Clone()
 $usuariosVars["AUTH_JWK_SET_URI"] = "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+$usuariosVars["GEO_SERVICE_URL"] = "https://alovecino-geo-service-qa.onrender.com"
+
+$geoVars = $commonBackendVars.Clone()
+$geoVars["AUTH_JWK_SET_URI"] = "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+$geoVars["GOOGLE_GEOCODE_DAILY_REQUEST_LIMIT"] = "100"
+if (-not [string]::IsNullOrWhiteSpace($env:GOOGLE_MAPS_API_KEY)) {
+    $geoVars["GOOGLE_MAPS_API_KEY"] = $env:GOOGLE_MAPS_API_KEY
+}
 
 $gatewayVars = @{
     "SERVER_PORT" = "10000"
     "SPRING_PROFILES_ACTIVE" = "qa"
     "AUTH_SERVICE_URL" = "https://alovecino-auth-service-qa.onrender.com"
     "USUARIOS_SERVICE_URL" = "https://alovecino-usuarios-service-qa.onrender.com"
+    "GEO_SERVICE_URL" = "https://alovecino-geo-service-qa.onrender.com"
     "AUTH_JWK_SET_URI" = "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
     "AUTH_JWT_ISSUER" = "alovecino-auth"
     "AUTH_JWT_AUDIENCE" = "alovecino-api"
@@ -121,6 +131,7 @@ $gatewayVars = @{
 Set-ManyRenderEnvVars -ServiceId $AuthServiceId -Values $authVars -ApiKey $renderApiKey
 Set-ManyRenderEnvVars -ServiceId $UsuariosServiceId -Values $usuariosVars -ApiKey $renderApiKey
 Set-ManyRenderEnvVars -ServiceId $ApiGatewayServiceId -Values $gatewayVars -ApiKey $renderApiKey
+Set-ManyRenderEnvVars -ServiceId $GeoServiceId -Values $geoVars -ApiKey $renderApiKey
 
 Write-Host "Render QA environment variables were updated."
 Write-Host "Trigger a deploy from Render or merge dev -> qa so the services use the new values."
