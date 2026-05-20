@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alovecino.usuarioservice.dto.ValoracionRequest;
 import com.alovecino.usuarioservice.dto.ValoracionResponse;
+import com.alovecino.usuarioservice.dto.ValoracionUpdateRequest;
 import com.alovecino.usuarioservice.service.ValoracionService;
 
 @RestController
@@ -45,6 +47,13 @@ public class ValoracionController {
     @GetMapping("/mis-valoraciones")
     public List<ValoracionResponse> listMisValoraciones(@AuthenticationPrincipal Jwt jwt) {
         return valoracionService.listMisValoraciones(jwt.getSubject());
+    }
+
+    @PutMapping("/{idValoracion}")
+    public ValoracionResponse updateValoracion(@AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long idValoracion,
+            @Valid @RequestBody ValoracionUpdateRequest request) {
+        return valoracionService.updateValoracion(jwt.getSubject(), idValoracion, request);
     }
 
     @DeleteMapping("/{idValoracion}")

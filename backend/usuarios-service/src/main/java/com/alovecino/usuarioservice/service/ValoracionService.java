@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.alovecino.usuarioservice.dto.ValoracionRequest;
 import com.alovecino.usuarioservice.dto.ValoracionResponse;
+import com.alovecino.usuarioservice.dto.ValoracionUpdateRequest;
 import com.alovecino.usuarioservice.exception.UsuarioNotFoundException;
 import com.alovecino.usuarioservice.model.Almacen;
 import com.alovecino.usuarioservice.model.Cliente;
@@ -76,6 +77,19 @@ public class ValoracionService {
         return valoracionRepository.findByClienteIdClienteOrderByIdValoracionDesc(cliente.getIdCliente()).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public ValoracionResponse updateValoracion(String principal, Long idValoracion, ValoracionUpdateRequest request) {
+        Cliente cliente = findCliente(principal);
+        Valoracion valoracion = valoracionRepository.findById(idValoracion)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Valoración no encontrada"));
+        if (!valoracion.getCliente().getIdCliente().equals(cliente.getIdCliente())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar esta valoración");
+        }
+        valoracion.setCantidadEstrellas(request.getCantidadEstrellas());
+        valoracion.setContenido(request.getContenido());
+        return toResponse(valoracionRepository.save(valoracion));
     }
 
     @Transactional
