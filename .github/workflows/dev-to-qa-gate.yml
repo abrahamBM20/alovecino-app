@@ -30,8 +30,10 @@ jobs:
       - name: Require dev to qa promotion path
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.head_ref }}" != "dev" ]; then
-            echo "Solo se permite promocionar cambios desde dev hacia qa."
+          if [ "${{ github.event_name }}" = "pull_request" ] &&
+             [ "${{ github.head_ref }}" != "dev" ] &&
+             [[ "${{ github.head_ref }}" != chore/promote-dev-to-qa* ]]; then
+            echo "Solo se permite promocionar cambios desde dev hacia qa o desde una rama de resolución chore/promote-dev-to-qa*."
             echo "Rama de origen actual: ${{ github.head_ref }}"
             exit 1
           fi
