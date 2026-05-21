@@ -4,7 +4,7 @@ import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 
 import BotonFiltro from '../../../../assets/boton_filtro.svg';
@@ -190,7 +190,7 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let isMounted = true;
 
     (async () => {
@@ -200,7 +200,7 @@ export default function HomeScreen() {
     return () => {
       isMounted = false;
     };
-  }, [loadNearbyStores]);
+  }, [loadNearbyStores]));
 
   const handleMarkerPress = (store) => {
     router.push({
@@ -299,7 +299,7 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   accessibilityRole="button"
                   activeOpacity={0.75}
-                  onPress={loadNearbyStores}
+                  onPress={() => loadNearbyStores()}
                   style={styles.mapStatusAction}
                 >
                   <Text style={styles.mapStatusActionText}>Buscar nuevamente</Text>
@@ -311,7 +311,7 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   accessibilityRole="button"
                   activeOpacity={0.75}
-                  onPress={loadNearbyStores}
+                  onPress={() => loadNearbyStores()}
                   style={styles.mapStatusAction}
                 >
                   <Text style={styles.mapStatusActionText}>Reintentar</Text>
