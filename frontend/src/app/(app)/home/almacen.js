@@ -1,6 +1,5 @@
 import React from 'react';
 import { Redirect } from 'expo-router';
-import AlmacenRegisterScreen from '../../../features/almacenes/screens/AlmacenRegisterScreen';
 import { useAuthStore } from '../../../store/authStore';
 
 export default function AlmacenRoute() {
@@ -10,5 +9,5 @@ export default function AlmacenRoute() {
     return <Redirect href="/auth" />;
   }
 
-  return <AlmacenRegisterScreen />;
+  return <Redirect href="/home" />;
 }

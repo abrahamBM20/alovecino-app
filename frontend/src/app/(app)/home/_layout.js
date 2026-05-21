@@ -9,5 +9,13 @@ export default function HomeLayout() {
     return <Redirect href="/auth" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { flex: 1, backgroundColor: 'transparent' },
+        animation: 'none',
+      }}
+    />
+  );
 }
