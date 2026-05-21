@@ -1,0 +1,13 @@
+{
+  "name": "alovecino-budget-kill-switch",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.4.6",
+    "googleapis": "^144.0.0"
+  }
+}

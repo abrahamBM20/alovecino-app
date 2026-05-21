@@ -2,6 +2,7 @@ package com.alovecino.usuarioservice.service;
 
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,10 @@ public class AlmacenService {
     @Transactional
     public AlmacenResponse createAlmacen(String duenoIdentifier, AlmacenRequest request) {
         Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
+        if (!"ALMACEN".equalsIgnoreCase(dueno.getRol().getNombreRol())) {
+            throw new AccessDeniedException("Solo usuarios de tipo almacén pueden registrar almacenes");
+        }
+
         EstadoCuenta estadoCuenta = estadoCuentaRepository.findByCodigo("PENDIENTE")
                 .orElseGet(() -> estadoCuentaRepository.save(new EstadoCuenta("PENDIENTE", "PENDIENTE", null)));
         Direccion direccion = usuarioService.createDireccionForAlmacen(request.getDireccion());
