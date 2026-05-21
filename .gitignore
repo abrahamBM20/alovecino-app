@@ -150,4 +150,7 @@ frontend/*.aab
 
 # Backend secrets
 backend/**/msusuariosbs.env
+
+# Java build output
+backend/**/target/
 .claude/
