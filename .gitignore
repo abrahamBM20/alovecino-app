@@ -167,3 +167,14 @@ backend/**/msusuariosbs.env
 backend/**/target/
 .claude/
 .codex/
+
+# Backend Spring Boot properties (exclude all profiles)
+backend/chat-service/src/main/resources/application.properties
+backend/chat-service/src/main/resources/application-local.properties
+backend/chat-service/src/main/resources/application-dev.properties
+backend/chat-service/src/main/resources/application-qa.properties
+backend/chat-service/src/main/resources/application-prod.properties
+
+backend/chat-service/.env
+backend/chat-service/.env.*
+!backend/chat-service/.env.example

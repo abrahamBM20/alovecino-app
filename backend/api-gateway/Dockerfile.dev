@@ -8,5 +8,5 @@ RUN mvn -q -DskipTests dependency:go-offline
 
 COPY src ./src
 
-EXPOSE 8080
+EXPOSE 8082
 CMD ["mvn", "-DskipTests", "clean", "spring-boot:run"]

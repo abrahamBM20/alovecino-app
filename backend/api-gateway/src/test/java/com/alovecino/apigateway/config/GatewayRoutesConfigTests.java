@@ -16,6 +16,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
         "gateway.services.auth.base-url=http://auth-service:8081",
         "gateway.services.usuarios.base-url=http://usuarios-service:8080",
         "gateway.services.geo.base-url=http://geo-service:8083",
+        "gateway.services.chat.base-url=http://chat-service:8084",
         "gateway.security.jwt.jwk-set-uri=http://auth-service:8081/.well-known/jwks.json",
         "gateway.security.jwt.issuer=alovecino-auth",
         "gateway.security.jwt.audience=alovecino-api"
@@ -39,6 +40,7 @@ class GatewayRoutesConfigTests {
                 "usuarios-api",
                 "almacenes-api",
                 "consultas-api",
+                "estados-consulta-api",
                 "valoraciones-api",
                 "ofertas-api",
                 "geo-api",
@@ -48,7 +50,8 @@ class GatewayRoutesConfigTests {
         assertThat(routes.get("auth-jwks").getUri().toString()).isEqualTo("http://auth-service:8081");
         assertThat(routes.get("usuarios-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("almacenes-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
-        assertThat(routes.get("consultas-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
+        assertThat(routes.get("consultas-api").getUri().toString()).isEqualTo("http://chat-service:8084");
+        assertThat(routes.get("estados-consulta-api").getUri().toString()).isEqualTo("http://chat-service:8084");
         assertThat(routes.get("valoraciones-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("ofertas-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("geo-api").getUri().toString()).isEqualTo("http://geo-service:8083");
