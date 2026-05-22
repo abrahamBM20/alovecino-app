@@ -1,0 +1,154 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: alovecino-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - alovecino-net
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: alovecino-auth-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8081
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/alovecino_dev
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
+      APP_JWT_REFRESH_COOKIE_SECURE: ${APP_JWT_REFRESH_COOKIE_SECURE:-false}
+      APP_JWT_REFRESH_COOKIE_SAME_SITE: ${APP_JWT_REFRESH_COOKIE_SAME_SITE:-Lax}
+    ports:
+      - "${AUTH_SERVICE_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - alovecino-net
+
+  usuarios-service:
+    build:
+      context: ./usuarios-service
+      dockerfile: Dockerfile
+    container_name: alovecino-usuarios-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/alovecino_dev
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      AUTH_JWK_SET_URI: http://auth-service:8081/.well-known/jwks.json
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
+    ports:
+      - "${USUARIOS_SERVICE_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - alovecino-net
+
+  chat-service:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    container_name: alovecino-consulta-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      usuarios-service:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8083
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/alovecino_consulta_dev
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SPRING_FLYWAY_ENABLED: true
+      AUTH_JWK_SET_URI: http://auth-service:8081/.well-known/jwks.json
+    ports:
+      - "${CHAT_SERVICE_PORT:-8083}:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - alovecino-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: alovecino-api-gateway
+    restart: unless-stopped
+    depends_on:
+      auth-service:
+        condition: service_started
+      usuarios-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
+    environment:
+      SERVER_PORT: 8082
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USUARIOS_SERVICE_URL: http://usuarios-service:8080
+      CHAT_SERVICE_URL: http://chat-service:8083
+      AUTH_JWK_SET_URI: http://auth-service:8081/.well-known/jwks.json
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
+      GATEWAY_CORS_ALLOWED_ORIGINS: ${GATEWAY_CORS_ALLOWED_ORIGINS:-http://localhost:19006,http://localhost:3000,http://localhost:8081}
+    ports:
+      - "${API_GATEWAY_PORT:-8082}:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - alovecino-net
+
+networks:
+  alovecino-net:
+    driver: bridge
+
+volumes:
+  postgres_data:

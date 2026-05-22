@@ -75,6 +75,27 @@ jobs:
     defaults:
       run:
         working-directory: backend/geo-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run tests
+        run: mvn test
+
+  chat-service:
+    name: chat-service tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/chat-service
     steps:
       - name: Checkout
         uses: actions/checkout@v4
