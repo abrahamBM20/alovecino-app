@@ -7,25 +7,26 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
+      - "scripts/resolve-eas-mobile-action.sh"
   push:
     branches:
       - dev
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
+      - "scripts/resolve-eas-mobile-action.sh"
   workflow_dispatch:
     inputs:
-      build_profile:
-        description: "EAS build profile"
+      mobile_action:
+        description: "Mobile delivery action"
         required: true
-        default: "dev"
+        default: "auto"
         type: choice
         options:
-          - dev
-          - dev-preview
-          - qa
-          - prod-preview
-          - prod
+          - auto
+          - update
+          - apk
+          - none
 
 concurrency:
   group: frontend-ci-${{ github.ref }}
@@ -56,20 +57,29 @@ jobs:
       - name: Run tests
         run: npm test -- --runInBand
 
-  eas-build-manual:
-    name: EAS Android manual build
+  eas-mobile-delivery:
+    name: EAS Android dev delivery
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    defaults:
-      run:
-        working-directory: frontend
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (vars.ENABLE_DEV_EAS_UPDATE == 'true' || vars.ENABLE_DEV_EAS_BUILD == 'true')) }}
+    env:
+      REQUESTED_MOBILE_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.mobile_action || 'auto' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve EAS mobile action
+        id: mobile
+        run: |
+          bash scripts/resolve-eas-mobile-action.sh \
+            --environment dev \
+            --requested-action "$REQUESTED_MOBILE_ACTION"
 
       - name: Set up Node
+        if: ${{ steps.mobile.outputs.action != 'none' }}
         uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -77,12 +87,37 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: ${{ steps.mobile.outputs.action != 'none' }}
+        working-directory: frontend
         run: npm ci
 
       - name: Install EAS CLI
+        if: ${{ steps.mobile.outputs.action != 'none' }}
+        working-directory: frontend
         run: npm install --global eas-cli
 
-      - name: Run EAS build
+      - name: Run EAS dev update
+        if: ${{ steps.mobile.outputs.action == 'update' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_DEV_EAS_UPDATE == 'true') }}
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile ${{ inputs.build_profile }} --non-interactive
+          EXPO_PUBLIC_APP_ENV: dev
+          EXPO_PUBLIC_API_URL: https://alovecino-api-gateway-dev.onrender.com
+          EXPO_PUBLIC_API_TIMEOUT_MS: "90000"
+          EAS_UPDATE_BRANCH: ${{ steps.mobile.outputs.update_branch }}
+        working-directory: frontend
+        run: eas update --branch "$EAS_UPDATE_BRANCH" --message "$GITHUB_SHA" --non-interactive
+
+      - name: Run EAS dev preview APK build
+        if: ${{ steps.mobile.outputs.action == 'build' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_DEV_EAS_BUILD == 'true') }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_PROFILE: ${{ steps.mobile.outputs.build_profile }}
+        working-directory: frontend
+        run: eas build --platform android --profile "$EAS_BUILD_PROFILE" --non-interactive
+
+      - name: Explain skipped mobile delivery
+        if: ${{ steps.mobile.outputs.action == 'none' || (steps.mobile.outputs.action == 'update' && github.event_name != 'workflow_dispatch' && vars.ENABLE_DEV_EAS_UPDATE != 'true') || (steps.mobile.outputs.action == 'build' && github.event_name != 'workflow_dispatch' && vars.ENABLE_DEV_EAS_BUILD != 'true') }}
+        run: |
+          echo "Mobile delivery skipped."
+          echo "Resolved action: ${{ steps.mobile.outputs.action }}"
+          echo "Reason: ${{ steps.mobile.outputs.reason }}"
