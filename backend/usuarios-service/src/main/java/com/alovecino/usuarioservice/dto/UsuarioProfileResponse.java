@@ -1,6 +1,8 @@
 package com.alovecino.usuarioservice.dto;
 
-public class UsuarioResponse {
+import java.util.List;
+
+public class UsuarioProfileResponse {
 
     private Long idUsuario;
     private String uuid;
@@ -10,12 +12,15 @@ public class UsuarioResponse {
     private String correo;
     private String nombreRol;
     private String fotoPerfil;
+    private ClienteProfileResponse cliente;
+    private List<AlmacenProfileResponse> almacenes;
 
-    public UsuarioResponse() {
+    public UsuarioProfileResponse() {
     }
 
-    public UsuarioResponse(Long idUsuario, String uuid, String rut, String nombreUsuario, String nombre, String correo,
-            String nombreRol, String fotoPerfil) {
+    public UsuarioProfileResponse(Long idUsuario, String uuid, String rut, String nombreUsuario, String nombre,
+            String correo, String nombreRol, String fotoPerfil, ClienteProfileResponse cliente,
+            List<AlmacenProfileResponse> almacenes) {
         this.idUsuario = idUsuario;
         this.uuid = uuid;
         this.rut = rut;
@@ -24,6 +29,8 @@ public class UsuarioResponse {
         this.correo = correo;
         this.nombreRol = nombreRol;
         this.fotoPerfil = fotoPerfil;
+        this.cliente = cliente;
+        this.almacenes = almacenes;
     }
 
     public Long getIdUsuario() {
@@ -89,5 +96,20 @@ public class UsuarioResponse {
     public void setFotoPerfil(String fotoPerfil) {
         this.fotoPerfil = fotoPerfil;
     }
-}
 
+    public ClienteProfileResponse getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(ClienteProfileResponse cliente) {
+        this.cliente = cliente;
+    }
+
+    public List<AlmacenProfileResponse> getAlmacenes() {
+        return almacenes;
+    }
+
+    public void setAlmacenes(List<AlmacenProfileResponse> almacenes) {
+        this.almacenes = almacenes;
+    }
+}

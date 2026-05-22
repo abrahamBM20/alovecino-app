@@ -1,13 +1,23 @@
 package com.alovecino.usuarioservice.service;
 
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.alovecino.usuarioservice.dto.AlmacenProfileResponse;
+import com.alovecino.usuarioservice.dto.ClienteProfileResponse;
+import com.alovecino.usuarioservice.dto.DireccionResponse;
+import com.alovecino.usuarioservice.dto.EstadoCuentaResponse;
 import com.alovecino.usuarioservice.dto.DireccionRequest;
+import com.alovecino.usuarioservice.dto.UsuarioProfileResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
 import com.alovecino.usuarioservice.exception.UsuarioNotFoundException;
@@ -45,13 +55,15 @@ public class UsuarioService {
     private final ConfiguracionUsuarioRepository configuracionUsuarioRepository;
     private final RutValidator rutValidator;
     private final GeocodingService geocodingService;
+    private final ImageService imageService;
 
     public UsuarioService(UsuarioRepository usuarioRepository, RolRepository rolRepository,
             PasswordEncoder passwordEncoder, ClienteRepository clienteRepository, AlmacenRepository almacenRepository,
             DireccionRepository direccionRepository, RegionRepository regionRepository, ComunaRepository comunaRepository,
             EstadoCuentaRepository estadoCuentaRepository,
             ConfiguracionUsuarioRepository configuracionUsuarioRepository, RutValidator rutValidator,
-            GeocodingService geocodingService) {
+            GeocodingService geocodingService, 
+            ImageService imageService) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
@@ -64,6 +76,7 @@ public class UsuarioService {
         this.configuracionUsuarioRepository = configuracionUsuarioRepository;
         this.rutValidator = rutValidator;
         this.geocodingService = geocodingService;
+        this.imageService = imageService;
     }
 
     @Transactional
@@ -74,6 +87,7 @@ public class UsuarioService {
         EstadoCuenta estadoCuenta = findEstadoCuenta(estadoCuentaInicial(request.getTipoCuenta()));
 
         Usuario usuario = new Usuario();
+        usuario.setUuid(UUID.randomUUID().toString());
         usuario.setRut(rutValidator.normalize(request.getRut()));
         usuario.setNombreUsuario(request.getNombreUsuario());
         usuario.setNombre(request.getNombre());
@@ -108,9 +122,32 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public UsuarioResponse getUsuarioByUuid(String uuid) {
-        return usuarioRepository.findById(Long.valueOf(uuid))
-                .map(this::toResponse)
-                .orElseThrow(() -> new UsuarioNotFoundException(uuid));
+        return toResponse(findUsuarioByIdOrUuid(uuid));
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioProfileResponse getUsuarioProfileByUuid(String uuid) {
+        Usuario usuario = findUsuarioByIdOrUuid(uuid);
+        ClienteProfileResponse clienteProfile = clienteRepository.findByUsuarioIdUsuario(usuario.getIdUsuario())
+                .map(this::mapCliente)
+                .orElse(null);
+        List<AlmacenProfileResponse> almacenes = almacenRepository
+                .findByDuenoIdUsuarioOrderByIdAlmacenDesc(usuario.getIdUsuario()).stream()
+                .map(this::mapAlmacen)
+                .collect(Collectors.toList());
+
+        return new UsuarioProfileResponse(usuario.getIdUsuario(), usuario.getUuid(), usuario.getRut(),
+                usuario.getNombreUsuario(), usuario.getNombre(), usuario.getCorreo(), usuario.getRol().getNombreRol(),
+                usuario.getFotoPerfil(), clienteProfile, almacenes);
+    }
+
+    @Transactional
+    public String uploadProfilePhoto(String uuidOrId, MultipartFile file) throws IOException {
+        Usuario usuario = findUsuarioByIdOrUuid(uuidOrId);
+        String imageUrl = imageService.uploadImage(file);
+        usuario.setFotoPerfil(imageUrl);
+        usuarioRepository.save(usuario);
+        return imageUrl;
     }
 
     @Transactional(readOnly = true)
@@ -185,8 +222,51 @@ public class UsuarioService {
     }
 
     private UsuarioResponse toResponse(Usuario usuario) {
-        return new UsuarioResponse(usuario.getIdUsuario(), usuario.getRut(), usuario.getNombreUsuario(),
-                usuario.getNombre(), usuario.getCorreo(), usuario.getRol().getNombreRol());
+        return new UsuarioResponse(usuario.getIdUsuario(), usuario.getUuid(), usuario.getRut(),
+                usuario.getNombreUsuario(), usuario.getNombre(), usuario.getCorreo(),
+                usuario.getRol().getNombreRol(), usuario.getFotoPerfil());
+    }
+
+    private Usuario findUsuarioByIdOrUuid(String uuidOrId) {
+        if (uuidOrId == null || uuidOrId.isBlank()) {
+            throw new UsuarioNotFoundException("Identificador inválido");
+        }
+        Optional<Usuario> usuario = usuarioRepository.findByUuid(uuidOrId);
+        if (usuario.isPresent()) {
+            return usuario.get();
+        }
+        try {
+            return usuarioRepository.findById(Long.valueOf(uuidOrId))
+                    .orElseThrow(() -> new UsuarioNotFoundException(uuidOrId));
+        } catch (NumberFormatException e) {
+            throw new UsuarioNotFoundException(uuidOrId);
+        }
+    }
+
+    private ClienteProfileResponse mapCliente(Cliente cliente) {
+        return new ClienteProfileResponse(cliente.getIdCliente(), cliente.getFechaNacimiento(),
+                mapEstadoCuenta(cliente.getEstadoCuenta()), mapDireccion(cliente.getDireccion()));
+    }
+
+    private AlmacenProfileResponse mapAlmacen(Almacen almacen) {
+        return new AlmacenProfileResponse(almacen.getIdAlmacen(), almacen.getNombre(),
+                mapEstadoCuenta(almacen.getEstadoCuenta()), mapDireccion(almacen.getDireccion()));
+    }
+
+    private EstadoCuentaResponse mapEstadoCuenta(EstadoCuenta estadoCuenta) {
+        if (estadoCuenta == null) {
+            return null;
+        }
+        return new EstadoCuentaResponse(estadoCuenta.getCodigo(), estadoCuenta.getNombre());
+    }
+
+    private DireccionResponse mapDireccion(Direccion direccion) {
+        if (direccion == null) {
+            return null;
+        }
+        return new DireccionResponse(direccion.getCalle(), direccion.getNumero(), direccion.getCodigoPostal(),
+                direccion.getComuna().getNombre(), direccion.getComuna().getRegion().getNombre(),
+                direccion.getLatitud(), direccion.getLongitud());
     }
 }
 
