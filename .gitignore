@@ -164,6 +164,8 @@ backend/**/msusuariosbs.env
 # Backend build outputs and local Maven caches
 .m2/
 .m2-*/
+
+# Java build output
 backend/**/target/
 .claude/
 .codex/

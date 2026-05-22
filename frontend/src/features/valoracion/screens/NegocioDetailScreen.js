@@ -49,7 +49,7 @@ export default function NegocioDetailScreen({ id, nombre, comuna, region, distan
   const router = useRouter();
   const { valoraciones, isLoading, error, promedio } = useValoracion(id);
 
-  const distanceLabel = distancia ? `${distancia} m de tu ubicación` : null;
+  const distanceLabel = distancia ? `${distancia} m de tu ubicacion` : null;
 
   return (
     <LinearGradient colors={['#ffffff', '#044e81']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.container}>
@@ -78,7 +78,7 @@ export default function NegocioDetailScreen({ id, nombre, comuna, region, distan
                     <Text style={styles.promedioValor}>{promedio}</Text>
                     <Text style={styles.promedioStar}> {STAR_FILLED}</Text>
                     <Text style={styles.promedioTotal}>
-                      {' '}({valoraciones.length} valoración{valoraciones.length !== 1 ? 'es' : ''})
+                      {' '}({valoraciones.length} valoracion{valoraciones.length !== 1 ? 'es' : ''})
                     </Text>
                   </View>
                 )}
@@ -98,7 +98,7 @@ export default function NegocioDetailScreen({ id, nombre, comuna, region, distan
               <ActivityIndicator size="small" color={PRIMARY} style={styles.loader} />
             ) : valoraciones.length === 0 ? (
               <View style={styles.sectionCard}>
-                <Text style={styles.emptyText}>Aún no hay valoraciones para este almacén.</Text>
+                <Text style={styles.emptyText}>Aun no hay valoraciones para este almacen.</Text>
               </View>
             ) : (
               valoraciones.map((v) => <ValoracionCard key={v.idValoracion} item={v} />)
