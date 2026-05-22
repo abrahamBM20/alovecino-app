@@ -12,6 +12,7 @@ public class GatewayRoutesConfig {
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder, GatewayProperties properties) {
         String authUrl = properties.getServices().getAuth().getBaseUrl();
         String usuariosUrl = properties.getServices().getUsuarios().getBaseUrl();
+        String geoUrl = properties.getServices().getGeo().getBaseUrl();
         String chatUrl = properties.getServices().getChat().getBaseUrl();
 
         return builder.routes()
@@ -39,6 +40,9 @@ public class GatewayRoutesConfig {
                 .route("ofertas-api", route -> route
                         .path("/api/ofertas/**")
                         .uri(usuariosUrl))
+                .route("geo-api", route -> route
+                        .path("/api/geo/**")
+                        .uri(geoUrl))
                 .route("usuarios-docs", route -> route
                         .path("/v3/api-docs/**", "/swagger-ui/**")
                         .uri(usuariosUrl))

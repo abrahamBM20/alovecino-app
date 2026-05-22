@@ -19,6 +19,7 @@ public class GatewayProperties {
     public static class Services {
         private final Service auth = new Service();
         private final Service usuarios = new Service();
+        private final Service geo = new Service();
         private final Service chat = new Service();
 
         public Service getAuth() {
@@ -27,6 +28,10 @@ public class GatewayProperties {
 
         public Service getUsuarios() {
             return usuarios;
+        }
+
+        public Service getGeo() {
+            return geo;
         }
 
         public Service getChat() {

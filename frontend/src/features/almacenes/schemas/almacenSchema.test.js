@@ -1,11 +1,14 @@
 import { almacenSchema } from './almacenSchema';
 
 describe('almacenSchema', () => {
-  it('acepta nombres, direcciones y comunas con caracteres del español latinoamericano', () => {
+  it('acepta datos de almacén geocodificables con caracteres del español latinoamericano', () => {
     const result = almacenSchema.safeParse({
       nombre: 'Almacén Doña Ñata',
-      direccion: 'Av. Libertador Bernardo O’Higgins 1234 #5',
+      calle: 'Av. Libertador Bernardo O’Higgins',
+      numero: '1234 #5',
       comuna: 'Ñuñoa',
+      region: 'Metropolitana',
+      codigoPostal: '8320000',
       telefono: '+56 9 1234 5678',
     });
 

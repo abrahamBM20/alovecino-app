@@ -20,8 +20,11 @@ export function useAlmacenForm() {
     mode: 'onBlur',
     defaultValues: {
       nombre: '',
-      direccion: '',
+      calle: '',
+      numero: '',
       comuna: '',
+      region: '',
+      codigoPostal: '',
       telefono: '',
     },
   });

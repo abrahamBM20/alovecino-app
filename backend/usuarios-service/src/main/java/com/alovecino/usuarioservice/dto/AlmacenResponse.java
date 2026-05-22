@@ -12,12 +12,13 @@ public class AlmacenResponse {
     private String longitud;
     private String estado;
     private Long idDueno;
+    private String imagenUrl;
 
     public AlmacenResponse() {
     }
 
     public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String comuna, String region,
-            String latitud, String longitud, String estado, Long idDueno) {
+            String latitud, String longitud, String estado, Long idDueno, String imagenUrl) {
         this.idAlmacen = idAlmacen;
         this.nombre = nombre;
         this.calle = calle;
@@ -28,6 +29,7 @@ public class AlmacenResponse {
         this.longitud = longitud;
         this.estado = estado;
         this.idDueno = idDueno;
+        this.imagenUrl = imagenUrl;
     }
 
     public Long getIdAlmacen() {
@@ -108,5 +110,13 @@ public class AlmacenResponse {
 
     public void setIdDueno(Long idDueno) {
         this.idDueno = idDueno;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+
+    public void setImagenUrl(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
     }
 }
