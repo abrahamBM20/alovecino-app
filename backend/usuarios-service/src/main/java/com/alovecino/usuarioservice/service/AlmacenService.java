@@ -2,10 +2,13 @@ package com.alovecino.usuarioservice.service;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.alovecino.usuarioservice.dto.AlmacenImagenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenResponse;
 import com.alovecino.usuarioservice.exception.UsuarioNotFoundException;
@@ -72,6 +75,18 @@ public class AlmacenService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public AlmacenResponse updateImagenUrl(String duenoIdentifier, Long idAlmacen, AlmacenImagenRequest request) {
+        Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
+        Almacen almacen = almacenRepository.findById(idAlmacen)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Almacén no encontrado"));
+        if (!almacen.getDueno().getIdUsuario().equals(dueno.getIdUsuario())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar este almacén");
+        }
+        almacen.setImagenUrl(request.getImagenUrl());
+        return toResponse(almacenRepository.save(almacen));
+    }
+
     @Transactional(readOnly = true)
     public List<AlmacenResponse> listAlmacenesByDueno(String duenoIdentifier) {
         Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
@@ -107,6 +122,7 @@ public class AlmacenService {
                 direccion.getLatitud().toPlainString(),
                 direccion.getLongitud().toPlainString(),
                 almacen.getEstadoCuenta().getCodigo(),
-                almacen.getDueno().getIdUsuario());
+                almacen.getDueno().getIdUsuario(),
+                almacen.getImagenUrl());
     }
 }

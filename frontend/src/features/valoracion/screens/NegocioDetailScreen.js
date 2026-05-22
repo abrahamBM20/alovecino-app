@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { useValoracion } from '../hooks/useValoracion';
 
 const PRIMARY = '#044E81';
@@ -45,18 +45,17 @@ function ValoracionCard({ item }) {
   );
 }
 
-export default function NegocioDetailScreen({ route }) {
-  const { id, nombre, comuna, region, distancia, logoUrl } = route?.params ?? {};
-  const navigation = useNavigation();
+export default function NegocioDetailScreen({ id, nombre, comuna, region, distancia, logoUrl }) {
+  const router = useRouter();
   const { valoraciones, isLoading, error, promedio } = useValoracion(id);
 
-  const distanceLabel = distancia ? `${distancia} m de tu ubicación` : null;
+  const distanceLabel = distancia ? `${distancia} m de tu ubicacion` : null;
 
   return (
     <LinearGradient colors={['#ffffff', '#044e81']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>← Volver</Text>
           </TouchableOpacity>
 
@@ -79,7 +78,7 @@ export default function NegocioDetailScreen({ route }) {
                     <Text style={styles.promedioValor}>{promedio}</Text>
                     <Text style={styles.promedioStar}> {STAR_FILLED}</Text>
                     <Text style={styles.promedioTotal}>
-                      {' '}({valoraciones.length} valoración{valoraciones.length !== 1 ? 'es' : ''})
+                      {' '}({valoraciones.length} valoracion{valoraciones.length !== 1 ? 'es' : ''})
                     </Text>
                   </View>
                 )}
@@ -99,7 +98,7 @@ export default function NegocioDetailScreen({ route }) {
               <ActivityIndicator size="small" color={PRIMARY} style={styles.loader} />
             ) : valoraciones.length === 0 ? (
               <View style={styles.sectionCard}>
-                <Text style={styles.emptyText}>Aún no hay valoraciones para este almacén.</Text>
+                <Text style={styles.emptyText}>Aun no hay valoraciones para este almacen.</Text>
               </View>
             ) : (
               valoraciones.map((v) => <ValoracionCard key={v.idValoracion} item={v} />)
@@ -107,11 +106,10 @@ export default function NegocioDetailScreen({ route }) {
           </View>
         </ScrollView>
 
-        {/* FAB chat — abajo a la derecha */}
         <TouchableOpacity
           style={styles.fab}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('ChatMinimarket', { idAlmacen: id, nombre, logoUrl })}
+          onPress={() => router.push({ pathname: '/home/chat/[id]', params: { id, nombre, logoUrl } })}
         >
           <Text style={styles.fabArrow}>›</Text>
         </TouchableOpacity>
@@ -128,11 +126,7 @@ const styles = StyleSheet.create({
   backButton: { marginTop: 8, marginBottom: 20 },
   backText: { color: PRIMARY, fontSize: 16, fontWeight: '500' },
   almacenHeader: { marginBottom: 20 },
-  almacenTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
+  almacenTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   almacenFoto: {
     width: 72,
     height: 72,
@@ -153,7 +147,7 @@ const styles = StyleSheet.create({
   almacenTitleInfo: { flex: 1 },
   almacenNombre: { fontSize: 22, fontWeight: '700', color: PRIMARY, marginBottom: 4 },
   almacenInfo: { fontSize: 14, color: '#555', marginBottom: 2 },
-  almacenDistancia: { fontSize: 13, color: '#64748b', marginBottom: 4 },
+  almacenDistancia: { fontSize: 13, color: '#64748b', marginBottom: 8 },
   promedioRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   promedioValor: { fontSize: 18, fontWeight: '700', color: PRIMARY },
   promedioStar: { fontSize: 18, color: '#f59e0b' },

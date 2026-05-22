@@ -1,39 +1,37 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  BackHandler,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Image,
-  BackHandler,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import ValoracionModal from '../../valoracion/components/ValoracionModal';
-
-const INITIAL_MESSAGES = [
-  { id: '1', from: 'almacen', text: '¡Hola! ¿En qué podemos ayudarte?' },
-];
-
-const TAB_ITEMS = [
-  { id: 'filtro',        source: require('../../../../assets/boton_filtro.png'),        label: 'Filtro' },
-  { id: 'inicio',        source: require('../../../../assets/boton_inicio.png'),        label: 'Inicio' },
-  { id: 'configuracion', source: require('../../../../assets/boton_configuracion.png'), label: 'Configuración' },
-  { id: 'perfil',        source: require('../../../../assets/boton_perfil.png'),        label: 'Perfil' },
-];
 
 const PRIMARY = '#044e81';
 
-// ─── ChatMinimarketScreen ─────────────────────────────────────────────────────
-export default function ChatMinimarketScreen({ route }) {
-  const { idAlmacen, nombre, logoUrl } = route?.params ?? {};
-  const navigation = useNavigation();
+const INITIAL_MESSAGES = [
+  { id: '1', from: 'almacen', text: 'Hola! En que podemos ayudarte?' },
+];
+
+const TAB_ITEMS = [
+  { id: 'filtro', source: require('../../../../assets/boton_filtro.png'), label: 'Filtro' },
+  { id: 'inicio', source: require('../../../../assets/boton_inicio.png'), label: 'Inicio' },
+  { id: 'configuracion', source: require('../../../../assets/boton_configuracion.png'), label: 'Configuracion' },
+  { id: 'perfil', source: require('../../../../assets/boton_perfil.png'), label: 'Perfil' },
+];
+
+export default function ChatMinimarketScreen({ idAlmacen, nombre, logoUrl }) {
+  const router = useRouter();
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -47,13 +45,19 @@ export default function ChatMinimarketScreen({ route }) {
     return () => sub.remove();
   }, []);
 
+  function handleLeave() {
+    setShowModal(true);
+  }
+
+  function handleModalClose() {
+    setShowModal(false);
+    router.back();
+  }
+
   function sendMessage() {
     const text = input.trim();
     if (!text) return;
-    setMessages(prev => [
-      ...prev,
-      { id: Date.now().toString(), from: 'usuario', text },
-    ]);
+    setMessages((prev) => [...prev, { id: Date.now().toString(), from: 'usuario', text }]);
     setInput('');
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   }
@@ -80,39 +84,42 @@ export default function ChatMinimarketScreen({ route }) {
   }
 
   return (
-    <LinearGradient colors={['#ffffff', '#044e81']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.gradient}>
+    <LinearGradient
+      colors={['#ffffff', '#044e81']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.gradient}
+    >
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowModal(true)} activeOpacity={0.7} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleLeave} activeOpacity={0.7} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={28} color="#fff" />
           </TouchableOpacity>
           {logoUrl
             ? <Image source={{ uri: logoUrl }} style={styles.headerPhoto} resizeMode="cover" />
             : <View style={styles.msgAvatar}><Ionicons name="storefront" size={20} color="#fff" /></View>
           }
-          <Text style={styles.headerTitle}>{nombre || 'Almacén'}</Text>
+          <Text style={styles.headerTitle}>{nombre || 'Almacen'}</Text>
         </View>
 
-        {/* Mensajes */}
-        <KeyboardAvoidingView style={styles.flex}
+        <KeyboardAvoidingView
+          style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={90}>
+          keyboardVerticalOffset={90}
+        >
           <FlatList
             ref={listRef}
             data={messages}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             renderItem={renderMessage}
             contentContainerStyle={styles.messageList}
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           />
 
-          {/* Input */}
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder="Escribe aquí"
+              placeholder="Escribe aqui"
               placeholderTextColor="rgba(4,78,129,0.4)"
               value={input}
               onChangeText={setInput}
@@ -125,12 +132,16 @@ export default function ChatMinimarketScreen({ route }) {
           </View>
         </KeyboardAvoidingView>
 
-        {/* Tab bar con íconos personalizados */}
         <View style={styles.tabBar}>
           {TAB_ITEMS.map(({ id, source, label }) => (
-            <TouchableOpacity key={id} style={styles.tabBtn} activeOpacity={0.8}
-              onPress={() => setShowModal(true)}
-              accessibilityRole="button" accessibilityLabel={label}>
+            <TouchableOpacity
+              key={id}
+              style={styles.tabBtn}
+              activeOpacity={0.8}
+              onPress={handleLeave}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+            >
               <Image source={source} style={styles.tabImage} resizeMode="contain" />
             </TouchableOpacity>
           ))}
@@ -138,7 +149,7 @@ export default function ChatMinimarketScreen({ route }) {
 
         <ValoracionModal
           visible={showModal}
-          onClose={() => { setShowModal(false); navigation.goBack(); }}
+          onClose={handleModalClose}
           idAlmacen={idAlmacen}
           nombreAlmacen={nombre}
           logoUrl={logoUrl}
@@ -151,8 +162,7 @@ export default function ChatMinimarketScreen({ route }) {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   safeArea: { flex: 1 },
-  flex:     { flex: 1 },
-
+  flex: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -187,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 8,
   },
-  messageRowLeft:  { justifyContent: 'flex-start' },
+  messageRowLeft: { justifyContent: 'flex-start' },
   messageRowRight: { justifyContent: 'flex-end' },
   msgAvatar: {
     width: 36,
@@ -196,6 +206,11 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  msgAvatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   bubble: {
     maxWidth: 220,
@@ -216,14 +231,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 21,
   },
-  bubbleTextLeft:  { color: PRIMARY },
+  bubbleTextLeft: { color: PRIMARY },
   bubbleTextRight: { color: '#fff' },
-  msgAvatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -249,7 +258,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   tabBar: {
     height: 87,
     backgroundColor: PRIMARY,
