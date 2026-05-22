@@ -1,0 +1,36 @@
+server:
+  port: ${SERVER_PORT:${GEO_SERVICE_PORT:8083}}
+
+spring:
+  application:
+    name: geo-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/alovecino}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+geo:
+  google:
+    api-key: ${GOOGLE_MAPS_API_KEY:${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY:}}
+    geocode-url: ${GOOGLE_GEOCODE_URL:https://maps.googleapis.com/maps/api/geocode/json}
+    timeout-ms: ${GOOGLE_GEOCODE_TIMEOUT_MS:2500}
+    daily-request-limit: ${GOOGLE_GEOCODE_DAILY_REQUEST_LIMIT:100}
+  security:
+    jwt:
+      issuer: ${AUTH_JWT_ISSUER:alovecino-auth}
+      audience: ${AUTH_JWT_AUDIENCE:alovecino-api}

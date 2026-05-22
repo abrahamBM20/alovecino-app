@@ -46,16 +46,32 @@ export default function AlmacenRegisterScreen() {
 
         <Controller
           control={control}
-          name="direccion"
+          name="calle"
           render={({ field: { onChange, onBlur, value } }) => (
             <AppInput
-              label="Dirección"
+              label="Calle"
               autoCapitalize="words"
               autoCorrect={false}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
-              error={errors.direccion?.message}
+              error={errors.calle?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="numero"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <AppInput
+              label="Número"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.numero?.message}
             />
           )}
         />
@@ -72,6 +88,39 @@ export default function AlmacenRegisterScreen() {
               onChangeText={onChange}
               value={value}
               error={errors.comuna?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="region"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <AppInput
+              label="Región"
+              autoCapitalize="words"
+              autoCorrect={false}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.region?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="codigoPostal"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <AppInput
+              label="Código postal"
+              keyboardType="default"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.codigoPostal?.message}
             />
           )}
         />

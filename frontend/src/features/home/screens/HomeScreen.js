@@ -1,16 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, StatusBar, ActivityIndicator, Text } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 
 import BotonFiltro from '../../../../assets/boton_filtro.svg';
 import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
+import { DEFAULT_RADIUS_METERS, fetchNearbyStores } from '../services/geoService';
+import { APP_ENV } from '../../../config/environment';
 
 const PRIMARY = '#044E81';
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
@@ -57,19 +59,36 @@ const CUSTOM_MAP_STYLE = [
   },
 ];
 
-const MOCK_STORES = [
-  { id: 1, latitude: -33.4370, longitude: -70.7560, name: 'Minimarket El Rincón' },
-  { id: 2, latitude: -33.4420, longitude: -70.7620, name: 'Almacén Don Juan' },
-  { id: 3, latitude: -33.4340, longitude: -70.7480, name: 'Tienda La Esquina' },
-  { id: 4, latitude: -33.4460, longitude: -70.7530, name: 'Mini Market Vecinos' },
-  { id: 5, latitude: -33.4390, longitude: -70.7650, name: 'Bodega Los Álamos' },
-];
-
 const DEFAULT_REGION = {
   latitude: -33.4400,
   longitude: -70.7570,
   latitudeDelta: 0.025,
   longitudeDelta: 0.025,
+};
+
+const DEFAULT_LOCATION = {
+  latitude: DEFAULT_REGION.latitude,
+  longitude: DEFAULT_REGION.longitude,
+};
+
+const LOCATION_TIMEOUT_MS = 8000;
+
+const withTimeout = (promise, timeoutMs, message) => {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
+
+const formatRadius = (radiusMeters) => {
+  if (radiusMeters >= 1000) {
+    return `${radiusMeters / 1000} km`;
+  }
+
+  return `${radiusMeters} m`;
 };
 
 const TAB_ITEMS = [
@@ -84,11 +103,49 @@ export default function HomeScreen() {
   const [userLocation, setUserLocation] = useState(null);
   const [activeTab, setActiveTab] = useState('ubicacion');
   const [loading, setLoading] = useState(true);
+  const [loadingStores, setLoadingStores] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [storesError, setStoresError] = useState(false);
+  const [stores, setStores] = useState([]);
+  const [radiusMeters] = useState(DEFAULT_RADIUS_METERS);
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  const applyLocation = (coords) => {
+    const { latitude, longitude } = coords;
+    setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
+    setUserLocation({ latitude, longitude });
+  };
+
+  const loadNearbyStores = useCallback(async (isActive = () => true) => {
+    if (!userLocation) return;
+
+    setLoadingStores(true);
+    setStoresError(false);
+
+    try {
+      const nearbyStores = await fetchNearbyStores({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        radiusMeters,
+      });
+
+      if (isActive()) {
+        setStores(nearbyStores);
+      }
+    } catch {
+      if (isActive()) {
+        setStores([]);
+        setStoresError(true);
+      }
+    } finally {
+      if (isActive()) {
+        setLoadingStores(false);
+      }
+    }
+  }, [radiusMeters, userLocation]);
 
   useEffect(() => {
     (async () => {
@@ -100,21 +157,65 @@ export default function HomeScreen() {
           return;
         }
 
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const { latitude, longitude } = location.coords;
-        setRegion({ latitude, longitude, latitudeDelta: 0.025, longitudeDelta: 0.025 });
-        setUserLocation({ latitude, longitude });
-      } catch {
-        setNetworkError(true);
+        const lastKnownLocation = await Location.getLastKnownPositionAsync({
+          maxAge: 10 * 60 * 1000,
+          requiredAccuracy: 1000,
+        });
+
+        if (lastKnownLocation?.coords) {
+          applyLocation(lastKnownLocation.coords);
+          return;
+        }
+
+        const location = await withTimeout(
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
+          LOCATION_TIMEOUT_MS,
+          'Timeout al obtener la ubicación actual',
+        );
+
+        applyLocation(location.coords);
+      } catch (error) {
+        console.warn('No se pudo obtener la ubicación actual', error);
+
+        if (APP_ENV === 'dev') {
+          applyLocation(DEFAULT_LOCATION);
+        } else {
+          setNetworkError(true);
+        }
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const handleMarkerPress = (storeId) => {
-    router.push(`/home/negocio/${storeId}`);
+  useFocusEffect(useCallback(() => {
+    let isMounted = true;
+
+    (async () => {
+      await loadNearbyStores(() => isMounted);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadNearbyStores]));
+
+  const handleMarkerPress = (store) => {
+    router.push({
+      pathname: '/home/negocio/[id]',
+      params: {
+        id: String(store.id),
+        nombre: store.name,
+        comuna: store.comuna || '',
+        region: store.region || '',
+        distancia: store.distanceMeters ? String(store.distanceMeters) : '',
+      },
+    });
   };
+
+  const showEmptyStores = userLocation && !loadingStores && !storesError && stores.length === 0;
 
   if (loading) {
     return (
@@ -169,22 +270,56 @@ export default function HomeScreen() {
           {userLocation && (
             <Circle
               center={userLocation}
-              radius={1000}
+              radius={radiusMeters}
               fillColor="rgba(255, 140, 0, 0.15)"
               strokeColor={MANGO}
               strokeWidth={2}
             />
           )}
-          {MOCK_STORES.map((store) => (
+          {stores.map((store) => (
             <Marker
               key={store.id}
               coordinate={{ latitude: store.latitude, longitude: store.longitude }}
               title={store.name}
+              description={store.distanceMeters ? `${store.distanceMeters} m` : undefined}
               pinColor={PRIMARY}
-              onPress={() => handleMarkerPress(store.id)}
+              onPress={() => handleMarkerPress(store)}
             />
           ))}
         </MapView>
+        {(loadingStores || storesError || showEmptyStores) && (
+          <View style={styles.mapStatus}>
+            {loadingStores ? (
+              <ActivityIndicator size="small" color={PRIMARY} />
+            ) : showEmptyStores ? (
+              <>
+                <Text style={styles.mapStatusText}>
+                  No hay almacenes cercanos en {formatRadius(radiusMeters)}.
+                </Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  activeOpacity={0.75}
+                  onPress={() => loadNearbyStores()}
+                  style={styles.mapStatusAction}
+                >
+                  <Text style={styles.mapStatusActionText}>Buscar nuevamente</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.mapStatusText}>No se pudieron cargar los negocios cercanos.</Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  activeOpacity={0.75}
+                  onPress={() => loadNearbyStores()}
+                  style={styles.mapStatusAction}
+                >
+                  <Text style={styles.mapStatusActionText}>Reintentar</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={[styles.tabBar, { marginBottom: insets.bottom + 10 }]}>
@@ -212,6 +347,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 51,
     overflow: 'hidden',
+  },
+  mapStatus: {
+    position: 'absolute',
+    top: 16,
+    alignSelf: 'center',
+    minHeight: 36,
+    minWidth: 36,
+    maxWidth: '82%',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  mapStatusText: {
+    color: PRIMARY,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  mapStatusAction: {
+    marginTop: 6,
+    minHeight: 28,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: PRIMARY,
+  },
+  mapStatusActionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   tabBar: {
     height: 87,

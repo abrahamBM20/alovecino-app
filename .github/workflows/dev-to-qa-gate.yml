@@ -50,6 +50,8 @@ jobs:
             service_name: auth-service
           - service: backend/usuarios-service
             service_name: usuarios-service
+          - service: backend/geo-service
+            service_name: geo-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}

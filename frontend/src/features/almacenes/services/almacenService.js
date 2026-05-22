@@ -1,15 +1,16 @@
 import { httpClient } from '../../../shared/api/httpClient';
-import { useAuthStore } from '../../../store/authStore';
 
 export async function createAlmacenService(payload) {
-  const token = useAuthStore.getState().token;
   const { data } = await httpClient.post('/api/almacenes', {
     nombre: payload.nombre,
-    direccion: payload.direccion,
-    comuna: payload.comuna,
+    direccion: {
+      calle: payload.calle,
+      numero: payload.numero,
+      comuna: payload.comuna,
+      region: payload.region,
+      codigoPostal: payload.codigoPostal || null,
+    },
     telefono: payload.telefono,
-  }, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 
   return data;

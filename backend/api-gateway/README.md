@@ -16,6 +16,7 @@ mvn spring-boot:run
 - AUTH_JWT_ISSUER (default: alovecino-auth)
 - AUTH_JWT_AUDIENCE (default: alovecino-api)
 - USUARIOS_SERVICE_URL (default: http://localhost:8080)
+- GEO_SERVICE_URL (default: http://localhost:8083)
 - GATEWAY_CORS_ALLOWED_ORIGINS
 
 ## Routes
@@ -27,6 +28,7 @@ mvn spring-boot:run
 - /api/consultas/** -> usuarios-service
 - /api/valoraciones/** -> usuarios-service
 - /api/ofertas/** -> usuarios-service
+- /api/geo/** -> geo-service
 - /v3/api-docs/** -> usuarios-service
 - /swagger-ui/** -> usuarios-service
 - / -> redirect to /swagger-ui/index.html
@@ -65,6 +67,7 @@ Configure the gateway service with:
 
 - `AUTH_SERVICE_URL=https://alovecino-auth-service-dev.onrender.com`
 - `USUARIOS_SERVICE_URL=https://alovecino-usuarios-service-dev.onrender.com`
+- `GEO_SERVICE_URL=https://alovecino-geo-service-dev.onrender.com`
 - `AUTH_JWK_SET_URI=https://alovecino-auth-service-dev.onrender.com/.well-known/jwks.json`
 - `AUTH_JWT_ISSUER=alovecino-auth`
 - `AUTH_JWT_AUDIENCE=alovecino-api`
@@ -78,6 +81,7 @@ Use internal service URLs for backend routing:
 
 - `AUTH_SERVICE_URL=http://<auth-service-private-dns-or-host>:<port>`
 - `USUARIOS_SERVICE_URL=http://<usuarios-service-private-dns-or-host>:<port>`
+- `GEO_SERVICE_URL=http://<geo-service-private-dns-or-host>:<port>`
 - `AUTH_JWK_SET_URI=http://<auth-service-private-dns-or-host>:<port>/.well-known/jwks.json`
 - `AUTH_JWT_ISSUER=<issuer shared with auth-service>`
 - `AUTH_JWT_AUDIENCE=<audience shared with auth-service>`
