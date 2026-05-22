@@ -55,15 +55,18 @@ describe('registerService', () => {
   it('mapea el formulario almacén con nombreAlmacen y sin fechaNacimiento', () => {
     const { buildRegisterPayload } = loadRegisterService();
 
-    expect(buildRegisterPayload({
+    const payload = buildRegisterPayload({
       ...formData,
       tipoUsuario: 'almacen',
       fechaNacimiento: '',
       nombreAlmacen: 'Minimarket Central',
-    })).toMatchObject({
+    });
+
+    expect(payload).toMatchObject({
       tipoCuenta: 'ALMACEN',
       nombreAlmacen: 'Minimarket Central',
     });
+    expect(payload).not.toHaveProperty('fechaNacimiento');
   });
 
   it('retorna respuesta mock en entorno de ejemplo', async () => {
@@ -106,6 +109,27 @@ describe('registerService', () => {
       contrasena: 'Password123',
       tipoCuenta: 'CLIENTE',
       fechaNacimiento: '1992-10-12',
+    }));
+  });
+
+  it('propaga errores de registro duplicado o invalido para mostrar feedback', async () => {
+    jest.doMock('../../../config/environment', () => ({
+      API_BASE_URL: 'https://alovecino-api-gateway-dev.onrender.com',
+    }));
+
+    const error = new Error('El correo ya está registrado');
+    const postMock = jest.fn().mockRejectedValue(error);
+    jest.doMock('../../../shared/api/httpClient', () => ({
+      httpClient: {
+        post: postMock,
+      },
+    }));
+
+    const { registerService } = loadRegisterService();
+
+    await expect(registerService(formData)).rejects.toThrow('El correo ya está registrado');
+    expect(postMock).toHaveBeenCalledWith('/api/usuarios', expect.objectContaining({
+      correo: 'maria.pena@example.com',
     }));
   });
 });

@@ -16,6 +16,8 @@ describe('geoService', () => {
       longitud: '-70.6692650',
       distancia_metros: 214,
       distancia_km: 0.214,
+      calle: 'Av. Matta',
+      numero: '123',
       comuna: 'Santiago',
       region: 'Metropolitana',
     })).toEqual({
@@ -25,9 +27,28 @@ describe('geoService', () => {
       longitude: -70.669265,
       distanceMeters: 214,
       distanceKm: 0.214,
+      address: 'Av. Matta 123, Santiago, Metropolitana',
+      calle: 'Av. Matta',
+      numero: '123',
       comuna: 'Santiago',
       region: 'Metropolitana',
     });
+  });
+
+  it('prefiere direccion formateada del backend si existe', () => {
+    expect(mapGeoStore({
+      id_almacen: 7,
+      nombre: 'Almacén Central',
+      latitud: '-33.4488900',
+      longitud: '-70.6692650',
+      distancia_metros: 214,
+      distancia_km: 0.214,
+      direccion: 'Av. Matta 123, Santiago, Metropolitana',
+      calle: 'Av. Matta',
+      numero: '123',
+      comuna: 'Santiago',
+      region: 'Metropolitana',
+    }).address).toBe('Av. Matta 123, Santiago, Metropolitana');
   });
 
   it('carga almacenes cercanos con el radio solicitado', async () => {
@@ -40,6 +61,7 @@ describe('geoService', () => {
           longitud: '-70.6692650',
           distancia_metros: 214,
           distancia_km: 0.214,
+          direccion: 'Av. Matta 123, Santiago, Metropolitana',
           comuna: 'Santiago',
           region: 'Metropolitana',
         },
@@ -67,6 +89,9 @@ describe('geoService', () => {
         longitude: -70.669265,
         distanceMeters: 214,
         distanceKm: 0.214,
+        address: 'Av. Matta 123, Santiago, Metropolitana',
+        calle: undefined,
+        numero: undefined,
         comuna: 'Santiago',
         region: 'Metropolitana',
       },

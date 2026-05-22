@@ -54,6 +54,7 @@ jobs:
         run: |
           mvn -f backend/api-gateway/pom.xml test
           mvn -f backend/auth-service/pom.xml test
+          mvn -f backend/geo-service/pom.xml test
           mvn -f backend/usuarios-service/pom.xml test
 
       - name: Run frontend coverage
@@ -99,6 +100,12 @@ jobs:
       BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
       QA_AUTH_SERVICE_URL: ${{ vars.QA_AUTH_SERVICE_URL || 'https://alovecino-auth-service-qa.onrender.com' }}
       QA_USUARIOS_SERVICE_URL: ${{ vars.QA_USUARIOS_SERVICE_URL || 'https://alovecino-usuarios-service-qa.onrender.com' }}
+      QA_LOGIN_EMAIL: ${{ secrets.QA_LOGIN_EMAIL }}
+      QA_LOGIN_PASSWORD: ${{ secrets.QA_LOGIN_PASSWORD }}
+      QA_MAP_LATITUDE: ${{ vars.QA_MAP_LATITUDE || '-33.44889' }}
+      QA_MAP_LONGITUDE: ${{ vars.QA_MAP_LONGITUDE || '-70.669265' }}
+      QA_MAP_RADIUS_METERS: ${{ vars.QA_MAP_RADIUS_METERS || '500' }}
+      RUN_QA_REGISTER_SMOKE: ${{ vars.RUN_QA_REGISTER_SMOKE || 'false' }}
       LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout
@@ -183,6 +190,12 @@ jobs:
           set +e
           newman run tests/postman/alovecino-api.postman_collection.json \
             --env-var baseUrl="${BASE_URL}" \
+            --env-var qaLoginEmail="${QA_LOGIN_EMAIL}" \
+            --env-var qaLoginPassword="${QA_LOGIN_PASSWORD}" \
+            --env-var qaMapLatitude="${QA_MAP_LATITUDE}" \
+            --env-var qaMapLongitude="${QA_MAP_LONGITUDE}" \
+            --env-var qaMapRadiusMeters="${QA_MAP_RADIUS_METERS}" \
+            --env-var runRegisterSmoke="${RUN_QA_REGISTER_SMOKE}" \
             --timeout-request 30000 \
             --reporters cli,json,junit \
             --reporter-json-export qa-evidence/newman-report.json \
@@ -238,6 +251,8 @@ jobs:
     timeout-minutes: 35
     env:
       APPIUM_APK_URL: ${{ secrets.APPIUM_APK_URL }}
+      APPIUM_LOGIN_EMAIL: ${{ secrets.QA_LOGIN_EMAIL }}
+      APPIUM_LOGIN_PASSWORD: ${{ secrets.QA_LOGIN_PASSWORD }}
       LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Prepare mobile evidence directory

@@ -100,4 +100,61 @@ describe('registerSchema', () => {
     expect(result.success).toBe(false);
     expect(result.error.issues[0].message).toBe('Ingresa el nombre del almacén');
   });
+
+  it('rechaza fecha de nacimiento con formato invalido, imposible o futura', () => {
+    const invalidDates = ['1992-10-12', '31/02/1992', '01/01/2999'];
+
+    invalidDates.forEach((fechaNacimiento) => {
+      const result = registerSchema.safeParse({
+        ...validClient,
+        fechaNacimiento,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error.issues.some((issue) => issue.path.includes('fechaNacimiento'))).toBe(true);
+    });
+  });
+
+  it('rechaza contraseña corta y confirmacion distinta', () => {
+    const shortPassword = registerSchema.safeParse({
+      ...validClient,
+      password: '1234567',
+      confirmarPassword: '1234567',
+    });
+    const mismatch = registerSchema.safeParse({
+      ...validClient,
+      confirmarPassword: 'OtraPassword123',
+    });
+
+    expect(shortPassword.success).toBe(false);
+    expect(shortPassword.error.issues[0].message).toBe('La contraseña debe tener al menos 8 caracteres');
+    expect(mismatch.success).toBe(false);
+    expect(mismatch.error.issues.some((issue) => issue.message === 'Las contraseñas no coinciden')).toBe(true);
+  });
+
+  it('rechaza campos obligatorios de identidad, direccion y correo', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      rut: '',
+      nombreUsuario: '',
+      nombreCompleto: '',
+      calle: '',
+      numero: '',
+      comuna: '',
+      region: '',
+      email: 'correo-invalido',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(expect.arrayContaining([
+      'rut',
+      'nombreUsuario',
+      'nombreCompleto',
+      'calle',
+      'numero',
+      'comuna',
+      'region',
+      'email',
+    ]));
+  });
 });

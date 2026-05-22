@@ -41,6 +41,7 @@ class GeoServiceTests {
 
         assertThat(stores).extracting(StoreGeoResponse::getIdAlmacen).containsExactly(1L);
         assertThat(stores.getFirst().getDistanciaMetros()).isBetween(99L, 101L);
+        assertThat(stores.getFirst().getDireccion()).isEqualTo("Calle 123, Santiago, Metropolitana");
         verify(repository).findCandidatesWithinBoundingBox(any(), any(), any(), any());
     }
 

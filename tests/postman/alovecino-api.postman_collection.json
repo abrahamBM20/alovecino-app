@@ -61,6 +61,108 @@
       ]
     },
     {
+      "name": "Auth accepts configured QA login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{qaLoginEmail}}\",\n  \"password\": \"{{qaLoginPassword}}\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.variables.get('qaLoginEmail') || !pm.variables.get('qaLoginPassword')) {",
+              "  pm.execution.skipRequest();",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('configured QA login succeeds', function () {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "pm.test('login returns access token and user identity', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('accessToken').that.is.a('string').and.is.not.empty;",
+              "  pm.expect(body).to.have.property('user');",
+              "  pm.expect(body.user).to.have.property('email', pm.variables.get('qaLoginEmail'));",
+              "  pm.collectionVariables.set('accessToken', body.accessToken);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Geo stores returns map-ready nearby stores when authenticated",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/geo/stores?latitud={{qaMapLatitude}}&longitud={{qaMapLongitude}}&radio_metros={{qaMapRadiusMeters}}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('accessToken')) {",
+              "  pm.execution.skipRequest();",
+              "}",
+              "pm.variables.set('qaMapLatitude', pm.variables.get('qaMapLatitude') || '-33.44889');",
+              "pm.variables.set('qaMapLongitude', pm.variables.get('qaMapLongitude') || '-70.669265');",
+              "pm.variables.set('qaMapRadiusMeters', pm.variables.get('qaMapRadiusMeters') || '500');"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('geo stores responds successfully', function () {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "pm.test('geo stores returns an array', function () {",
+              "  pm.expect(pm.response.json()).to.be.an('array');",
+              "});",
+              "pm.test('geo store entries are map-ready when present', function () {",
+              "  const stores = pm.response.json();",
+              "  stores.forEach(function (store) {",
+              "    pm.expect(store).to.have.property('id_almacen');",
+              "    pm.expect(store).to.have.property('nombre');",
+              "    pm.expect(Number.isFinite(Number(store.latitud))).to.eql(true);",
+              "    pm.expect(Number.isFinite(Number(store.longitud))).to.eql(true);",
+              "    pm.expect(store).to.have.property('distancia_metros');",
+              "    pm.expect(store).to.have.property('direccion');",
+              "  });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
       "name": "Users endpoint contract",
       "request": {
         "method": "GET",
@@ -73,6 +175,100 @@
             "exec": [
               "pm.test('users endpoint is available', function () {",
               "  pm.expect([200, 401, 403]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users registration rejects invalid payload",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rut\": \"12345678-9\",\n  \"nombreUsuario\": \"qa-invalid-register\",\n  \"nombre\": \"QA Invalid Register\",\n  \"correo\": \"correo-invalido\",\n  \"contrasena\": \"123\",\n  \"tipoCuenta\": \"CLIENTE\",\n  \"fechaNacimiento\": null\n}"
+        },
+        "url": "{{baseUrl}}/api/usuarios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('invalid registration is rejected', function () {",
+              "  pm.expect([400, 422]).to.include(pm.response.code);",
+              "});",
+              "pm.test('invalid registration response is not empty', function () {",
+              "  pm.expect(pm.response.text()).to.not.equal('');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users registration creates QA client when enabled",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rut\": \"{{qaRegisterRut}}\",\n  \"nombreUsuario\": \"{{qaRegisterUsername}}\",\n  \"nombre\": \"QA Cliente Smoke\",\n  \"correo\": \"{{qaRegisterEmail}}\",\n  \"contrasena\": \"Password123\",\n  \"tipoCuenta\": \"CLIENTE\",\n  \"fechaNacimiento\": \"1992-10-12\",\n  \"direccion\": {\n    \"calle\": \"Los Alerces\",\n    \"numero\": \"123\",\n    \"comuna\": \"Santiago\",\n    \"region\": \"Metropolitana\",\n    \"codigoPostal\": null\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/usuarios"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('runRegisterSmoke') !== 'true') {",
+              "  pm.execution.skipRequest();",
+              "}",
+              "function rutDv(body) {",
+              "  let sum = 0;",
+              "  let multiplier = 2;",
+              "  for (let i = body.length - 1; i >= 0; i -= 1) {",
+              "    sum += Number(body[i]) * multiplier;",
+              "    multiplier = multiplier === 7 ? 2 : multiplier + 1;",
+              "  }",
+              "  const remainder = 11 - (sum % 11);",
+              "  return remainder === 11 ? '0' : remainder === 10 ? 'K' : String(remainder);",
+              "}",
+              "const unique = Date.now().toString();",
+              "const body = String(10000000 + (Number(unique.slice(-7)) % 8999999));",
+              "pm.variables.set('qaRegisterRut', `${body}-${rutDv(body)}`);",
+              "pm.variables.set('qaRegisterUsername', `qa_cliente_${unique}`);",
+              "pm.variables.set('qaRegisterEmail', `qa-cliente-${unique}@alovecino.test`);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('QA client registration succeeds', function () {",
+              "  pm.expect([200, 201]).to.include(pm.response.code);",
+              "});",
+              "pm.test('registered client response contains identity data', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('correo', pm.variables.get('qaRegisterEmail'));",
+              "  pm.expect(body).to.have.property('nombreUsuario', pm.variables.get('qaRegisterUsername'));",
               "});"
             ],
             "type": "text/javascript"

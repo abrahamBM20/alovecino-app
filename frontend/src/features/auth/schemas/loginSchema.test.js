@@ -18,4 +18,14 @@ describe('loginSchema', () => {
 
     expect(result.success).toBe(false);
   });
+
+  it('rechaza password vacio o demasiado corto', () => {
+    const result = loginSchema.safeParse({
+      email: 'test@mail.com',
+      password: '',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues[0].message).toBe('La contraseña debe tener al menos 6 caracteres.');
+  });
 });
