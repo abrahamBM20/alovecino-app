@@ -40,6 +40,22 @@ function toNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function compactJoin(parts, separator = ', ') {
+  return parts
+    .map((part) => (typeof part === 'string' ? part.trim() : part))
+    .filter(Boolean)
+    .join(separator);
+}
+
+function getAddress(apiStore) {
+  if (apiStore.direccion) {
+    return apiStore.direccion;
+  }
+
+  const street = compactJoin([apiStore.calle, apiStore.numero], ' ');
+  return compactJoin([street, apiStore.comuna, apiStore.region]);
+}
+
 export function mapGeoStore(apiStore) {
   return {
     id: apiStore.id_almacen,
@@ -48,6 +64,9 @@ export function mapGeoStore(apiStore) {
     longitude: toNumber(apiStore.longitud),
     distanceMeters: apiStore.distancia_metros,
     distanceKm: apiStore.distancia_km,
+    address: getAddress(apiStore),
+    calle: apiStore.calle,
+    numero: apiStore.numero,
     comuna: apiStore.comuna,
     region: apiStore.region,
   };

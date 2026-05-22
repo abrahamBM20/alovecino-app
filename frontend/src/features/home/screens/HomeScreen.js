@@ -91,6 +91,18 @@ const formatRadius = (radiusMeters) => {
   return `${radiusMeters} m`;
 };
 
+const formatDistance = (distanceMeters) => {
+  if (distanceMeters === null || distanceMeters === undefined) {
+    return null;
+  }
+
+  return `${distanceMeters} m`;
+};
+
+const markerDescription = (store) => (
+  [store.address, formatDistance(store.distanceMeters)].filter(Boolean).join(' - ')
+);
+
 const TAB_ITEMS = [
   { id: 'ubicacion', Component: BotonFiltro },
   { id: 'inicio', Component: BotonInicio },
@@ -210,6 +222,7 @@ export default function HomeScreen() {
         nombre: store.name,
         comuna: store.comuna || '',
         region: store.region || '',
+        direccion: store.address || '',
         distancia: store.distanceMeters ? String(store.distanceMeters) : '',
       },
     });
@@ -257,7 +270,11 @@ export default function HomeScreen() {
     >
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      <View style={[styles.mapWrapper, { marginTop: insets.top + 10 }]}>
+      <View
+        accessible
+        accessibilityLabel="Mapa de almacenes cercanos"
+        style={[styles.mapWrapper, { marginTop: insets.top + 10 }]}
+      >
         <MapView
           ref={mapRef}
           provider={IS_EXPO_GO ? undefined : PROVIDER_GOOGLE}
@@ -281,7 +298,7 @@ export default function HomeScreen() {
               key={store.id}
               coordinate={{ latitude: store.latitude, longitude: store.longitude }}
               title={store.name}
-              description={store.distanceMeters ? `${store.distanceMeters} m` : undefined}
+              description={markerDescription(store) || undefined}
               pinColor={PRIMARY}
               onPress={() => handleMarkerPress(store)}
             />
@@ -327,6 +344,8 @@ export default function HomeScreen() {
           <TouchableOpacity
             key={id}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={`Tab ${id}`}
             onPress={() => setActiveTab(id)}
           >
             <Component width={63} height={63} opacity={activeTab === id ? 1 : 0.65} />

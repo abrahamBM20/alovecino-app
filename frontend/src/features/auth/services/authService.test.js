@@ -78,4 +78,29 @@ describe('loginService', () => {
       },
     });
   });
+
+  it('propaga errores del backend para que la pantalla muestre feedback', async () => {
+    jest.doMock('../../../config/environment', () => ({
+      API_BASE_URL: 'http://localhost:8080',
+    }));
+
+    const error = new Error('Credenciales invalidas');
+    const postMock = jest.fn().mockRejectedValue(error);
+    jest.doMock('../../../shared/api/httpClient', () => ({
+      httpClient: {
+        post: postMock,
+      },
+    }));
+
+    const loginService = loadLoginService();
+
+    await expect(loginService({
+      email: 'admin@alovecino.com',
+      password: 'wrong-password',
+    })).rejects.toThrow('Credenciales invalidas');
+    expect(postMock).toHaveBeenCalledWith('/auth/login', {
+      email: 'admin@alovecino.com',
+      password: 'wrong-password',
+    });
+  });
 });

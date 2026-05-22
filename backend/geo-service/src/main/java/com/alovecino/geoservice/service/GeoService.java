@@ -69,6 +69,8 @@ public class GeoService {
                 direccion.getLongitud(),
                 distanceMeters,
                 distanceKm,
+                direccion.getCalle(),
+                direccion.getNumero(),
                 direccion.getComuna().getNombre(),
                 direccion.getComuna().getRegion().getNombre());
     }
