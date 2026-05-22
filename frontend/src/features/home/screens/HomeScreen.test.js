@@ -120,6 +120,17 @@ describe('HomeScreen', () => {
     fetchNearbyStores.mockResolvedValue([]);
   });
 
+  const renderHomeScreen = async () => {
+    const screen = render(<HomeScreen />);
+
+    await waitFor(
+      () => expect(screen.queryByText('Obteniendo tu ubicación...')).toBeNull(),
+      { timeout: 5000 },
+    );
+
+    return screen;
+  };
+
   it('muestra markers de almacenes cercanos con nombre, direccion y distancia', async () => {
     fetchNearbyStores.mockResolvedValueOnce([
       {
@@ -134,9 +145,9 @@ describe('HomeScreen', () => {
       },
     ]);
 
-    const { getByText, getByTestId, queryByText } = render(<HomeScreen />);
+    const { getByText, getByTestId, queryByText } = await renderHomeScreen();
 
-    await waitFor(() => expect(getByTestId('map-view')).toBeTruthy());
+    expect(getByTestId('map-view')).toBeTruthy();
     await waitFor(() => expect(getByText('Almacén Central')).toBeTruthy());
 
     expect(getByText('Av. Matta 123, Santiago, Metropolitana - 214 m')).toBeTruthy();
@@ -162,7 +173,7 @@ describe('HomeScreen', () => {
         },
       ]);
 
-    const { getByText } = render(<HomeScreen />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => expect(getByText('No hay almacenes cercanos en 500 m.')).toBeTruthy());
 
@@ -186,7 +197,7 @@ describe('HomeScreen', () => {
         },
       ]);
 
-    const { getByText } = render(<HomeScreen />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => expect(getByText('No se pudieron cargar los negocios cercanos.')).toBeTruthy());
 
@@ -210,7 +221,7 @@ describe('HomeScreen', () => {
       },
     ]);
 
-    const { getByTestId } = render(<HomeScreen />);
+    const { getByTestId } = await renderHomeScreen();
 
     await waitFor(() => expect(getByTestId('marker-Almacén Central')).toBeTruthy());
 
@@ -232,7 +243,7 @@ describe('HomeScreen', () => {
   it('muestra mensaje claro cuando el permiso de ubicacion fue denegado', async () => {
     Location.requestForegroundPermissionsAsync.mockResolvedValueOnce({ status: 'denied' });
 
-    const { getByText } = render(<HomeScreen />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => expect(getByText('Permiso de ubicación denegado')).toBeTruthy());
     expect(fetchNearbyStores).not.toHaveBeenCalled();
