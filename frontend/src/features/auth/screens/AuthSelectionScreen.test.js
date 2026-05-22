@@ -11,4 +11,13 @@ describe('AuthSelectionScreen', () => {
 
     expect(navigate).toHaveBeenCalledWith('Login');
   });
+
+  it('navega al registro al presionar crear cuenta', () => {
+    const navigate = jest.fn();
+    const { getByLabelText } = render(<AuthSelectionScreen navigation={{ navigate }} />);
+
+    fireEvent.press(getByLabelText('Ir a crear cuenta'));
+
+    expect(navigate).toHaveBeenCalledWith('Register');
+  });
 });

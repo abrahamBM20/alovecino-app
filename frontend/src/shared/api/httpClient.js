@@ -1,12 +1,25 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../../config/environment';
+import { API_BASE_URL, API_TIMEOUT_MS } from '../../config/environment';
 
 export const httpClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: API_TIMEOUT_MS,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+httpClient.interceptors.request.use((config) => {
+  const { useAuthStore } = require('../../store/authStore');
+  const token = useAuthStore.getState().accessToken;
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 httpClient.interceptors.response.use(

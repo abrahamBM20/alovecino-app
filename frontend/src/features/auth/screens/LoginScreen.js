@@ -13,14 +13,14 @@ export default function LoginScreen({ navigation }) {
   return (
     <ScreenContainer scroll keyboard>
       <View style={styles.container}>
-        <Image source={{ uri: ASSETS.logoCompact }} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
+        <Image source={ASSETS.logoCompact} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
 
         <Controller
           control={control}
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
             <AppInput
-              label="Correo electronico"
+              label="Correo electrónico"
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }) {
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <AppInput
-              label="Contrasena"
+              label="Contraseña"
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -61,7 +61,7 @@ export default function LoginScreen({ navigation }) {
         </View>
 
         <Pressable accessibilityRole="button" onPress={() => {}} style={styles.linkButton}>
-          <Text style={styles.linkText}>Olvidaste tu contrasena?</Text>
+          <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
         </Pressable>
 
         <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.linkButton}>

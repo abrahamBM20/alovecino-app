@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.model;
+package com.alovecino.usuarioservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,8 +10,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import com.alovecino.usuarioservice.usuario.model.Rol;
-
 @Entity
 @Table(name = "usuario")
 public class Usuario {
@@ -20,11 +18,17 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
 
-    @Column(name = "nombre_usuario", nullable = false, unique = true)
+    @Column(name = "rut", nullable = false, unique = true, length = 12)
+    private String rut;
+
+    @Column(name = "nombre_usuario", nullable = false, unique = true, length = 120)
     private String nombreUsuario;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "nombre", nullable = false, length = 160)
     private String nombre;
+
+    @Column(name = "correo", nullable = false, unique = true, length = 180)
+    private String correo;
 
     @Column(name = "contrasena", nullable = false)
     private String contrasena;
@@ -44,6 +48,14 @@ public class Usuario {
         this.idUsuario = idUsuario;
     }
 
+    public String getRut() {
+        return rut;
+    }
+
+    public void setRut(String rut) {
+        this.rut = rut;
+    }
+
     public String getNombreUsuario() {
         return nombreUsuario;
     }
@@ -58,6 +70,14 @@ public class Usuario {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public String getContrasena() {

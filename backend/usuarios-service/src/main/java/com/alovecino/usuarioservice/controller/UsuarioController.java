@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.controller;
+package com.alovecino.usuarioservice.controller;
 
 import java.util.List;
 
@@ -20,9 +20,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.alovecino.usuarioservice.usuario.dto.UsuarioRequest;
-import com.alovecino.usuarioservice.usuario.dto.UsuarioResponse;
-import com.alovecino.usuarioservice.usuario.service.UsuarioService;
+import com.alovecino.usuarioservice.dto.UsuarioRequest;
+import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.service.UsuarioService;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -55,14 +55,14 @@ public class UsuarioController {
         return usuarioService.listUsuarios();
     }
 
-    @Operation(summary = "Obtener usuario por id")
+    @Operation(summary = "Obtener usuario por UUID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Usuario encontrado", content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
     })
-    @GetMapping("/{id}")
-    public UsuarioResponse getUsuario(@PathVariable("id") Long id) {
-        return usuarioService.getUsuarioById(id);
+    @GetMapping("/{uuid}")
+    public UsuarioResponse getUsuario(@PathVariable("uuid") String uuid) {
+        return usuarioService.getUsuarioByUuid(uuid);
     }
 }
 

@@ -1,15 +1,16 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginService } from '../features/auth/services/authService';
+import { loginService, logoutService } from '../features/auth/services/authService';
 import { mapApiError } from '../shared/api/errorMapper';
+
+const { persist, createJSONStorage } = require('zustand/middleware');
 
 export const useAuthStore = create(
   persist(
     (set) => ({
       status: 'unauthenticated',
       user: null,
-      token: null,
+      accessToken: null,
       isLoading: false,
       error: null,
       async login(credentials) {
@@ -20,7 +21,7 @@ export const useAuthStore = create(
           set({
             status: 'authenticated',
             user: response.user,
-            token: response.token,
+            accessToken: response.accessToken,
             isLoading: false,
             error: null,
           });
@@ -28,18 +29,24 @@ export const useAuthStore = create(
           set({
             status: 'unauthenticated',
             user: null,
-            token: null,
+            accessToken: null,
             isLoading: false,
             error: mapApiError(error),
           });
           throw error;
         }
       },
-      logout() {
+      async logout() {
+        try {
+          await logoutService();
+        } catch {
+          // Local logout still wins if the server-side session is already gone.
+        }
+
         set({
           status: 'unauthenticated',
           user: null,
-          token: null,
+          accessToken: null,
           error: null,
         });
       },
@@ -53,7 +60,7 @@ export const useAuthStore = create(
       partialize: (state) => ({
         status: state.status,
         user: state.user,
-        token: state.token,
+        accessToken: state.accessToken,
       }),
     },
   ),

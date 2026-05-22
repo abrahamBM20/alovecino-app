@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.controller;
+package com.alovecino.usuarioservice.controller;
 
 import java.util.Map;
 import java.util.UUID;
@@ -23,11 +23,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.alovecino.usuarioservice.usuario.dto.LoginRequest;
-import com.alovecino.usuarioservice.usuario.dto.LoginResponse;
-import com.alovecino.usuarioservice.usuario.dto.SessionUserResponse;
-import com.alovecino.usuarioservice.usuario.model.Usuario;
-import com.alovecino.usuarioservice.usuario.repository.UsuarioRepository;
+import com.alovecino.usuarioservice.dto.LoginRequest;
+import com.alovecino.usuarioservice.dto.LoginResponse;
+import com.alovecino.usuarioservice.dto.SessionUserResponse;
+import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @RestController
 @RequestMapping("/auth")
@@ -55,13 +55,13 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
             String username = authentication.getName();
-            Usuario usuario = usuarioRepository.findByNombreUsuario(username)
+            Usuario usuario = usuarioRepository.findByCorreo(username)
                     .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
 
             SessionUserResponse sessionUser = new SessionUserResponse(
                     String.valueOf(usuario.getIdUsuario()),
-                    usuario.getNombreUsuario(),
-                    usuario.getNombreUsuario());
+                    usuario.getNombre(),
+                    usuario.getCorreo());
 
             LoginResponse response = new LoginResponse(UUID.randomUUID().toString(), sessionUser);
             return ResponseEntity.ok(response);

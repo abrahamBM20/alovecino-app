@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "AloVecino necesita tu ubicación para mostrarte tiendas cercanas."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,23 +24,21 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.alovecino.app.dev"
+      "package": "com.alovecino.app.dev",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "appEnv": "dev",
-      "apiUrl": "https://api-dev.example.com",
+      "apiUrl": "https://alovecino-api-gateway-dev.onrender.com",
       "eas": {
         "projectId": "6527488c-1ffe-47e4-a535-3bf5b57df25a"
       }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/6527488c-1ffe-47e4-a535-3bf5b57df25a"
     }
   }
 }

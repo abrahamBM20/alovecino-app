@@ -1,4 +1,4 @@
-package com.alovecino.usuarioservice.usuario.service;
+package com.alovecino.usuarioservice.service;
 
 import java.util.Collections;
 
@@ -10,8 +10,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.alovecino.usuarioservice.usuario.model.Usuario;
-import com.alovecino.usuarioservice.usuario.repository.UsuarioRepository;
+import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @Service
 public class UsuarioDetailsService implements UserDetailsService {
@@ -24,11 +24,12 @@ public class UsuarioDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByNombreUsuario(username)
+        Usuario usuario = usuarioRepository.findByCorreo(username)
+                .or(() -> usuarioRepository.findByNombreUsuario(username))
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + usuario.getRol().getNombreRol());
-        return User.withUsername(usuario.getNombreUsuario())
+        return User.withUsername(usuario.getCorreo())
                 .password(usuario.getContrasena())
                 .authorities(Collections.singleton(authority))
                 .build();

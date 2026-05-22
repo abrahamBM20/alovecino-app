@@ -8,14 +8,14 @@ export default function AuthSelectionScreen({ navigation }) {
   return (
     <ScreenContainer>
       <View style={styles.container}>
-        <Image source={{ uri: ASSETS.logoCompact }} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
+        <Image source={ASSETS.logoCompact} style={styles.logo} resizeMode="contain" accessibilityLabel="Logo AloVecino" />
         <Text accessibilityRole="header" style={styles.title}>Bienvenido</Text>
         <Text style={styles.subtitle}>Selecciona como quieres continuar</Text>
 
         <View style={styles.actions}>
           <AppButton title="Iniciar sesion" onPress={() => navigation.navigate('Login')} accessibilityLabel="Ir a inicio de sesion" />
           <View style={styles.buttonGap} />
-          <AppButton title="Crear cuenta" variant="secondary" onPress={() => navigation.navigate('Login')} accessibilityLabel="Ir a crear cuenta" />
+          <AppButton title="Crear cuenta" variant="secondary" onPress={() => navigation.navigate('Register')} accessibilityLabel="Ir a crear cuenta" />
         </View>
       </View>
     </ScreenContainer>
