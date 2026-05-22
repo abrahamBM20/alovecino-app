@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useValoracion } from '../hooks/useValoracion';
 
@@ -43,7 +45,7 @@ function ValoracionCard({ item }) {
   );
 }
 
-export default function NegocioDetailScreen({ id, nombre, comuna, region, distancia }) {
+export default function NegocioDetailScreen({ id, nombre, comuna, region, distancia, logoUrl }) {
   const router = useRouter();
   const { valoraciones, isLoading, error, promedio } = useValoracion(id);
 
@@ -58,20 +60,30 @@ export default function NegocioDetailScreen({ id, nombre, comuna, region, distan
           </TouchableOpacity>
 
           <View style={styles.almacenHeader}>
-            <Text style={styles.almacenNombre}>{nombre || 'Detalle del Negocio'}</Text>
-            {!!comuna && (
-              <Text style={styles.almacenInfo}>{comuna}{region ? `, ${region}` : ''}</Text>
-            )}
-            {!!distanceLabel && <Text style={styles.almacenDistancia}>{distanceLabel}</Text>}
-            {promedio !== null && (
-              <View style={styles.promedioRow}>
-                <Text style={styles.promedioValor}>{promedio}</Text>
-                <Text style={styles.promedioStar}> {STAR_FILLED}</Text>
-                <Text style={styles.promedioTotal}>
-                  {' '}({valoraciones.length} valoración{valoraciones.length !== 1 ? 'es' : ''})
-                </Text>
+            <View style={styles.almacenTitleRow}>
+              {logoUrl
+                ? <Image source={{ uri: logoUrl }} style={styles.almacenFoto} resizeMode="cover" />
+                : <View style={styles.almacenFotoPlaceholder}>
+                    <Ionicons name="storefront" size={32} color="#fff" />
+                  </View>
+              }
+              <View style={styles.almacenTitleInfo}>
+                <Text style={styles.almacenNombre}>{nombre || 'Detalle del Negocio'}</Text>
+                {!!comuna && (
+                  <Text style={styles.almacenInfo}>{comuna}{region ? `, ${region}` : ''}</Text>
+                )}
+                {!!distanceLabel && <Text style={styles.almacenDistancia}>{distanceLabel}</Text>}
+                {promedio !== null && (
+                  <View style={styles.promedioRow}>
+                    <Text style={styles.promedioValor}>{promedio}</Text>
+                    <Text style={styles.promedioStar}> {STAR_FILLED}</Text>
+                    <Text style={styles.promedioTotal}>
+                      {' '}({valoraciones.length} valoración{valoraciones.length !== 1 ? 'es' : ''})
+                    </Text>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
           </View>
 
           {!!error && (
@@ -93,6 +105,14 @@ export default function NegocioDetailScreen({ id, nombre, comuna, region, distan
             )}
           </View>
         </ScrollView>
+
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={() => router.push({ pathname: '/home/chat/[id]', params: { id, nombre, logoUrl } })}
+        >
+          <Text style={styles.fabArrow}>›</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -102,11 +122,30 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
   backButton: { marginTop: 8, marginBottom: 20 },
   backText: { color: PRIMARY, fontSize: 16, fontWeight: '500' },
   almacenHeader: { marginBottom: 20 },
-  almacenNombre: { fontSize: 26, fontWeight: '700', color: PRIMARY, marginBottom: 4 },
+  almacenTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  almacenFoto: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: PRIMARY,
+  },
+  almacenFotoPlaceholder: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: PRIMARY,
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  almacenTitleInfo: { flex: 1 },
+  almacenNombre: { fontSize: 22, fontWeight: '700', color: PRIMARY, marginBottom: 4 },
   almacenInfo: { fontSize: 14, color: '#555', marginBottom: 2 },
   almacenDistancia: { fontSize: 13, color: '#64748b', marginBottom: 8 },
   promedioRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
@@ -145,4 +184,28 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: '#64748b', textAlign: 'center', paddingVertical: 8 },
   errorBanner: { backgroundColor: '#fee2e2', borderRadius: 10, padding: 12, marginBottom: 16 },
   errorBannerText: { color: '#dc2626', fontSize: 13 },
+  fab: {
+    position: 'absolute',
+    bottom: 28,
+    right: 20,
+    width: 70,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabArrow: {
+    fontSize: 44,
+    fontWeight: '900',
+    color: PRIMARY,
+    lineHeight: 48,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
 });

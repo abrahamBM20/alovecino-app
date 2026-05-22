@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   BackHandler,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -119,7 +120,7 @@ function ValoracionModal({ visible, nombre, miValoracion, isLoading, isSaving, i
   );
 }
 
-export default function ChatMinimarketScreen({ idAlmacen, nombre }) {
+export default function ChatMinimarketScreen({ idAlmacen, nombre, logoUrl }) {
   const router = useRouter();
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
@@ -158,13 +159,18 @@ export default function ChatMinimarketScreen({ idAlmacen, nombre }) {
     return (
       <View style={[styles.messageRow, isAlmacen ? styles.messageRowLeft : styles.messageRowRight]}>
         {isAlmacen && (
-          <View style={styles.msgAvatar}>
-            <Ionicons name="storefront-outline" size={24} color={colors.white} />
-          </View>
+          logoUrl
+            ? <Image source={{ uri: logoUrl }} style={styles.msgAvatarImg} resizeMode="cover" />
+            : <View style={styles.msgAvatar}><Ionicons name="storefront" size={20} color={colors.white} /></View>
         )}
         <View style={[styles.bubble, isAlmacen ? styles.bubbleLeft : styles.bubbleRight]}>
-          <Text style={styles.bubbleText}>{item.text}</Text>
+          <Text style={[styles.bubbleText, isAlmacen ? styles.bubbleTextLeft : styles.bubbleTextRight]}>
+            {item.text}
+          </Text>
         </View>
+        {!isAlmacen && (
+          <View style={styles.msgAvatar}><Ionicons name="person" size={20} color={colors.white} /></View>
+        )}
       </View>
     );
   }
@@ -172,13 +178,14 @@ export default function ChatMinimarketScreen({ idAlmacen, nombre }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Ionicons name="person-circle-outline" size={40} color={colors.white} />
-        </View>
+        <TouchableOpacity onPress={handleLeave} activeOpacity={0.7} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={28} color={colors.white} />
+        </TouchableOpacity>
+        {logoUrl
+          ? <Image source={{ uri: logoUrl }} style={styles.headerPhoto} resizeMode="cover" />
+          : <View style={styles.avatar}><Ionicons name="storefront" size={24} color={colors.white} /></View>
+        }
         <Text style={styles.headerTitle}>{nombre || 'Almacen'}</Text>
-        <View style={styles.avatar}>
-          <Ionicons name="storefront-outline" size={36} color={colors.white} />
-        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -246,19 +253,28 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    gap: 8,
+    paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  headerTitle: { fontSize: 34, fontWeight: '700', color: colors.white },
+  backBtn: { padding: 4 },
+  headerPhoto: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.white, flex: 1 },
   avatar: {
-    width: 63,
-    height: 63,
-    borderRadius: 31.5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  msgAvatarImg: { width: 36, height: 36, borderRadius: 18 },
   messageList: { paddingHorizontal: 20, paddingVertical: 12, gap: 10 },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   messageRowLeft: { justifyContent: 'flex-start' },
@@ -276,11 +292,12 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.white,
   },
-  bubbleLeft: { borderBottomLeftRadius: 4 },
-  bubbleRight: { borderBottomRightRadius: 4 },
-  bubbleText: { fontSize: 15, fontWeight: '500', color: colors.primary, lineHeight: 21 },
+  bubbleLeft: { backgroundColor: 'rgba(255,255,255,0.92)', borderBottomLeftRadius: 4 },
+  bubbleRight: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+  bubbleText: { fontSize: 15, fontWeight: '500', lineHeight: 21 },
+  bubbleTextLeft: { color: colors.primary },
+  bubbleTextRight: { color: colors.white },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import NegocioDetailScreen from '../../../../features/valoracion/screens/NegocioDetailScreen';
 
 export default function BusinessDetailRoute() {
-  const { id, nombre, comuna, region, distancia } = useLocalSearchParams();
+  const { id, nombre, comuna, region, distancia, logoUrl } = useLocalSearchParams();
   return (
     <NegocioDetailScreen
       id={id}
@@ -10,6 +10,7 @@ export default function BusinessDetailRoute() {
       comuna={comuna}
       region={region}
       distancia={distancia}
+      logoUrl={logoUrl}
     />
   );
 }
