@@ -24,6 +24,9 @@ module.exports = ({ config }) => {
     slug: 'alovecino-app',
     scheme: 'alovecino',
     version: '1.0.0',
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
     orientation: 'portrait',
     icon: './assets/app-icon.png',
     userInterfaceStyle: 'light',
