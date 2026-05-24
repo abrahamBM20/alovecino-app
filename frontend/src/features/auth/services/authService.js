@@ -13,6 +13,7 @@ export async function loginService({ email, password }) {
         id: '1',
         name: 'Usuario Demo',
         email,
+        rol: 'ALMACEN', // Por defecto ALMACEN para testing
       },
     };
   }
@@ -24,7 +25,12 @@ export async function loginService({ email, password }) {
 
   return {
     accessToken: data?.accessToken,
-    user: data?.user,
+    user: {
+      id: data?.user?.id,
+      name: data?.user?.name,
+      email: data?.user?.email,
+      rol: data?.user?.rol,
+    },
   };
 }
 
