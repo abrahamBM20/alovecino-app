@@ -21,9 +21,6 @@ public class Usuario {
     @Column(name = "rut", nullable = false, unique = true, length = 12)
     private String rut;
 
-    @Column(name = "uuid", nullable = false, unique = true, length = 36)
-    private String uuid;
-
     @Column(name = "nombre_usuario", nullable = false, unique = true, length = 120)
     private String nombreUsuario;
 
@@ -60,14 +57,6 @@ public class Usuario {
 
     public void setRut(String rut) {
         this.rut = rut;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
     }
 
     public String getNombreUsuario() {
@@ -118,4 +107,3 @@ public class Usuario {
         this.rol = rol;
     }
 }
-

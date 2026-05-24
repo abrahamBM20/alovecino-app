@@ -60,14 +60,14 @@ public class UsuarioController {
         return usuarioService.listUsuarios();
     }
 
-    @Operation(summary = "Obtener usuario por UUID o ID")
+    @Operation(summary = "Obtener usuario por ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Usuario encontrado", content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
     })
-    @GetMapping("/{uuid}")
-    public UsuarioResponse getUsuario(@PathVariable("uuid") String uuid) {
-        return usuarioService.getUsuarioByUuid(uuid);
+    @GetMapping("/{id}")
+    public UsuarioResponse getUsuario(@PathVariable("id") String id) {
+        return usuarioService.getUsuarioById(id);
     }
 
     @Operation(summary = "Obtener perfil completo del usuario")
@@ -75,9 +75,9 @@ public class UsuarioController {
             @ApiResponse(responseCode = "200", description = "Perfil encontrado", content = @Content(schema = @Schema(implementation = UsuarioProfileResponse.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
     })
-    @GetMapping("/{uuid}/profile")
-    public UsuarioProfileResponse getUsuarioProfile(@PathVariable("uuid") String uuid) {
-        return usuarioService.getUsuarioProfileByUuid(uuid);
+    @GetMapping("/{id}/profile")
+    public UsuarioProfileResponse getUsuarioProfile(@PathVariable("id") String id) {
+        return usuarioService.getUsuarioProfileById(id);
     }
 
     @Operation(summary = "Subir foto de perfil de usuario")
@@ -86,11 +86,10 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Archivo inválido", content = @Content),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
     })
-    @PostMapping("/{uuid}/foto")
-    public ResponseEntity<Map<String, String>> uploadFoto(@PathVariable("uuid") String uuid,
+    @PostMapping("/{id}/foto")
+    public ResponseEntity<Map<String, String>> uploadFoto(@PathVariable("id") String id,
             @RequestParam("file") MultipartFile file) throws IOException {
-        String imageUrl = usuarioService.uploadProfilePhoto(uuid, file);
+        String imageUrl = usuarioService.uploadProfilePhoto(id, file);
         return ResponseEntity.ok(Map.of("url", imageUrl));
     }
 }
-
