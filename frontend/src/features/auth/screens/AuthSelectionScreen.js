@@ -1,10 +1,13 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import AppButton from '../../../shared/ui/AppButton';
 import { ASSETS } from '../../../shared/constants/assets';
 
-export default function AuthSelectionScreen({ navigation }) {
+export default function AuthSelectionScreen() {
+  const router = useRouter();
+
   return (
     <ScreenContainer>
       <View style={styles.container}>
@@ -13,9 +16,9 @@ export default function AuthSelectionScreen({ navigation }) {
         <Text style={styles.subtitle}>Selecciona como quieres continuar</Text>
 
         <View style={styles.actions}>
-          <AppButton title="Iniciar sesion" onPress={() => navigation.navigate('Login')} accessibilityLabel="Ir a inicio de sesion" />
+          <AppButton title="Iniciar sesion" onPress={() => router.push('/auth/login')} accessibilityLabel="Ir a inicio de sesion" />
           <View style={styles.buttonGap} />
-          <AppButton title="Crear cuenta" variant="secondary" onPress={() => navigation.navigate('Register')} accessibilityLabel="Ir a crear cuenta" />
+          <AppButton title="Crear cuenta" variant="secondary" onPress={() => router.push('/auth/register')} accessibilityLabel="Ir a crear cuenta" />
         </View>
       </View>
     </ScreenContainer>

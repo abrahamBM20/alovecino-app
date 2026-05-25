@@ -1,6 +1,7 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import AppButton from '../../../shared/ui/AppButton';
 import AppInput from '../../../shared/ui/AppInput';
@@ -24,8 +25,18 @@ function formatRut(text) {
   return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
 }
 
-export default function RegisterScreen({ navigation }) {
-  const { control, errors, tipoUsuario, isLoading, registerError, onSubmit, canSubmit } = useRegisterForm(navigation);
+export default function RegisterScreen() {
+  const router = useRouter();
+  const { control, errors, tipoUsuario, isLoading, registerError, onSubmit, canSubmit } = useRegisterForm();
+
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/auth');
+  };
 
   return (
     <ScreenContainer scroll keyboard>
@@ -294,7 +305,7 @@ export default function RegisterScreen({ navigation }) {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => navigation.goBack()}
+          onPress={goBack}
           style={styles.linkButton}
         >
           <Text style={styles.linkText}>Volver</Text>

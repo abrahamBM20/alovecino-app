@@ -1,14 +1,25 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import AppButton from '../../../shared/ui/AppButton';
 import AppInput from '../../../shared/ui/AppInput';
 import { ASSETS } from '../../../shared/constants/assets';
 import { useLoginForm } from '../hooks/useLoginForm';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen() {
+  const router = useRouter();
   const { control, errors, isLoading, authError, onSubmit, canSubmit } = useLoginForm();
+
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/auth');
+  };
 
   return (
     <ScreenContainer scroll keyboard>
@@ -64,7 +75,7 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
         </Pressable>
 
-        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.linkButton}>
+        <Pressable accessibilityRole="button" onPress={goBack} style={styles.linkButton}>
           <Text style={styles.linkText}>Volver</Text>
         </Pressable>
       </View>

@@ -105,8 +105,8 @@ const markerDescription = (store) => (
 
 const TAB_ITEMS = [
   { id: 'ubicacion', Component: BotonFiltro },
-  { id: 'inicio', Component: BotonInicio },
-  { id: 'configuracion', Component: BotonConfiguracion },
+  { id: 'inicio', Component: BotonInicio, route: '/home' },
+  { id: 'configuracion', Component: BotonConfiguracion, route: '/home/configuracion' },
   { id: 'perfil', Component: BotonPerfil },
 ];
 
@@ -228,6 +228,14 @@ export default function HomeScreen() {
     });
   };
 
+  const handleTabPress = (id, route) => {
+    setActiveTab(id);
+
+    if (route) {
+      router.push(route);
+    }
+  };
+
   const showEmptyStores = userLocation && !loadingStores && !storesError && stores.length === 0;
 
   if (loading) {
@@ -340,13 +348,13 @@ export default function HomeScreen() {
       </View>
 
       <View style={[styles.tabBar, { marginBottom: insets.bottom + 10 }]}>
-        {TAB_ITEMS.map(({ id, Component }) => (
+        {TAB_ITEMS.map(({ id, Component, route }) => (
           <TouchableOpacity
             key={id}
             activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel={`Tab ${id}`}
-            onPress={() => setActiveTab(id)}
+            onPress={() => handleTabPress(id, route)}
           >
             <Component width={63} height={63} opacity={activeTab === id ? 1 : 0.65} />
           </TouchableOpacity>
