@@ -240,6 +240,14 @@ describe('HomeScreen', () => {
     });
   });
 
+  it('navega a configuracion al presionar el tab de configuracion', async () => {
+    const { getAllByLabelText } = await renderHomeScreen();
+
+    fireEvent.press(getAllByLabelText('Tab configuracion')[0]);
+
+    expect(mockPush).toHaveBeenCalledWith('/home/configuracion');
+  });
+
   it('muestra mensaje claro cuando el permiso de ubicacion fue denegado', async () => {
     Location.requestForegroundPermissionsAsync.mockResolvedValueOnce({ status: 'denied' });
 
