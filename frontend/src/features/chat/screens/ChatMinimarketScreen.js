@@ -25,8 +25,13 @@ const INITIAL_MESSAGES = [
 
 const TAB_ITEMS = [
   { id: 'filtro', source: require('../../../../assets/boton_filtro.png'), label: 'Filtro' },
-  { id: 'inicio', source: require('../../../../assets/boton_inicio.png'), label: 'Inicio' },
-  { id: 'configuracion', source: require('../../../../assets/boton_configuracion.png'), label: 'Configuracion' },
+  { id: 'inicio', source: require('../../../../assets/boton_inicio.png'), label: 'Inicio', route: '/home' },
+  {
+    id: 'configuracion',
+    source: require('../../../../assets/boton_configuracion.png'),
+    label: 'Configuracion',
+    route: '/home/configuracion',
+  },
   { id: 'perfil', source: require('../../../../assets/boton_perfil.png'), label: 'Perfil' },
 ];
 
@@ -35,6 +40,7 @@ export default function ChatMinimarketScreen({ idAlmacen, nombre, logoUrl }) {
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState(null);
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -45,12 +51,19 @@ export default function ChatMinimarketScreen({ idAlmacen, nombre, logoUrl }) {
     return () => sub.remove();
   }, []);
 
-  function handleLeave() {
+  function handleLeave(route = null) {
+    setPendingRoute(route);
     setShowModal(true);
   }
 
   function handleModalClose() {
     setShowModal(false);
+    if (pendingRoute) {
+      router.push(pendingRoute);
+      setPendingRoute(null);
+      return;
+    }
+
     router.back();
   }
 
@@ -133,12 +146,12 @@ export default function ChatMinimarketScreen({ idAlmacen, nombre, logoUrl }) {
         </KeyboardAvoidingView>
 
         <View style={styles.tabBar}>
-          {TAB_ITEMS.map(({ id, source, label }) => (
+          {TAB_ITEMS.map(({ id, source, label, route }) => (
             <TouchableOpacity
               key={id}
               style={styles.tabBtn}
               activeOpacity={0.8}
-              onPress={handleLeave}
+              onPress={() => handleLeave(route)}
               accessibilityRole="button"
               accessibilityLabel={label}
             >

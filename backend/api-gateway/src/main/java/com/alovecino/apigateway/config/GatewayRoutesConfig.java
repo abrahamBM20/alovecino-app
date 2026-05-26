@@ -28,6 +28,9 @@ public class GatewayRoutesConfig {
                 .route("almacenes-api", route -> route
                         .path("/api/almacenes/**")
                         .uri(usuariosUrl))
+                .route("configuracion-api", route -> route
+                        .path("/api/configuracion/**")
+                        .uri(usuariosUrl))
                 .route("consultas-api", route -> route
                         .path("/api/consultas/**")
                         .uri(chatUrl))
