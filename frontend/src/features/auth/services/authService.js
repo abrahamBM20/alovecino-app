@@ -5,22 +5,17 @@ function isMockEnvironment() {
   return API_BASE_URL.includes('example.com');
 }
 
+const MOCK_ALMACEN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZXMiOlsiUk9MRV9BTE1BQ0VOIl0sIm5hbWUiOiJUZXN0IEFsbWFjZW4ifQ.mock-signature';
+
 export async function loginService({ email, password }) {
   if (isMockEnvironment()) {
     return {
-      accessToken: 'dev-token',
-      user: {
-        id: '1',
-        name: 'Usuario Demo',
-        email,
-      },
+      accessToken: MOCK_ALMACEN_TOKEN,
+      user: { id: '1', name: 'Test Almacen', email },
     };
   }
 
-  const { data } = await httpClient.post('/auth/login', {
-    email,
-    password,
-  });
+  const { data } = await httpClient.post('/auth/login', { email, password });
 
   return {
     accessToken: data?.accessToken,
