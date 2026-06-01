@@ -24,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
       SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'alovecino-app' }}
     steps:
       - name: Checkout
@@ -67,15 +66,12 @@ jobs:
         run: |
           docker run --rm -v "${PWD}:/src" -w /src semgrep/semgrep semgrep scan --config p/ci --sarif --output qa-evidence/semgrep.sarif
 
-      - name: Run SonarQube analysis
-        if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != ''
-        uses: SonarSource/sonarqube-scan-action@v5
+      - name: Run SonarCloud analysis
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
 
       - name: Upload code quality evidence
         if: always()
