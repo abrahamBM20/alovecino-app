@@ -8,6 +8,18 @@ on:
     branches:
       - dev
 
+env:
+  RENDER_DEV_AUTH_SERVICE_ID: ${{ vars.RENDER_DEV_AUTH_SERVICE_ID }}
+  RENDER_DEV_AUTH_SERVICE_NAME: ${{ vars.RENDER_DEV_AUTH_SERVICE_NAME || 'alovecino-auth-service-dev' }}
+  RENDER_DEV_USUARIOS_SERVICE_ID: ${{ vars.RENDER_DEV_USUARIOS_SERVICE_ID }}
+  RENDER_DEV_USUARIOS_SERVICE_NAME: ${{ vars.RENDER_DEV_USUARIOS_SERVICE_NAME || 'alovecino-usuarios-service-dev' }}
+  RENDER_DEV_GEO_SERVICE_ID: ${{ vars.RENDER_DEV_GEO_SERVICE_ID }}
+  RENDER_DEV_GEO_SERVICE_NAME: ${{ vars.RENDER_DEV_GEO_SERVICE_NAME || 'alovecino-geo-service-dev' }}
+  RENDER_DEV_API_GATEWAY_SERVICE_ID: ${{ vars.RENDER_DEV_API_GATEWAY_SERVICE_ID }}
+  RENDER_DEV_API_GATEWAY_SERVICE_NAME: ${{ vars.RENDER_DEV_API_GATEWAY_SERVICE_NAME || 'alovecino-api-gateway-dev' }}
+  RENDER_DEV_CHAT_SERVICE_ID: ${{ vars.RENDER_DEV_CHAT_SERVICE_ID }}
+  RENDER_DEV_CHAT_SERVICE_NAME: ${{ vars.RENDER_DEV_CHAT_SERVICE_NAME }}
+
 jobs:
   api-gateway:
     name: api-gateway tests
@@ -109,3 +121,82 @@ jobs:
 
       - name: Run tests
         run: mvn test
+
+  render-dev-deploy:
+    name: Render dev deploy
+    runs-on: ubuntu-latest
+    needs:
+      - api-gateway
+      - auth-service
+      - usuarios-service
+      - geo-service
+      - chat-service
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' }}
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+    steps:
+      - name: Validate Render API key
+        run: test -n "$RENDER_API_KEY"
+
+      - name: Trigger Render dev deploys
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          services_json="$(mktemp)"
+          curl --fail --silent --show-error \
+            --url "https://api.render.com/v1/services?limit=100" \
+            --header "Authorization: Bearer ${RENDER_API_KEY}" \
+            --header "Accept: application/json" > "$services_json"
+
+          resolve_service_id() {
+            local configured_id="$1"
+            local service_name="$2"
+
+            if [ -n "$configured_id" ]; then
+              printf '%s' "$configured_id"
+              return 0
+            fi
+
+            if [ -z "$service_name" ]; then
+              return 1
+            fi
+
+            jq -r --arg name "$service_name" \
+              '[.[] | (.service // .) | select(.name == $name) | .id][0] // empty' \
+              "$services_json"
+          }
+
+          trigger_deploy() {
+            local label="$1"
+            local configured_id="$2"
+            local service_name="$3"
+            local optional="${4:-false}"
+            local service_id
+
+            service_id="$(resolve_service_id "$configured_id" "$service_name")"
+            if [ -z "$service_id" ]; then
+              if [ "$optional" = "true" ]; then
+                echo "Skipping optional ${label}: service not configured."
+                return 0
+              fi
+
+              echo "Render service not found for ${label}. Configure ${label} ID as a GitHub variable or ensure service name exists: ${service_name}."
+              exit 1
+            fi
+
+            echo "Triggering Render deploy for ${label} (${service_id})."
+            jq -n --arg commit "$GITHUB_SHA" '{clearCache: "do_not_clear", commitId: $commit}' |
+              curl --fail --silent --show-error --request POST \
+                --url "https://api.render.com/v1/services/${service_id}/deploys" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                --header "Accept: application/json" \
+                --header "Content-Type: application/json" \
+                --data @- >/dev/null
+          }
+
+          trigger_deploy "auth-service" "$RENDER_DEV_AUTH_SERVICE_ID" "$RENDER_DEV_AUTH_SERVICE_NAME"
+          trigger_deploy "usuarios-service" "$RENDER_DEV_USUARIOS_SERVICE_ID" "$RENDER_DEV_USUARIOS_SERVICE_NAME"
+          trigger_deploy "geo-service" "$RENDER_DEV_GEO_SERVICE_ID" "$RENDER_DEV_GEO_SERVICE_NAME"
+          trigger_deploy "api-gateway" "$RENDER_DEV_API_GATEWAY_SERVICE_ID" "$RENDER_DEV_API_GATEWAY_SERVICE_NAME"
+          trigger_deploy "chat-service" "$RENDER_DEV_CHAT_SERVICE_ID" "$RENDER_DEV_CHAT_SERVICE_NAME" true
