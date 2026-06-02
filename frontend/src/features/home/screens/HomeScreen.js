@@ -11,7 +11,7 @@ import BotonFiltro from '../../../../assets/boton_filtro.svg';
 import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
-import { DEFAULT_RADIUS_METERS, fetchNearbyStores } from '../services/geoService';
+import { DEFAULT_RADIUS_METERS, RADIUS_OPTIONS, fetchNearbyStores } from '../services/geoService';
 import { APP_ENV } from '../../../config/environment';
 
 const PRIMARY = '#044E81';
@@ -120,7 +120,7 @@ export default function HomeScreen() {
   const [networkError, setNetworkError] = useState(false);
   const [storesError, setStoresError] = useState(false);
   const [stores, setStores] = useState([]);
-  const [radiusMeters] = useState(DEFAULT_RADIUS_METERS);
+  const [radiusMeters, setRadiusMeters] = useState(DEFAULT_RADIUS_METERS);
   const mapRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -238,6 +238,10 @@ export default function HomeScreen() {
 
   const showEmptyStores = userLocation && !loadingStores && !storesError && stores.length === 0;
 
+  const handleRadiusChange = (nextRadiusMeters) => {
+    setRadiusMeters(nextRadiusMeters);
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -312,6 +316,31 @@ export default function HomeScreen() {
             />
           ))}
         </MapView>
+        <View
+          accessible
+          accessibilityLabel="Filtro de distancia de almacenes"
+          style={styles.radiusSelector}
+        >
+          {RADIUS_OPTIONS.map((option) => {
+            const selected = option === radiusMeters;
+
+            return (
+              <TouchableOpacity
+                key={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`Buscar almacenes en ${formatRadius(option)}`}
+                activeOpacity={0.75}
+                onPress={() => handleRadiusChange(option)}
+                style={[styles.radiusOption, selected && styles.radiusOptionActive]}
+              >
+                <Text style={[styles.radiusOptionText, selected && styles.radiusOptionTextActive]}>
+                  {formatRadius(option)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         {(loadingStores || storesError || showEmptyStores) && (
           <View style={styles.mapStatus}>
             {loadingStores ? (
@@ -388,6 +417,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  radiusSelector: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 18,
+    minHeight: 42,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 4,
+  },
+  radiusOption: {
+    flex: 1,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  radiusOptionActive: {
+    backgroundColor: PRIMARY,
+  },
+  radiusOptionText: {
+    color: PRIMARY,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  radiusOptionTextActive: {
+    color: '#ffffff',
   },
   mapStatusText: {
     color: PRIMARY,

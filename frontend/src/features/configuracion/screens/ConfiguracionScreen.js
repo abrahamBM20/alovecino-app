@@ -120,11 +120,17 @@ export default function ConfiguracionScreen() {
   const insets = useSafeAreaInsets();
   const { config, isLoading, isSaving, error, saveSuccess, updateField, save } = useConfiguracionForm();
   const logout = useAuthStore((state) => state.logout);
-  const [loggingOut, setLoggingOut] = React.useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await logout();
+
+    try {
+      await logout();
+      router.replace('/auth');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (

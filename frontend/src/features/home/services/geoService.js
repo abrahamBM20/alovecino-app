@@ -2,7 +2,7 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { API_BASE_URL } from '../../../config/environment';
 
 export const DEFAULT_RADIUS_METERS = 500;
-export const RADIUS_OPTIONS = [200, 500, 1000, 2000];
+export const RADIUS_OPTIONS = [500, 2000, 10000, 100000];
 
 function isMockEnvironment() {
   return API_BASE_URL.includes('example.com');

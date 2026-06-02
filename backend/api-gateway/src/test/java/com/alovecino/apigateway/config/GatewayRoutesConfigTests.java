@@ -39,6 +39,7 @@ class GatewayRoutesConfigTests {
                 "auth-jwks",
                 "usuarios-api",
                 "almacenes-api",
+                "configuracion-api",
                 "consultas-api",
                 "estados-consulta-api",
                 "valoraciones-api",
@@ -50,6 +51,7 @@ class GatewayRoutesConfigTests {
         assertThat(routes.get("auth-jwks").getUri().toString()).isEqualTo("http://auth-service:8081");
         assertThat(routes.get("usuarios-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("almacenes-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
+        assertThat(routes.get("configuracion-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
         assertThat(routes.get("consultas-api").getUri().toString()).isEqualTo("http://chat-service:8084");
         assertThat(routes.get("estados-consulta-api").getUri().toString()).isEqualTo("http://chat-service:8084");
         assertThat(routes.get("valoraciones-api").getUri().toString()).isEqualTo("http://usuarios-service:8080");
