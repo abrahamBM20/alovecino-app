@@ -95,6 +95,20 @@ Se rechaza si:
 - Después de una tarea con aprendizaje durable: actualiza `trajectory-log.md`.
 - Cuando el log acumule suficiente evidencia: genera y valida un candidato.
 
+## Pull Requests
+
+Antes de crear un PR, lee `.github/pull_request_template.md` y usa sus secciones en el body. No reemplaces la plantilla por un resumen libre. Si falta información, conserva la sección y marca claramente lo pendiente.
+
+La plantilla actual exige:
+
+- Resumen.
+- Trazabilidad con Jira ID e Historia de Usuario.
+- Tipo de cambio.
+- Criterios de Aceptación de la HU.
+- Evidencia y QA.
+- Checklist Técnico.
+- Notas de Despliegue.
+
 ## Permisos Y Sandbox
 
 El flujo permite ejecutar comandos fuera del sandbox cuando sea necesario, pero siempre con solicitud de permiso y una justificación concreta. La solicitud debe explicar el objetivo del comando, no solo el comando mismo.

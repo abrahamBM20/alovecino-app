@@ -57,3 +57,19 @@ Observación:
 Promoción:
 
 - Promovido a `best_skill.md` y `training-protocol.md`.
+
+## 2026-06-02 - Plantilla Obligatoria De Pull Request
+
+Tipo: docs
+Resultado: éxito
+Archivos/rutas: `.github/pull_request_template.md`, `docs/skillopt/best_skill.md`
+
+Observación:
+
+- Los PRs del repositorio deben seguir la plantilla oficial en `.github/pull_request_template.md`.
+- La plantilla fuerza trazabilidad Jira/HU, criterios de aceptación, evidencia QA, checklist y notas de despliegue.
+- Para evitar PRs incompletos, el flujo SkillOpt debe recordar leer y aplicar la plantilla antes de crear PR.
+
+Promoción:
+
+- Promovido a `best_skill.md` y `training-protocol.md`.

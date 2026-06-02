@@ -24,6 +24,7 @@
       "qa",
       "merge-tree",
       "Sonar",
+      "pull_request_template.md",
       "trajectory-log.md"
     ],
     "forbidden_patterns": [

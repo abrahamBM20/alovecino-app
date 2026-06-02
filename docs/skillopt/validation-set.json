@@ -22,6 +22,11 @@
     "task": "Revisar múltiples PRs antes de mergear.",
     "must_include": ["merge-tree", "checks", "reviewDecision"],
     "reason": "Hay que validar interacción entre PRs, no solo cada PR por separado."
+  },
+  {
+    "id": "pull-request-template",
+    "task": "Crear un PR hacia dev o qa.",
+    "must_include": ["pull_request_template.md", "Jira", "Criterios de Aceptación"],
+    "reason": "Los PRs deben conservar trazabilidad HU/Jira y evidencias QA según la plantilla oficial."
   }
 ]
-

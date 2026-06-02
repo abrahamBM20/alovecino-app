@@ -33,6 +33,7 @@ Usa este skill como primer contexto antes de trabajar en el repositorio. Es el a
 - Auth/roles: confirma claims en `backend/auth-service/**` antes de cambiar navegación o permisos.
 - Endpoint backend: revisa controller, service, repository, DTO y tests del microservicio.
 - CI/QA: revisa `.github/workflows`, `docs/qa-testing.md`, `gh pr checks` y logs fallidos.
+- PRs: antes de crear un PR, lee `.github/pull_request_template.md` y usa exactamente sus secciones.
 - Datos/modelo: revisa `docs/modelo-datos-alovecino.md`, SQL en `docs/` y entidades JPA.
 - Deploy/ambientes: revisa `docs/eas-mobile-delivery.md`, `docs/produccion-aws-ec2-av-82-hu-24.md` y scripts de `scripts/`.
 
@@ -45,6 +46,7 @@ Usa este skill como primer contexto antes de trabajar en el repositorio. Es el a
 - Si Sonar usa `sonar.java.binaries`, compila cada módulo listado antes del scan.
 - Si una pantalla usa mocks (`mock*`, `actualizar*Mock`), decláralo en review cuando se espere persistencia.
 - Antes de mergear varios PRs, valida también la interacción entre ellos, no solo cada PR contra base.
+- Todo PR debe mapear Jira/HU y completar la plantilla `.github/pull_request_template.md`, incluyendo Criterios de Aceptación, evidencia QA, checklist técnico y notas de despliegue.
 
 ## Matriz Mínima De Validación
 
