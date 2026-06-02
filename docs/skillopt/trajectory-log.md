@@ -73,3 +73,19 @@ Observación:
 Promoción:
 
 - Promovido a `best_skill.md` y `training-protocol.md`.
+
+## 2026-06-02 - Identidad, Workflows Y EAS
+
+Tipo: docs
+Resultado: éxito
+Archivos/rutas: `docs/skillopt/best_skill.md`, `.github/workflows`, `frontend/eas.json`
+
+Observación:
+
+- Las interacciones externas no deben firmarse ni atribuirse a la identidad del agente.
+- Antes de tocar workflows hay que revisar si los triggers, paths y jobs existentes ya cubren el cambio.
+- En Expo/EAS, un update OTA basta para cambios JS compatibles; un build nuevo aplica ante cambios nativos, runtime, permisos o perfil.
+
+Promoción:
+
+- Promovido a `best_skill.md`, `training-protocol.md`, `config.json` y `validation-set.json`.

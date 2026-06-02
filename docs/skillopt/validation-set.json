@@ -28,5 +28,17 @@
     "task": "Crear un PR hacia dev o qa.",
     "must_include": ["pull_request_template.md", "Jira", "Criterios de Aceptación"],
     "reason": "Los PRs deben conservar trazabilidad HU/Jira y evidencias QA según la plantilla oficial."
+  },
+  {
+    "id": "agent-attribution",
+    "task": "Comentar, firmar, commitear o interactuar con GitHub/Jira/CI.",
+    "must_include": ["identidad del agente", "lenguaje profesional", "equipo"],
+    "reason": "Las interacciones externas no deben atribuirse a una identidad de asistente."
+  },
+  {
+    "id": "workflow-eas",
+    "task": "Cambiar workflows o decidir entre EAS update y build Android.",
+    "must_include": ["workflow", "EAS", "dev-preview"],
+    "reason": "Evita cambios innecesarios de CI/CD y distingue updates OTA de builds APK."
   }
 ]

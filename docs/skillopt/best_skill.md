@@ -1,6 +1,6 @@
 # AloVecino Best Skill
 
-Usa este skill como primer contexto antes de trabajar en el repositorio. Es el artefacto desplegable inspirado en SkillOpt: compacto, reutilizable y mantenido por validación. Carga archivos detallados solo cuando la tarea los toque.
+Usa este skill como primer contexto. Es compacto, reutilizable y validado; carga archivos detallados solo cuando la tarea los toque.
 
 ## Mapa Del Proyecto
 
@@ -10,14 +10,14 @@ Usa este skill como primer contexto antes de trabajar en el repositorio. Es el a
 - `backend/usuarios-service`: usuarios, almacenes, perfil, configuración y valoraciones.
 - `backend/geo-service`: geolocalización y búsqueda de almacenes.
 - `backend/chat-service`: consultas/chat.
-- `.github/workflows/`: CI/CD de frontend, backend, QA, promoción y calidad estática.
+- `.github/workflows/`: CI/CD, QA, promoción y calidad.
 - `docs/`: arquitectura, QA, despliegue, base de datos y evidencias.
 - `scripts/`: setup de ambientes, QA, despliegue y helpers.
 
 ## Contratos Estables
 
 - Los tokens de autenticación vienen de `auth-service`.
-- El JWT usa RS256 y trae `roles` como `ROLE_CLIENTE` o `ROLE_ALMACEN`.
+- El JWT usa RS256 y `roles` como `ROLE_CLIENTE` o `ROLE_ALMACEN`.
 - No asumas `user.rol` en frontend salvo que el contrato API lo garantice; deriva el rol del JWT o revisa `authStore`.
 - El estado auth del frontend vive en `frontend/src/store/authStore.js`.
 - Las llamadas HTTP del frontend deben pasar por `frontend/src/shared/api/httpClient.js`.
@@ -33,7 +33,8 @@ Usa este skill como primer contexto antes de trabajar en el repositorio. Es el a
 - Auth/roles: confirma claims en `backend/auth-service/**` antes de cambiar navegación o permisos.
 - Endpoint backend: revisa controller, service, repository, DTO y tests del microservicio.
 - CI/QA: revisa `.github/workflows`, `docs/qa-testing.md`, `gh pr checks` y logs fallidos.
-- PRs: antes de crear un PR, lee `.github/pull_request_template.md` y usa exactamente sus secciones.
+- PRs: lee `.github/pull_request_template.md` y usa sus secciones.
+- Workflows/EAS: antes de tocar YAML revisa triggers, paths, secrets/vars y `eas.json`; JS/TS suele ser `eas update`, nativo/config/runtime/permisos/perfil exige build.
 - Datos/modelo: revisa `docs/modelo-datos-alovecino.md`, SQL en `docs/` y entidades JPA.
 - Deploy/ambientes: revisa `docs/eas-mobile-delivery.md`, `docs/produccion-aws-ec2-av-82-hu-24.md` y scripts de `scripts/`.
 
@@ -46,17 +47,20 @@ Usa este skill como primer contexto antes de trabajar en el repositorio. Es el a
 - Si Sonar usa `sonar.java.binaries`, compila cada módulo listado antes del scan.
 - Si una pantalla usa mocks (`mock*`, `actualizar*Mock`), decláralo en review cuando se espere persistencia.
 - Antes de mergear varios PRs, valida también la interacción entre ellos, no solo cada PR contra base.
-- Todo PR debe mapear Jira/HU y completar la plantilla `.github/pull_request_template.md`, incluyendo Criterios de Aceptación, evidencia QA, checklist técnico y notas de despliegue.
+- Todo PR debe mapear Jira/HU y completar `.github/pull_request_template.md`: Criterios de Aceptación, evidencia QA, checklist y despliegue.
+- No firmes, comentes, commitees ni interactúes en sistemas externos atribuyendo identidad del agente; usa lenguaje profesional del equipo/proyecto.
+- En workflows, distingue cambios de CI/CD de cambios de producto; si el YAML ya cubre el path y comando correcto, documenta la cobertura en vez de editarlo.
 
 ## Matriz Mínima De Validación
 
-- Frontend-only: `cd frontend; npm test -- --runInBand` o tests Jest dirigidos.
+- Frontend-only: `cd frontend; npm test -- --runInBand` o Jest dirigido.
 - Backend servicio único: `mvn -f backend/<service>/pom.xml test`.
 - Auth/gateway compartido: corre tests de `auth-service`, `api-gateway` y el servicio afectado.
 - Workflows/QA: usa `gh pr checks`, `gh run view --log-failed` e inspección YAML.
+- EAS mobile: `eas update` para OTA compatible; `eas build --profile dev-preview` si se necesita APK o cambia nativo/config.
 - Merge readiness: usa `gh pr view --json mergeable,mergeStateStatus,reviewDecision,statusCheckRollup` y `git merge-tree --write-tree`.
 - SkillOpt local: antes de promover cambios al skill, corre `scripts/measure-skill-budget.ps1` y `scripts/evaluate-skillopt.ps1`.
-- Comandos fuera del sandbox: si el sandbox falla o se requiere red/GitHub, pide permiso explícito con justificación y alcance acotado antes de ejecutar.
+- Fuera del sandbox: si falla o se requiere red/GitHub, pide permiso con justificación y alcance.
 
 ## Disciplina De Tokens
 
@@ -65,4 +69,4 @@ Usa este skill como primer contexto antes de trabajar en el repositorio. Es el a
 - Resume aprendizajes durables en `docs/skillopt/trajectory-log.md`.
 - Promueve al skill solo reglas repetibles, validadas y útiles para futuras tareas.
 - Mantén este archivo bajo el presupuesto de `docs/skillopt/config.json`.
-- Si una tarea exige permisos elevados, documenta qué comando se ejecutó y por qué en el cierre o en el log si deja una lección durable.
+- Si usas permisos elevados, reporta comando y motivo; registra solo lecciones durables.
