@@ -1,6 +1,8 @@
 package com.alovecino.usuarioservice.controller;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.validation.Valid;
 
@@ -11,7 +13,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +24,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import com.alovecino.usuarioservice.dto.UsuarioProfileResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
 import com.alovecino.usuarioservice.service.UsuarioService;
@@ -55,14 +60,36 @@ public class UsuarioController {
         return usuarioService.listUsuarios();
     }
 
-    @Operation(summary = "Obtener usuario por UUID")
+    @Operation(summary = "Obtener usuario por ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Usuario encontrado", content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
     })
-    @GetMapping("/{uuid}")
-    public UsuarioResponse getUsuario(@PathVariable("uuid") String uuid) {
-        return usuarioService.getUsuarioByUuid(uuid);
+    @GetMapping("/{id}")
+    public UsuarioResponse getUsuario(@PathVariable("id") String id) {
+        return usuarioService.getUsuarioById(id);
+    }
+
+    @Operation(summary = "Obtener perfil completo del usuario")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil encontrado", content = @Content(schema = @Schema(implementation = UsuarioProfileResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
+    })
+    @GetMapping("/{id}/profile")
+    public UsuarioProfileResponse getUsuarioProfile(@PathVariable("id") String id) {
+        return usuarioService.getUsuarioProfileById(id);
+    }
+
+    @Operation(summary = "Subir foto de perfil de usuario")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto subida", content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Archivo inválido", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content)
+    })
+    @PostMapping("/{id}/foto")
+    public ResponseEntity<Map<String, String>> uploadFoto(@PathVariable("id") String id,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        String imageUrl = usuarioService.uploadProfilePhoto(id, file);
+        return ResponseEntity.ok(Map.of("url", imageUrl));
     }
 }
-
