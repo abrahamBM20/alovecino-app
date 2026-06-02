@@ -18,6 +18,7 @@ import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
 import { useConfiguracionForm } from '../hooks/useConfiguracionForm';
+import { useAuthStore } from '../../../store/authStore';
 
 const PRIMARY = '#044E81';
 const MIN_KM = 0.5;
@@ -118,6 +119,13 @@ export default function ConfiguracionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { config, isLoading, isSaving, error, saveSuccess, updateField, save } = useConfiguracionForm();
+  const logout = useAuthStore((state) => state.logout);
+  const [loggingOut, setLoggingOut] = React.useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+  };
 
   return (
     <LinearGradient
@@ -205,6 +213,22 @@ export default function ConfiguracionScreen() {
               >
                 <Text style={styles.saveButtonText}>
                   {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.logoutButtonPressed,
+                  loggingOut && styles.saveButtonDisabled,
+                ]}
+                onPress={handleLogout}
+                disabled={loggingOut}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar sesión"
+              >
+                <Text style={styles.logoutButtonText}>
+                  {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </Text>
               </Pressable>
             </>
@@ -383,6 +407,25 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  logoutButton: {
+    borderRadius: 28,
+    minHeight: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: '#dc2626',
+  },
+  logoutButtonPressed: {
+    backgroundColor: '#fee2e2',
+  },
+  logoutButtonText: {
+    color: '#dc2626',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.4,
