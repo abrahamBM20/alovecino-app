@@ -1,0 +1,27 @@
+[
+  {
+    "id": "frontend-auth-role",
+    "task": "Revisar o cambiar navegación de usuarios ALMACEN/CLIENTE en frontend.",
+    "must_include": ["JWT", "roles", "authStore"],
+    "reason": "Evita depender de campos de usuario no garantizados por el backend."
+  },
+  {
+    "id": "qa-promotion",
+    "task": "Evaluar PR hacia qa.",
+    "must_include": ["qa", "gate", "checks"],
+    "reason": "La rama qa tiene reglas de promoción además de mergeabilidad Git."
+  },
+  {
+    "id": "ci-sonar",
+    "task": "Modificar Sonar o workflows de calidad.",
+    "must_include": ["Sonar", "sonar.java.binaries"],
+    "reason": "El scanner falla si los binarios Java declarados no existen."
+  },
+  {
+    "id": "merge-review",
+    "task": "Revisar múltiples PRs antes de mergear.",
+    "must_include": ["merge-tree", "checks", "reviewDecision"],
+    "reason": "Hay que validar interacción entre PRs, no solo cada PR por separado."
+  }
+]
+
