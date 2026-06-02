@@ -120,16 +120,16 @@ export default function ConfiguracionScreen() {
   const insets = useSafeAreaInsets();
   const { config, isLoading, isSaving, error, saveSuccess, updateField, save } = useConfiguracionForm();
   const logout = useAuthStore((state) => state.logout);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
+    setLoggingOut(true);
 
     try {
       await logout();
       router.replace('/auth');
     } finally {
-      setIsLoggingOut(false);
+      setLoggingOut(false);
     }
   };
 
@@ -226,15 +226,15 @@ export default function ConfiguracionScreen() {
                 style={({ pressed }) => [
                   styles.logoutButton,
                   pressed && styles.logoutButtonPressed,
-                  isLoggingOut && styles.saveButtonDisabled,
+                  loggingOut && styles.saveButtonDisabled,
                 ]}
                 onPress={handleLogout}
-                disabled={isLoggingOut}
+                disabled={loggingOut}
                 accessibilityRole="button"
                 accessibilityLabel="Cerrar sesión"
               >
                 <Text style={styles.logoutButtonText}>
-                  {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+                  {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </Text>
               </Pressable>
             </>
@@ -418,23 +418,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   logoutButton: {
-    minHeight: 48,
+    borderRadius: 28,
+    minHeight: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 12,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: '#dc2626',
   },
   logoutButtonPressed: {
-    opacity: 0.82,
+    backgroundColor: '#fee2e2',
   },
   logoutButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
+    color: '#dc2626',
+    fontSize: 16,
     fontWeight: '700',
+    letterSpacing: 0.4,
   },
   tabBar: {
     height: 87,

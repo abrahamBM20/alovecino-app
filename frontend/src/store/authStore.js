@@ -5,11 +5,32 @@ import { mapApiError } from '../shared/api/errorMapper';
 
 const { persist, createJSONStorage } = require('zustand/middleware');
 
+function extractRoleFromToken(token) {
+  try {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) b64 += '=';
+    const bin = atob(b64);
+    const json = decodeURIComponent(
+      bin.split('').map((c) => '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2)).join(''),
+    );
+    const payload = JSON.parse(json);
+    const roles = Array.isArray(payload.roles) ? payload.roles : [];
+    const raw = roles[0] ?? '';
+    return raw.replace('ROLE_', '') || null;
+  } catch {
+    return null;
+  }
+}
+
 export const useAuthStore = create(
   persist(
     (set) => ({
       status: 'unauthenticated',
       user: null,
+      role: null,
       accessToken: null,
       isLoading: false,
       error: null,
@@ -21,6 +42,7 @@ export const useAuthStore = create(
           set({
             status: 'authenticated',
             user: response.user,
+            role: extractRoleFromToken(response.accessToken),
             accessToken: response.accessToken,
             isLoading: false,
             error: null,
@@ -29,6 +51,7 @@ export const useAuthStore = create(
           set({
             status: 'unauthenticated',
             user: null,
+            role: null,
             accessToken: null,
             isLoading: false,
             error: mapApiError(error),
@@ -46,6 +69,7 @@ export const useAuthStore = create(
         set({
           status: 'unauthenticated',
           user: null,
+          role: null,
           accessToken: null,
           error: null,
         });
@@ -60,6 +84,7 @@ export const useAuthStore = create(
       partialize: (state) => ({
         status: state.status,
         user: state.user,
+        role: state.role,
         accessToken: state.accessToken,
       }),
     },

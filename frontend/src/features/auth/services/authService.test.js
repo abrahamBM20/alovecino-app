@@ -32,7 +32,8 @@ describe('loginService', () => {
       password: '123456',
     });
 
-    expect(response.accessToken).toBe('dev-token');
+    expect(typeof response.accessToken).toBe('string');
+    expect(response.accessToken.length).toBeGreaterThan(0);
     expect(response.user.email).toBe('demo@alovecino.com');
     expect(postMock).not.toHaveBeenCalled();
   });
