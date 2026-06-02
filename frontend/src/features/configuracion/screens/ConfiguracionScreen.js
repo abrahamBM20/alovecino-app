@@ -18,6 +18,7 @@ import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
 import { useConfiguracionForm } from '../hooks/useConfiguracionForm';
+import { useAuthStore } from '../../../store/authStore';
 
 const PRIMARY = '#044E81';
 const MIN_KM = 0.5;
@@ -118,6 +119,19 @@ export default function ConfiguracionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { config, isLoading, isSaving, error, saveSuccess, updateField, save } = useConfiguracionForm();
+  const logout = useAuthStore((state) => state.logout);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      router.replace('/auth');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <LinearGradient
@@ -205,6 +219,22 @@ export default function ConfiguracionScreen() {
               >
                 <Text style={styles.saveButtonText}>
                   {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.logoutButtonPressed,
+                  isLoggingOut && styles.saveButtonDisabled,
+                ]}
+                onPress={handleLogout}
+                disabled={isLoggingOut}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar sesión"
+              >
+                <Text style={styles.logoutButtonText}>
+                  {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </Text>
               </Pressable>
             </>
@@ -386,6 +416,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.4,
+  },
+  logoutButton: {
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 12,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  logoutButtonPressed: {
+    opacity: 0.82,
+  },
+  logoutButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   tabBar: {
     height: 87,

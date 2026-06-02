@@ -101,6 +101,7 @@ jest.mock('../../../../assets/boton_perfil.svg', () => function MockPerfil(props
 
 jest.mock('../services/geoService', () => ({
   DEFAULT_RADIUS_METERS: 500,
+  RADIUS_OPTIONS: [500, 2000, 10000, 100000],
   fetchNearbyStores: jest.fn(),
 }));
 
@@ -181,6 +182,34 @@ describe('HomeScreen', () => {
 
     await waitFor(() => expect(getByText('Almacén Nuevo')).toBeTruthy());
     expect(fetchNearbyStores).toHaveBeenCalledTimes(2);
+  });
+
+  it('permite ampliar el radio de busqueda y vuelve a cargar almacenes', async () => {
+    fetchNearbyStores
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 10,
+          name: 'Almacén Vicuña',
+          latitude: -33.5193,
+          longitude: -70.5986,
+          distanceMeters: 1800,
+          address: 'Vicuña Mackenna 1000, La Florida, Metropolitana',
+        },
+      ]);
+
+    const { getByLabelText, getByText } = await renderHomeScreen();
+
+    await waitFor(() => expect(getByText('No hay almacenes cercanos en 500 m.')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buscar almacenes en 2 km'));
+
+    await waitFor(() => expect(getByText('Almacén Vicuña')).toBeTruthy());
+    expect(fetchNearbyStores).toHaveBeenLastCalledWith({
+      latitude: -33.44889,
+      longitude: -70.669265,
+      radiusMeters: 2000,
+    });
   });
 
   it('muestra error de carga de almacenes y permite reintentar', async () => {
