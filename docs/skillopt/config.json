@@ -25,9 +25,12 @@
       "merge-tree",
       "Sonar",
       "pull_request_template.md",
-      "trajectory-log.md"
+      "trajectory-log.md",
+      "EAS",
+      "workflow"
     ],
     "forbidden_patterns": [
+      "Codex",
       "siempre mergear",
       "ignorar checks",
       "cargar todo el repo",

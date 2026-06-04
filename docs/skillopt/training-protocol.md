@@ -109,6 +109,18 @@ La plantilla actual exige:
 - Checklist Técnico.
 - Notas de Despliegue.
 
+No firmes ni comentes en GitHub, commits, PRs, reviews o sistemas externos atribuyendo la acción a la identidad del agente. El registro debe sonar como una acción técnica del equipo/proyecto.
+
+## Workflows Y EAS
+
+Antes de modificar `.github/workflows/**`, revisa triggers, branches, `paths`, jobs, secrets/vars, comandos y relación con la HU. Si el workflow existente ya cubre el cambio, no edites YAML: documenta qué job lo valida.
+
+Para Android/Expo:
+
+- Usa `eas update` cuando el cambio sea solo JS/TS/assets OTA compatibles y el runtime instalado ya coincida.
+- Usa `eas build --profile dev-preview` o el perfil correspondiente cuando cambien dependencias nativas, `app.json/app.config`, permisos, plugins Expo, runtimeVersion, SDK, variables embebidas, canal/perfil, o cuando el emulador no tenga APK compatible instalado.
+- Para pruebas locales rápidas, usa `npm run android` con Expo Go si la app no requiere cliente nativo, o `npm run android:dev-client` si usa development client.
+
 ## Permisos Y Sandbox
 
 El flujo permite ejecutar comandos fuera del sandbox cuando sea necesario, pero siempre con solicitud de permiso y una justificación concreta. La solicitud debe explicar el objetivo del comando, no solo el comando mismo.
