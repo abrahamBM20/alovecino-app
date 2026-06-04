@@ -107,7 +107,7 @@ const TAB_ITEMS = [
   { id: 'ubicacion', Component: BotonFiltro },
   { id: 'inicio', Component: BotonInicio, route: '/home' },
   { id: 'configuracion', Component: BotonConfiguracion, route: '/home/configuracion' },
-  { id: 'perfil', Component: BotonPerfil },
+  { id: 'perfil', Component: BotonPerfil, route: '/home/perfil' },
 ];
 
 export default function HomeScreen() {

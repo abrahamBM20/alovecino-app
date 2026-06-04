@@ -5,13 +5,13 @@ function isMockEnvironment() {
   return API_BASE_URL.includes('example.com');
 }
 
-const MOCK_ALMACEN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZXMiOlsiUk9MRV9BTE1BQ0VOIl0sIm5hbWUiOiJUZXN0IEFsbWFjZW4ifQ.mock-signature';
+const MOCK_CLIENTE_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZXMiOlsiUk9MRV9DTElFTlRFIl0sIm5hbWUiOiJUZXN0IENsaWVudGUifQ.mock-signature';
 
 export async function loginService({ email, password }) {
   if (isMockEnvironment()) {
     return {
-      accessToken: MOCK_ALMACEN_TOKEN,
-      user: { id: '1', name: 'Test Almacen', email },
+      accessToken: MOCK_CLIENTE_TOKEN,
+      user: { id: '1', name: 'Demo Cliente', email },
     };
   }
 
