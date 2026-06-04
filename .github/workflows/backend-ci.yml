@@ -159,7 +159,7 @@ jobs:
             fi
 
             if [ -z "$service_name" ]; then
-              return 1
+              return 0
             fi
 
             jq -r --arg name "$service_name" \
