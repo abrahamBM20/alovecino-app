@@ -12,7 +12,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { mockConsultas } from '../services/consultasService';
+import { fetchMisAlmacenes } from '../services/almacenService';
+import { fetchConsultasAlmacenero } from '../services/consultasService';
 
 const PRIMARY = '#044E81';
 const TEXT_PRIMARY = '#0F2D45';
@@ -137,11 +138,41 @@ export default function BandejaConsultasScreen() {
   const insets = useSafeAreaInsets();
   const [filtro, setFiltro] = useState('todas');
   const [refreshing, setRefreshing] = useState(false);
-  const [consultas, setConsultas] = useState([...mockConsultas]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [almacen, setAlmacen] = useState(null);
+  const [consultas, setConsultas] = useState([]);
+
+  const loadConsultas = useCallback(async () => {
+    setError(null);
+    const almacenes = await fetchMisAlmacenes();
+    const principal = almacenes[0] ?? null;
+    setAlmacen(principal);
+
+    if (!principal) {
+      setConsultas([]);
+      return;
+    }
+
+    const data = await fetchConsultasAlmacenero(principal.id);
+    setConsultas(data);
+  }, []);
 
   useFocusEffect(useCallback(() => {
-    setConsultas([...mockConsultas]);
-  }, []));
+    let active = true;
+    setIsLoading(true);
+    loadConsultas()
+      .catch(() => {
+        if (active) setError('No pudimos cargar las consultas reales.');
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [loadConsultas]));
 
   const consultasFiltradas =
     filtro === 'todas'
@@ -172,9 +203,29 @@ export default function BandejaConsultasScreen() {
 
   async function onRefresh() {
     setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setRefreshing(false);
+    try {
+      await loadConsultas();
+    } catch {
+      setError('No pudimos actualizar las consultas.');
+    } finally {
+      setRefreshing(false);
+    }
   }
+
+  const emptyTitle = isLoading
+    ? 'Cargando consultas'
+    : error
+      ? 'No se pudo cargar'
+      : !almacen
+        ? 'Sin almacén registrado'
+        : 'Sin consultas';
+  const emptySubtitle = isLoading
+    ? 'Estamos consultando la bandeja real de tu almacén.'
+    : error
+      ? `${error} Desliza para reintentar.`
+      : !almacen
+        ? 'Registra un almacén para comenzar a recibir consultas.'
+        : `No hay consultas ${filtro !== 'todas' ? `en estado "${FILTROS.find((f) => f.key === filtro)?.label.toLowerCase()}"` : 'disponibles'}.`;
 
   return (
     <LinearGradient
@@ -264,10 +315,8 @@ export default function BandejaConsultasScreen() {
               <View style={styles.emptyIconWrap}>
                 <Ionicons name="mail-open-outline" size={40} color={TEXT_MUTED} />
               </View>
-              <Text style={styles.emptyTitle}>Sin consultas</Text>
-              <Text style={styles.emptySubtitle}>
-                No hay consultas {filtro !== 'todas' ? `en estado "${FILTROS.find((f) => f.key === filtro)?.label.toLowerCase()}"` : 'disponibles'}.
-              </Text>
+              <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+              <Text style={styles.emptySubtitle}>{emptySubtitle}</Text>
             </View>
           }
         />

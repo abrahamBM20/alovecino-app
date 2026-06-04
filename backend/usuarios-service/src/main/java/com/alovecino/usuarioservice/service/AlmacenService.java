@@ -95,6 +95,17 @@ public class AlmacenService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public AlmacenResponse getAlmacenByDueno(String duenoIdentifier, Long idAlmacen) {
+        Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
+        Almacen almacen = almacenRepository.findById(idAlmacen)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Almacén no encontrado"));
+        if (!almacen.getDueno().getIdUsuario().equals(dueno.getIdUsuario())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para ver este almacén");
+        }
+        return toResponse(almacen);
+    }
+
     private Usuario findUsuarioByPrincipal(String identifier) {
         return findUsuarioById(identifier)
                 .or(() -> usuarioRepository.findByNombreUsuario(identifier))
@@ -123,6 +134,10 @@ public class AlmacenService {
                 direccion.getLongitud().toPlainString(),
                 almacen.getEstadoCuenta().getCodigo(),
                 almacen.getDueno().getIdUsuario(),
-                almacen.getImagenUrl());
+                almacen.getImagenUrl(),
+                almacenContactoRepository
+                        .findFirstByAlmacenIdAlmacenAndEsPrincipalTrueOrderByIdAlmacenContactoAsc(almacen.getIdAlmacen())
+                        .map(AlmacenContacto::getValor)
+                        .orElse(null));
     }
 }

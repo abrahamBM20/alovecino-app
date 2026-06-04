@@ -2,6 +2,7 @@ package com.alovecino.consultaservice.controller;
 
 import com.alovecino.consultaservice.dto.ConsultaRequest;
 import com.alovecino.consultaservice.dto.ConsultaResponse;
+import com.alovecino.consultaservice.dto.DashboardAlmacenResponse;
 import com.alovecino.consultaservice.dto.ResponderConsultaRequest;
 import com.alovecino.consultaservice.service.ConsultaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,9 +12,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/consultas")
@@ -50,8 +53,20 @@ public class ConsultaController {
     @GetMapping("/almacen/{idAlmacen}")
     @Operation(summary = "Obtener consultas por almacén")
     @PreAuthorize("hasRole('ALMACEN')")
-    public ResponseEntity<List<ConsultaResponse>> obtenerConsultasPorAlmacen(@PathVariable Long idAlmacen) {
-        List<ConsultaResponse> response = consultaService.obtenerConsultasPorAlmacen(idAlmacen);
+    public ResponseEntity<List<ConsultaResponse>> obtenerConsultasPorAlmacen(
+            Principal principal,
+            @PathVariable Long idAlmacen) {
+        List<ConsultaResponse> response = consultaService.obtenerConsultasPorAlmacen(principal.getName(), idAlmacen);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/almacen/{idAlmacen}/dashboard")
+    @Operation(summary = "Obtener métricas del dashboard de un almacén")
+    @PreAuthorize("hasRole('ALMACEN')")
+    public ResponseEntity<DashboardAlmacenResponse> obtenerDashboardAlmacen(
+            Principal principal,
+            @PathVariable Long idAlmacen) {
+        DashboardAlmacenResponse response = consultaService.obtenerDashboardAlmacen(principal.getName(), idAlmacen);
         return ResponseEntity.ok(response);
     }
 
@@ -59,9 +74,10 @@ public class ConsultaController {
     @Operation(summary = "Responder a una consulta")
     @PreAuthorize("hasRole('ALMACEN')")
     public ResponseEntity<ConsultaResponse> responderConsulta(
+            Principal principal,
             @PathVariable Long id,
             @Valid @RequestBody ResponderConsultaRequest request) {
-        ConsultaResponse response = consultaService.responderConsulta(id, request);
+        ConsultaResponse response = consultaService.responderConsulta(principal.getName(), id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -69,9 +85,17 @@ public class ConsultaController {
     @Operation(summary = "Actualizar estado de consulta")
     @PreAuthorize("hasRole('CLIENTE') or hasRole('ALMACEN')")
     public ResponseEntity<ConsultaResponse> actualizarEstadoConsulta(
+            Authentication authentication,
             @PathVariable Long id,
             @RequestParam Long idEstadoConsulta) {
-        ConsultaResponse response = consultaService.actualizarEstadoConsulta(id, idEstadoConsulta);
+        ConsultaResponse response = hasAuthority(authentication, "ROLE_ALMACEN")
+                ? consultaService.actualizarEstadoConsulta(authentication.getName(), id, idEstadoConsulta)
+                : consultaService.actualizarEstadoConsulta(id, idEstadoConsulta);
         return ResponseEntity.ok(response);
+    }
+
+    private boolean hasAuthority(Authentication authentication, String authority) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> authority.equals(grantedAuthority.getAuthority()));
     }
 }

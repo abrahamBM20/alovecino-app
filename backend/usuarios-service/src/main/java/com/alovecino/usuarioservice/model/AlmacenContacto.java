@@ -41,19 +41,39 @@ public class AlmacenContacto {
         this.almacen = almacen;
     }
 
+    public Almacen getAlmacen() {
+        return almacen;
+    }
+
     public void setTipoContacto(TipoContacto tipoContacto) {
         this.tipoContacto = tipoContacto;
+    }
+
+    public TipoContacto getTipoContacto() {
+        return tipoContacto;
     }
 
     public void setValor(String valor) {
         this.valor = valor;
     }
 
+    public String getValor() {
+        return valor;
+    }
+
     public void setNombreContacto(String nombreContacto) {
         this.nombreContacto = nombreContacto;
     }
 
+    public String getNombreContacto() {
+        return nombreContacto;
+    }
+
     public void setEsPrincipal(boolean esPrincipal) {
         this.esPrincipal = esPrincipal;
+    }
+
+    public boolean isEsPrincipal() {
+        return esPrincipal;
     }
 }

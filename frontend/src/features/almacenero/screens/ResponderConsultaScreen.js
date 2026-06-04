@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { actualizarConsultaMock } from '../services/consultasService';
+import { cerrarConsulta, responderConsulta } from '../services/consultasService';
 
 const PRIMARY = '#044E81';
 const TEXT_PRIMARY = '#0F2D45';
@@ -59,6 +59,7 @@ export default function ResponderConsultaScreen({
   const insets = useSafeAreaInsets();
   const [respuesta, setRespuesta] = useState('');
   const [status, setStatus] = useState('idle'); // idle | sending | closing | done_respond | done_close
+  const [error, setError] = useState(null);
 
   const isWorking = status === 'sending' || status === 'closing';
   const isDone = status === 'done_respond' || status === 'done_close';
@@ -67,12 +68,13 @@ export default function ResponderConsultaScreen({
   async function handleResponder() {
     if (!respuesta.trim() || isWorking || isDone) return;
     setStatus('sending');
+    setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      actualizarConsultaMock(idConsulta, 'respondida', respuesta.trim());
+      await responderConsulta(idConsulta, respuesta.trim());
       setStatus('done_respond');
       setTimeout(() => router.back(), 1400);
     } catch {
+      setError('No pudimos enviar la respuesta. Intenta nuevamente.');
       setStatus('idle');
     }
   }
@@ -80,12 +82,13 @@ export default function ResponderConsultaScreen({
   async function handleCerrar() {
     if (isWorking || isDone) return;
     setStatus('closing');
+    setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      actualizarConsultaMock(idConsulta, 'cerrada');
+      await cerrarConsulta(idConsulta);
       setStatus('done_close');
       setTimeout(() => router.back(), 1400);
     } catch {
+      setError('No pudimos cerrar la consulta. Intenta nuevamente.');
       setStatus('idle');
     }
   }
@@ -171,6 +174,12 @@ export default function ResponderConsultaScreen({
               <View style={[styles.feedbackBanner, styles.feedbackNeutral]}>
                 <Ionicons name="close-circle" size={20} color="#475569" />
                 <Text style={styles.feedbackNeutralText}>Consulta cerrada</Text>
+              </View>
+            )}
+            {!!error && (
+              <View style={[styles.feedbackBanner, styles.feedbackError]}>
+                <Ionicons name="alert-circle-outline" size={20} color="#B91C1C" />
+                <Text style={styles.feedbackErrorText}>{error}</Text>
               </View>
             )}
 
@@ -385,6 +394,7 @@ const styles = StyleSheet.create({
   },
   feedbackSuccess: { backgroundColor: '#F0FDF4' },
   feedbackNeutral: { backgroundColor: '#F1F5F9' },
+  feedbackError: { backgroundColor: '#FEF2F2' },
   feedbackSuccessText: {
     fontSize: 14,
     fontWeight: '600',
@@ -394,6 +404,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#475569',
+  },
+  feedbackErrorText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#B91C1C',
   },
 
   /* Input */
