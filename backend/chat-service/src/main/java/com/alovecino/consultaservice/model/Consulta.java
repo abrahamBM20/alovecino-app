@@ -1,10 +1,14 @@
 package com.alovecino.consultaservice.model;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,12 +20,6 @@ public class Consulta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_consulta")
     private Long idConsulta;
-
-    @Column(name = "descripcion", columnDefinition = "TEXT")
-    private String descripcion;
-
-    @Column(name = "cantidad")
-    private Integer cantidad;
 
     @Column(name = "id_cliente")
     private Long idCliente;
@@ -45,6 +43,16 @@ public class Consulta {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "consulta", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<ConsultaDetalle> detalles = new ArrayList<>();
+
+    public void addDetalle(ConsultaDetalle detalle) {
+        detalles.add(detalle);
+        detalle.setConsulta(this);
+    }
 
     @PrePersist
     public void prePersist() {

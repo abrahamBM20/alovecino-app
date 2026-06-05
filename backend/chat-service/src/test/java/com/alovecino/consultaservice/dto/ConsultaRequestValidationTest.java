@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,27 +39,27 @@ class ConsultaRequestValidationTest {
     }
 
     @Test
-    void descripcionVacia_debeSerInvalida() {
+    void detalleDescripcionVacia_debeSerInvalida() {
         ConsultaRequest request = requestValido();
-        request.setDescripcion("   ");
+        request.getDetalles().get(0).setDescripcion("   ");
 
         Set<ConstraintViolation<ConsultaRequest>> violations = validator.validate(request);
 
         assertThat(violations)
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("descripcion");
+                .contains("detalles[0].descripcion");
     }
 
     @Test
-    void descripcionMayorA1000Caracteres_debeSerInvalida() {
+    void detalleDescripcionMayorA1000Caracteres_debeSerInvalida() {
         ConsultaRequest request = requestValido();
-        request.setDescripcion("a".repeat(1001));
+        request.getDetalles().get(0).setDescripcion("a".repeat(1001));
 
         Set<ConstraintViolation<ConsultaRequest>> violations = validator.validate(request);
 
         assertThat(violations)
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("descripcion");
+                .contains("detalles[0].descripcion");
     }
 
     @Test
@@ -69,20 +70,35 @@ class ConsultaRequestValidationTest {
 
         assertThat(violations)
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("descripcion", "cantidad", "idCliente", "idAlmacen")
+                .contains("detalles", "idCliente", "idAlmacen")
+                .doesNotContain("descripcion", "cantidad")
                 .doesNotContain("idEstadoConsulta");
     }
 
     @Test
-    void cantidadNegativa_debeSerInvalida() {
-        ConsultaRequest request = requestValido();
-        request.setCantidad(-1);
+    void detalleNormalizadoInvalido_debeReportarCamposDelDetalle() {
+        ConsultaRequest request = new ConsultaRequest();
+        request.setIdCliente(1L);
+        request.setIdAlmacen(2L);
+        request.setDetalles(List.of(detalleValido(" ", 0)));
 
         Set<ConstraintViolation<ConsultaRequest>> violations = validator.validate(request);
 
         assertThat(violations)
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("cantidad");
+                .contains("detalles[0].descripcion", "detalles[0].cantidadSolicitada");
+    }
+
+    @Test
+    void detalleCantidadNegativa_debeSerInvalida() {
+        ConsultaRequest request = requestValido();
+        request.getDetalles().get(0).setCantidadSolicitada(-1);
+
+        Set<ConstraintViolation<ConsultaRequest>> violations = validator.validate(request);
+
+        assertThat(violations)
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("detalles[0].cantidadSolicitada");
     }
 
     @Test
@@ -100,10 +116,16 @@ class ConsultaRequestValidationTest {
 
     private ConsultaRequest requestValido() {
         ConsultaRequest request = new ConsultaRequest();
-        request.setDescripcion("Necesito consultar stock disponible");
-        request.setCantidad(3);
         request.setIdCliente(1L);
         request.setIdAlmacen(2L);
+        request.setDetalles(List.of(detalleValido("Necesito consultar stock disponible", 3)));
         return request;
+    }
+
+    private ConsultaDetalleRequest detalleValido(String descripcion, Integer cantidadSolicitada) {
+        ConsultaDetalleRequest detalle = new ConsultaDetalleRequest();
+        detalle.setDescripcion(descripcion);
+        detalle.setCantidadSolicitada(cantidadSolicitada);
+        return detalle;
     }
 }
