@@ -1,79 +1,84 @@
 import { httpClient } from '../../../shared/api/httpClient';
 
-export const mockConsultas = [
-  {
-    id: '1',
-    pregunta: '¿Tienen arroz integral en stock?',
-    estado: 'respondida',
-    cantidad: 2,
-    fecha: 'Ayer · 3:10 p. m.',
-    cliente: 'Juan Pérez',
-    respuesta: 'Sí, tenemos disponible. Mañana llegará más stock.',
-  },
-  {
-    id: '2',
-    pregunta: 'Necesito leche deslactosada, ¿la tienen?',
-    estado: 'pendiente',
-    cantidad: 4,
-    fecha: 'Hoy · 5:34 p. m.',
-    cliente: 'María González',
-    respuesta: null,
-  },
-  {
-    id: '3',
-    pregunta: 'Consulta sobre aceite vegetal de 5 litros',
-    estado: 'cerrada',
-    cantidad: 1,
-    fecha: '23 may · 9:00 a. m.',
-    cliente: 'Pedro López',
-    respuesta: 'Lamentablemente no contamos con esa presentación.',
-  },
-  {
-    id: '4',
-    pregunta: 'Necesito saber si tienen azúcar morena',
-    estado: 'pendiente',
-    cantidad: 3,
-    fecha: 'Hoy · 10:32 a. m.',
-    cliente: 'Ana Torres',
-    respuesta: null,
-  },
-  {
-    id: '5',
-    pregunta: '¿Tienen pan de molde integral?',
-    estado: 'respondida',
-    cantidad: 2,
-    fecha: 'Ayer · 8:15 a. m.',
-    cliente: 'Carlos Ruiz',
-    respuesta: 'Sí, tenemos en presentación de 500g.',
-  },
-];
+const ESTADO_BY_ID = {
+  1: 'pendiente',
+  2: 'respondida',
+  3: 'cerrada',
+  4: 'cancelada',
+};
 
-export function actualizarConsultaMock(id, estado, respuesta = null) {
-  const idx = mockConsultas.findIndex((c) => c.id === String(id));
-  if (idx >= 0) {
-    mockConsultas[idx] = { ...mockConsultas[idx], estado, respuesta };
-  }
+const ESTADO_BY_NAME = {
+  PENDIENTE: 'pendiente',
+  RESPONDIDA: 'respondida',
+  CERRADA: 'cerrada',
+  CANCELADA: 'cerrada',
+};
+
+function formatFecha(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function mapConsulta(apiConsulta) {
+  const estadoNombre = apiConsulta.estadoNombre?.toUpperCase?.();
+  const estado = ESTADO_BY_NAME[estadoNombre] ?? ESTADO_BY_ID[apiConsulta.idEstadoConsulta] ?? 'pendiente';
+
+  return {
+    id: String(apiConsulta.idConsulta),
+    idConsulta: apiConsulta.idConsulta,
+    pregunta: apiConsulta.descripcion,
+    estado,
+    estadoNombre: apiConsulta.estadoNombre,
+    idEstadoConsulta: apiConsulta.idEstadoConsulta,
+    cantidad: apiConsulta.cantidad ?? 0,
+    fecha: formatFecha(apiConsulta.createdAt),
+    cliente: apiConsulta.clienteNombre ?? `Cliente #${apiConsulta.idCliente ?? '-'}`,
+    idCliente: apiConsulta.idCliente,
+    respuesta: apiConsulta.respuesta,
+    fechaRespuesta: apiConsulta.fechaRespuesta,
+    createdAt: apiConsulta.createdAt,
+  };
 }
 
 export async function fetchConsultasAlmacenero(idAlmacen) {
-  const { data } = await httpClient.get(`/api/almacenes/${idAlmacen}/consultas`);
-  return data.map((consulta) => ({
-    ...consulta,
-    cliente: consulta.usuario?.nombre ?? consulta.clienteNombre ?? 'Cliente',
-  }));
+  const { data } = await httpClient.get(`/api/consultas/almacen/${idAlmacen}`);
+  return Array.isArray(data) ? data.map(mapConsulta) : [];
 }
 
-export async function fetchEstadisticasAlmacenero(idAlmacen) {
-  const { data } = await httpClient.get(`/api/almacenes/${idAlmacen}/consultas/estadisticas`);
+export async function fetchDashboardAlmacenero(idAlmacen) {
+  const { data } = await httpClient.get(`/api/consultas/almacen/${idAlmacen}/dashboard`);
+  return {
+    ...data,
+    consultasRecientes: Array.isArray(data?.consultasRecientes)
+      ? data.consultasRecientes.map(mapConsulta)
+      : [],
+  };
+}
+
+export async function fetchEstadosConsulta() {
+  const { data } = await httpClient.get('/api/estados-consulta');
   return data;
 }
 
-export async function responderConsulta(idConsulta, respuesta) {
-  const { data } = await httpClient.put(`/api/consultas/${idConsulta}/responder`, { respuesta });
+export async function responderConsulta(idConsulta, respuesta, idEstadoConsulta = null) {
+  const payload = idEstadoConsulta ? { respuesta, idEstadoConsulta } : { respuesta };
+  const { data } = await httpClient.put(`/api/consultas/${idConsulta}/responder`, payload);
   return data;
 }
 
 export async function cerrarConsulta(idConsulta) {
-  const { data } = await httpClient.put(`/api/consultas/${idConsulta}/cerrar`);
+  const estados = await fetchEstadosConsulta();
+  const cerrada = estados.find((estado) => estado.nombre === 'CERRADA');
+  const idEstadoConsulta = cerrada?.idEstadoConsulta ?? 3;
+  const { data } = await httpClient.put(`/api/consultas/${idConsulta}/estado`, null, {
+    params: { idEstadoConsulta },
+  });
   return data;
 }

@@ -30,7 +30,7 @@ const TAB_ITEMS = [
   { id: 'ubicacion', Component: BotonFiltro, route: '/home' },
   { id: 'inicio', Component: BotonInicio, route: '/home' },
   { id: 'configuracion', Component: BotonConfiguracion, route: '/home/configuracion' },
-  { id: 'perfil', Component: BotonPerfil, route: '/home' },
+  { id: 'perfil', Component: BotonPerfil, route: '/home/perfil' },
 ];
 
 function RadioSlider({ value, onValueChange }) {

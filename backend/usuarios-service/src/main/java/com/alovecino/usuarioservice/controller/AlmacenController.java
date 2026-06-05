@@ -43,6 +43,11 @@ public class AlmacenController {
         return almacenService.listAlmacenesByDueno(jwt.getSubject());
     }
 
+    @GetMapping("/{id}")
+    public AlmacenResponse getAlmacen(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+        return almacenService.getAlmacenByDueno(jwt.getSubject(), id);
+    }
+
     @PatchMapping("/{id}/imagen")
     public AlmacenResponse updateImagenUrl(@AuthenticationPrincipal Jwt jwt,
             @PathVariable Long id,

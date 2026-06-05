@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Image,
   RefreshControl,
@@ -14,6 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
+import { fetchMisAlmacenes } from '../services/almacenService';
+import { fetchDashboardAlmacenero } from '../services/consultasService';
 
 const PRIMARY = '#044E81';
 const TEXT_PRIMARY = '#0F2D45';
@@ -52,20 +54,6 @@ const INDICADORES = [
     bg: '#DDD6FE',
     unidad: 'min',
   },
-];
-
-const MOCK_STATS = {
-  consultasHoy: 18,
-  pendientes: 4,
-  respondidas: 14,
-  tiempoPromedioMin: 13,
-};
-
-const MOCK_CONSULTAS = [
-  { id: '1', pregunta: 'Necesito saber si tienen azúcar', cliente: 'Ana Torres', hora: '10:32' },
-  { id: '2', pregunta: '¿Tienen arroz integral en stock?', cliente: 'Juan Pérez', hora: '09:15' },
-  { id: '3', pregunta: 'Necesito leche deslactosada, ¿la tienen?', cliente: 'María González', hora: '08:45' },
-  { id: '4', pregunta: 'Consulta sobre aceite vegetal de 5 litros', cliente: 'Pedro López', hora: '08:20' },
 ];
 
 function Avatar({ nombre, size = 36 }) {
@@ -115,7 +103,7 @@ function ConsultaRow({ item, onPress }) {
         <Text style={styles.consultaRowPregunta} numberOfLines={1}>
           {item.pregunta}
         </Text>
-        <Text style={styles.consultaRowCliente}>{item.cliente} · {item.hora}</Text>
+        <Text style={styles.consultaRowCliente}>{item.cliente} · {item.fecha}</Text>
       </View>
       <View style={styles.pendienteDot} />
     </TouchableOpacity>
@@ -126,20 +114,72 @@ export default function PanelAlmaceneroScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
-  const [estadoAbierto, setEstadoAbierto] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [almacen, setAlmacen] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
 
   const nombreAlmacen =
-    user?.almacen?.nombre ?? user?.nombreAlmacen ?? user?.nombre ?? user?.name ?? 'Almacén';
+    almacen?.nombre ?? user?.almacen?.nombre ?? user?.nombreAlmacen ?? user?.nombre ?? user?.name ?? 'Almacén';
   const logoUrl =
-    user?.almacen?.logoUrl ?? user?.almacen?.foto ?? user?.logoUrl ?? user?.fotoUrl ?? null;
-  const pendientes = MOCK_STATS.pendientes;
+    almacen?.imagenUrl ?? user?.almacen?.logoUrl ?? user?.almacen?.foto ?? user?.logoUrl ?? user?.fotoUrl ?? null;
+  const pendientes = dashboard?.pendientes ?? 0;
+  const consultasRecientes = dashboard?.consultasRecientes ?? [];
+  const estadoPerfil = almacen?.estado ?? 'Sin estado';
+  const estadoActivo = ['ACTIVO', 'APROBADO', 'HABILITADO'].includes(String(estadoPerfil).toUpperCase());
+  const stats = {
+    consultasHoy: dashboard?.consultasHoy ?? 0,
+    pendientes,
+    respondidas: (dashboard?.respondidas ?? 0) + (dashboard?.cerradas ?? 0),
+    tiempoPromedioMin: dashboard?.tiempoPromedioMin ?? '-',
+  };
+
+  const loadPanel = useCallback(async () => {
+    setError(null);
+    const almacenes = await fetchMisAlmacenes();
+    const principal = almacenes[0] ?? null;
+    setAlmacen(principal);
+
+    if (!principal) {
+      setDashboard(null);
+      return;
+    }
+
+    const data = await fetchDashboardAlmacenero(principal.id);
+    setDashboard(data);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    setIsLoading(true);
+    loadPanel()
+      .catch(() => {
+        if (mounted) setError('No pudimos cargar los datos reales del almacén.');
+      })
+      .finally(() => {
+        if (mounted) setIsLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [loadPanel]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setRefreshing(false);
-  }, []);
+    try {
+      await loadPanel();
+    } catch {
+      setError('No pudimos actualizar el panel.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadPanel]);
+
+  const goPerfil = useCallback(() => {
+    if (!almacen) return;
+    router.push('/home/almacenero/perfil');
+  }, [almacen, router]);
 
   return (
     <LinearGradient
@@ -171,7 +211,7 @@ export default function PanelAlmaceneroScreen() {
                 ¡Hola, {nombreAlmacen}!
               </Text>
             </View>
-            <TouchableOpacity activeOpacity={0.8} style={styles.headerAvatarBtn}>
+            <TouchableOpacity activeOpacity={0.8} style={styles.headerAvatarBtn} onPress={goPerfil}>
               <View style={styles.headerAvatar}>
                 {logoUrl ? (
                   <Image
@@ -191,33 +231,56 @@ export default function PanelAlmaceneroScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Estado del negocio ── */}
+          {/* ── Estado del perfil ── */}
           <TouchableOpacity
             style={styles.estadoCard}
             activeOpacity={0.85}
-            onPress={() => setEstadoAbierto((v) => !v)}
+            onPress={almacen ? goPerfil : undefined}
             accessibilityRole="button"
-            accessibilityLabel={`Estado del negocio: ${estadoAbierto ? 'Abierto' : 'Cerrado'}. Tocar para cambiar.`}
+            accessibilityLabel="Ver perfil del almacén"
           >
-            <Text style={styles.cardEyebrow}>Estado del negocio</Text>
+            <Text style={styles.cardEyebrow}>Estado del perfil</Text>
             <View style={styles.estadoRow}>
               <View
                 style={[
                   styles.estadoDot,
-                  { backgroundColor: estadoAbierto ? '#22C55E' : '#EF4444' },
+                  { backgroundColor: estadoActivo ? '#22C55E' : '#F59E0B' },
                 ]}
               />
               <Text style={styles.estadoValor}>
-                {estadoAbierto ? 'Abierto' : 'Cerrado'}
+                {estadoPerfil}
               </Text>
               <Ionicons
-                name={estadoAbierto ? 'chevron-up' : 'chevron-down'}
+                name="chevron-forward"
                 size={20}
                 color={TEXT_MUTED}
               />
             </View>
-            <Text style={styles.estadoNombreText}>{nombreAlmacen}</Text>
+            <Text style={styles.estadoNombreText}>
+              {almacen?.direccion ?? 'Perfil del almacén'}
+            </Text>
           </TouchableOpacity>
+
+          {isLoading && (
+            <View style={styles.messageCard}>
+              <Text style={styles.messageTitle}>Cargando datos reales...</Text>
+              <Text style={styles.messageText}>Estamos consultando tus almacenes y consultas.</Text>
+            </View>
+          )}
+
+          {!!error && (
+            <TouchableOpacity style={styles.messageCard} onPress={onRefresh} activeOpacity={0.8}>
+              <Text style={styles.messageTitle}>No se pudo cargar el panel</Text>
+              <Text style={styles.messageText}>{error} Toca para reintentar.</Text>
+            </TouchableOpacity>
+          )}
+
+          {!isLoading && !error && !almacen && (
+            <View style={styles.messageCard}>
+              <Text style={styles.messageTitle}>Aún no tienes almacenes</Text>
+              <Text style={styles.messageText}>Registra un almacén para activar el panel y la bandeja.</Text>
+            </View>
+          )}
 
           {/* ── Indicadores ── */}
           <Text style={styles.sectionLabel}>Indicadores</Text>
@@ -229,7 +292,7 @@ export default function PanelAlmaceneroScreen() {
                 color={ind.color}
                 bg={ind.bg}
                 label={ind.label}
-                valor={MOCK_STATS[ind.key]}
+                valor={stats[ind.key]}
                 unidad={ind.unidad}
               />
             ))}
@@ -256,13 +319,18 @@ export default function PanelAlmaceneroScreen() {
           <View style={styles.consultasCard}>
             <View style={styles.consultasCardHeader}>
               <Text style={styles.consultasCardTitle}>
-                Consultas de hoy
+                Consultas recientes
               </Text>
               <View style={styles.consultasCount}>
-                <Text style={styles.consultasCountText}>{MOCK_CONSULTAS.length}</Text>
+                <Text style={styles.consultasCountText}>{consultasRecientes.length}</Text>
               </View>
             </View>
-            {MOCK_CONSULTAS.map((item, idx) => (
+            {consultasRecientes.length === 0 && (
+              <View style={styles.emptyConsultas}>
+                <Text style={styles.messageText}>No hay consultas reales para mostrar.</Text>
+              </View>
+            )}
+            {consultasRecientes.map((item, idx) => (
               <React.Fragment key={item.id}>
                 {idx > 0 && <View style={styles.divider} />}
                 <ConsultaRow
@@ -399,6 +467,24 @@ const styles = StyleSheet.create({
   estadoNombreText: {
     fontSize: 13,
     color: TEXT_MUTED,
+  },
+  messageCard: {
+    backgroundColor: SURFACE,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+    ...CARD_SHADOW,
+  },
+  messageTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: TEXT_PRIMARY,
+    marginBottom: 4,
+  },
+  messageText: {
+    fontSize: 13,
+    color: TEXT_SECONDARY,
+    lineHeight: 18,
   },
 
   /* Section labels */
@@ -558,6 +644,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: PRIMARY,
+  },
+  emptyConsultas: {
+    paddingHorizontal: 18,
+    paddingVertical: 18,
   },
 
   /* Avatar */

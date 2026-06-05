@@ -4,6 +4,7 @@ import com.alovecino.consultaservice.dto.ConsultaDetalleRequest;
 import com.alovecino.consultaservice.dto.ConsultaDetalleResponse;
 import com.alovecino.consultaservice.dto.ConsultaRequest;
 import com.alovecino.consultaservice.dto.ConsultaResponse;
+import com.alovecino.consultaservice.dto.DashboardAlmacenResponse;
 import com.alovecino.consultaservice.dto.ResponderConsultaRequest;
 import com.alovecino.consultaservice.service.ConsultaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -118,15 +121,40 @@ class ConsultaControllerTest {
 
     @Test
     void obtenerConsultasPorAlmacen_debeRetornar200YLista() throws Exception {
-        when(consultaService.obtenerConsultasPorAlmacen(20L)).thenReturn(List.of(
+        when(consultaService.obtenerConsultasPorAlmacen("99", 20L)).thenReturn(List.of(
                 responseConsulta(1L, "Consulta 1", 1, 10L, 20L, null, 1L)
         ));
 
-        mockMvc.perform(get("/api/consultas/almacen/{idAlmacen}", 20L))
+        mockMvc.perform(get("/api/consultas/almacen/{idAlmacen}", 20L)
+                        .principal(() -> "99"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idAlmacen").value(20));
 
-        verify(consultaService).obtenerConsultasPorAlmacen(20L);
+        verify(consultaService).obtenerConsultasPorAlmacen("99", 20L);
+    }
+
+    @Test
+    void obtenerDashboardAlmacen_debeRetornar200YMetricas() throws Exception {
+        DashboardAlmacenResponse response = new DashboardAlmacenResponse();
+        response.setIdAlmacen(20L);
+        response.setTotalConsultas(3);
+        response.setPendientes(1);
+        response.setRespondidas(2);
+        response.setConsultasRecientes(List.of(
+                responseConsulta(1L, "Consulta 1", 1, 10L, 20L, null, 1L)
+        ));
+        when(consultaService.obtenerDashboardAlmacen("99", 20L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/consultas/almacen/{idAlmacen}/dashboard", 20L)
+                        .principal(() -> "99"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idAlmacen").value(20))
+                .andExpect(jsonPath("$.totalConsultas").value(3))
+                .andExpect(jsonPath("$.pendientes").value(1))
+                .andExpect(jsonPath("$.respondidas").value(2))
+                .andExpect(jsonPath("$.consultasRecientes[0].idConsulta").value(1));
+
+        verify(consultaService).obtenerDashboardAlmacen("99", 20L);
     }
 
     @Test
@@ -137,9 +165,12 @@ class ConsultaControllerTest {
         
         ConsultaResponse response = responseConsulta(7L, "Consulta pendiente", 4, 11L, 22L,
                 "Sí, tenemos stock", 2L);
-        when(consultaService.responderConsulta(7L, requestDTO)).thenReturn(response);
+        when(consultaService.responderConsulta(org.mockito.ArgumentMatchers.eq("99"),
+                org.mockito.ArgumentMatchers.eq(7L),
+                org.mockito.ArgumentMatchers.any(ResponderConsultaRequest.class))).thenReturn(response);
 
         mockMvc.perform(put("/api/consultas/{id}/responder", 7L)
+                        .principal(() -> "99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isOk())
@@ -148,16 +179,35 @@ class ConsultaControllerTest {
                 .andExpect(jsonPath("$.idEstadoConsulta").value(2));
 
         ArgumentCaptor<ResponderConsultaRequest> requestCaptor = ArgumentCaptor.forClass(ResponderConsultaRequest.class);
-        verify(consultaService).responderConsulta(org.mockito.ArgumentMatchers.eq(7L), requestCaptor.capture());
+        verify(consultaService).responderConsulta(org.mockito.ArgumentMatchers.eq("99"),
+                org.mockito.ArgumentMatchers.eq(7L), requestCaptor.capture());
         assertThat(requestCaptor.getValue().getRespuesta()).isEqualTo("Sí, tenemos stock");
     }
 
     @Test
     void actualizarEstadoConsulta_debeRetornar200YEstadoActualizado() throws Exception {
         ConsultaResponse response = responseConsulta(9L, "Consulta", 1, 11L, 22L, null, 3L);
+        when(consultaService.actualizarEstadoConsulta("99", 9L, 3L)).thenReturn(response);
+
+        mockMvc.perform(put("/api/consultas/{id}/estado", 9L)
+                        .principal(new UsernamePasswordAuthenticationToken("99", "n/a",
+                                List.of(new SimpleGrantedAuthority("ROLE_ALMACEN"))))
+                        .param("idEstadoConsulta", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idConsulta").value(9))
+                .andExpect(jsonPath("$.idEstadoConsulta").value(3));
+
+        verify(consultaService).actualizarEstadoConsulta("99", 9L, 3L);
+    }
+
+    @Test
+    void actualizarEstadoConsulta_comoClienteDebeMantenerContratoAnterior() throws Exception {
+        ConsultaResponse response = responseConsulta(9L, "Consulta", 1, 11L, 22L, null, 3L);
         when(consultaService.actualizarEstadoConsulta(9L, 3L)).thenReturn(response);
 
         mockMvc.perform(put("/api/consultas/{id}/estado", 9L)
+                        .principal(new UsernamePasswordAuthenticationToken("55", "n/a",
+                                List.of(new SimpleGrantedAuthority("ROLE_CLIENTE"))))
                         .param("idEstadoConsulta", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idConsulta").value(9))
