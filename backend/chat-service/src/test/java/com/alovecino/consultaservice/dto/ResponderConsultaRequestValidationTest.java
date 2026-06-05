@@ -50,7 +50,17 @@ class ResponderConsultaRequestValidationTest {
     }
 
     @Test
-    void estadoNuloOCero_debeSerInvalido() {
+    void estadoNulo_debeSerValidoPorqueBackendUsaRespondidaPorDefecto() {
+        ResponderConsultaRequest request = requestValido();
+        request.setIdEstadoConsulta(null);
+
+        Set<ConstraintViolation<ResponderConsultaRequest>> violations = validator.validate(request);
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void estadoCero_debeSerInvalido() {
         ResponderConsultaRequest request = requestValido();
         request.setIdEstadoConsulta(0L);
 

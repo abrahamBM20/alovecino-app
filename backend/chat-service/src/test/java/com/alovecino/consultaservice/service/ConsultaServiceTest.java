@@ -1,14 +1,18 @@
 package com.alovecino.consultaservice.service;
 
-import com.alovecino.consultaservice.dto.ConsultaRequest;
 import com.alovecino.consultaservice.dto.ConsultaResponse;
+import com.alovecino.consultaservice.dto.ConsultaRequest;
+import com.alovecino.consultaservice.dto.DashboardAlmacenResponse;
 import com.alovecino.consultaservice.dto.ResponderConsultaRequest;
+import com.alovecino.consultaservice.model.Almacen;
 import com.alovecino.consultaservice.model.Consulta;
 import com.alovecino.consultaservice.model.EstadoConsulta;
 import com.alovecino.consultaservice.repository.AlmacenRepository;
 import com.alovecino.consultaservice.repository.ClienteRepository;
 import com.alovecino.consultaservice.repository.ConsultaRepository;
 import com.alovecino.consultaservice.repository.EstadoConsultaRepository;
+import com.alovecino.consultaservice.repository.UsuarioRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -41,6 +45,9 @@ class ConsultaServiceTest {
 
     @Mock
     private AlmacenRepository almacenRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @InjectMocks
     private ConsultaService consultaService;
@@ -198,6 +205,22 @@ class ConsultaServiceTest {
     }
 
     @Test
+    void responderConsulta_sinEstadoDebeUsarRespondidaPorDefecto() {
+        Consulta consulta = nuevaConsulta(8L, "Consulta pendiente", 1, 15L, 25L, null, 1L);
+        EstadoConsulta estadoRespondida = nuevoEstado(2L, "RESPONDIDA");
+        ResponderConsultaRequest request = nuevaResponderRequest("Sí, tenemos stock", null);
+
+        when(consultaRepository.findById(8L)).thenReturn(Optional.of(consulta));
+        when(estadoConsultaRepository.findByNombre("RESPONDIDA")).thenReturn(estadoRespondida);
+        when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ConsultaResponse response = consultaService.responderConsulta(8L, request);
+
+        assertThat(response.getIdEstadoConsulta()).isEqualTo(2L);
+        verify(estadoConsultaRepository).findByNombre("RESPONDIDA");
+    }
+
+    @Test
     void responderConsulta_conRespuestaVacia_debeLanzarExcepcionSinConsultarBase() {
         ResponderConsultaRequest request = nuevaResponderRequest("   ", 2L);
 
@@ -279,6 +302,47 @@ class ConsultaServiceTest {
         verify(consultaRepository, never()).save(any(Consulta.class));
     }
 
+    @Test
+    void obtenerDashboardAlmacen_debeValidarDuenoYCalcularIndicadoresReales() {
+        Almacen almacen = nuevoAlmacen(41L, 99L);
+        EstadoConsulta pendiente = nuevoEstado(1L, "PENDIENTE");
+        EstadoConsulta respondida = nuevoEstado(2L, "RESPONDIDA");
+        EstadoConsulta cerrada = nuevoEstado(3L, "CERRADA");
+        Consulta consultaPendiente = nuevaConsulta(1L, "Consulta A", 4, 31L, 41L, null, 1L);
+        consultaPendiente.setCreatedAt(LocalDateTime.now().minusHours(1));
+        Consulta consultaRespondida = nuevaConsulta(2L, "Consulta B", 5, 32L, 41L, "Disponible", 2L);
+        consultaRespondida.setCreatedAt(LocalDateTime.now().minusHours(2));
+        consultaRespondida.setFechaRespuesta(LocalDateTime.now().minusHours(1));
+
+        when(almacenRepository.findById(41L)).thenReturn(Optional.of(almacen));
+        when(consultaRepository.findConsultasByAlmacen(41L)).thenReturn(List.of(consultaPendiente, consultaRespondida));
+        when(estadoConsultaRepository.findById(1L)).thenReturn(Optional.of(pendiente));
+        when(estadoConsultaRepository.findById(2L)).thenReturn(Optional.of(respondida));
+        when(estadoConsultaRepository.findAll()).thenReturn(List.of(pendiente, respondida, cerrada));
+
+        DashboardAlmacenResponse response = consultaService.obtenerDashboardAlmacen("99", 41L);
+
+        assertThat(response.getIdAlmacen()).isEqualTo(41L);
+        assertThat(response.getTotalConsultas()).isEqualTo(2);
+        assertThat(response.getConsultasHoy()).isEqualTo(2);
+        assertThat(response.getPendientes()).isEqualTo(1);
+        assertThat(response.getRespondidas()).isEqualTo(1);
+        assertThat(response.getCerradas()).isZero();
+        assertThat(response.getTiempoPromedioMin()).isEqualTo(60L);
+        assertThat(response.getConsultasRecientes()).hasSize(2);
+    }
+
+    @Test
+    void obtenerConsultasPorAlmacen_cuandoNoEsDueno_debeDenegarAcceso() {
+        when(almacenRepository.findById(41L)).thenReturn(Optional.of(nuevoAlmacen(41L, 99L)));
+
+        assertThatThrownBy(() -> consultaService.obtenerConsultasPorAlmacen("100", 41L))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("No tienes permiso para operar sobre este almacén");
+
+        verify(consultaRepository, never()).findConsultasByAlmacen(41L);
+    }
+
     private ConsultaRequest nuevaConsultaRequest() {
         ConsultaRequest request = new ConsultaRequest();
         request.setDescripcion("Necesito consultar disponibilidad de arroz");
@@ -317,5 +381,13 @@ class ConsultaServiceTest {
         consulta.setCreatedAt(now);
         consulta.setUpdatedAt(now.plusMinutes(5));
         return consulta;
+    }
+
+    private Almacen nuevoAlmacen(Long idAlmacen, Long idUsuario) {
+        Almacen almacen = new Almacen();
+        almacen.setIdAlmacen(idAlmacen);
+        almacen.setIdUsuario(idUsuario);
+        almacen.setNombre("Almacén Test");
+        return almacen;
     }
 }

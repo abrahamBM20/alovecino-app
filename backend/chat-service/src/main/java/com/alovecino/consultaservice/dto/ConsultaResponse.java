@@ -10,10 +10,12 @@ public class ConsultaResponse {
     private String descripcion;
     private Integer cantidad;
     private Long idCliente;
+    private String clienteNombre;
     private Long idAlmacen;
     private LocalDateTime fechaRespuesta;
     private String respuesta;
     private Long idEstadoConsulta;
+    private String estadoNombre;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

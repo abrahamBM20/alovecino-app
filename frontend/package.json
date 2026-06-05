@@ -18,9 +18,9 @@
     "eas:build:qa": "npx eas-cli build --platform android --profile qa",
     "eas:build:prod-preview": "npx eas-cli build --platform android --profile prod-preview",
     "eas:build:prod": "npx eas-cli build --platform android --profile prod",
-    "eas:update:dev": "npx eas-cli update --branch development",
-    "eas:update:qa": "npx eas-cli update --branch qa",
-    "eas:update:prod": "npx eas-cli update --branch production"
+    "eas:update:dev": "npx eas-cli update --branch development --platform android",
+    "eas:update:qa": "npx eas-cli update --branch qa --platform android",
+    "eas:update:prod": "npx eas-cli update --branch production --platform android"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
