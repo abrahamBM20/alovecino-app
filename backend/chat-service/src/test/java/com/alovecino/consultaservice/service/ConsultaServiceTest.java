@@ -343,10 +343,11 @@ class ConsultaServiceTest {
         EstadoConsulta respondida = nuevoEstado(2L, "RESPONDIDA");
         EstadoConsulta cerrada = nuevoEstado(3L, "CERRADA");
         Consulta consultaPendiente = nuevaConsulta(1L, "Consulta A", 4, 31L, 41L, null, 1L);
-        consultaPendiente.setCreatedAt(LocalDateTime.now().minusHours(1));
         Consulta consultaRespondida = nuevaConsulta(2L, "Consulta B", 5, 32L, 41L, "Disponible", 2L);
-        consultaRespondida.setCreatedAt(LocalDateTime.now().minusHours(2));
-        consultaRespondida.setFechaRespuesta(LocalDateTime.now().minusHours(1));
+        LocalDateTime hoyMediodia = LocalDateTime.now().toLocalDate().atTime(12, 0);
+        consultaPendiente.setCreatedAt(hoyMediodia.minusHours(1));
+        consultaRespondida.setCreatedAt(hoyMediodia.minusHours(2));
+        consultaRespondida.setFechaRespuesta(hoyMediodia.minusHours(1));
 
         when(almacenRepository.findById(41L)).thenReturn(Optional.of(almacen));
         when(consultaRepository.findConsultasByAlmacen(41L)).thenReturn(List.of(consultaPendiente, consultaRespondida));
