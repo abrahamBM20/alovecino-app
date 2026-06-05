@@ -1,5 +1,7 @@
 package com.alovecino.consultaservice.controller;
 
+import com.alovecino.consultaservice.dto.ConsultaDetalleRequest;
+import com.alovecino.consultaservice.dto.ConsultaDetalleResponse;
 import com.alovecino.consultaservice.dto.ConsultaRequest;
 import com.alovecino.consultaservice.dto.ConsultaResponse;
 import com.alovecino.consultaservice.dto.DashboardAlmacenResponse;
@@ -54,7 +56,8 @@ class ConsultaControllerTest {
     @Test
     void crearConsulta_conRequestValido_debeRetornar201YBody() throws Exception {
         ConsultaRequest request = requestValido();
-        ConsultaResponse response = responseConsulta(1L, request.getDescripcion(), request.getCantidad(),
+        ConsultaDetalleRequest detalleRequest = request.getDetalles().get(0);
+        ConsultaResponse response = responseConsulta(1L, detalleRequest.getDescripcion(), detalleRequest.getCantidadSolicitada(),
                 request.getIdCliente(), request.getIdAlmacen(), null, 1L);
 
         when(consultaService.crearConsulta(org.mockito.ArgumentMatchers.any(ConsultaRequest.class))).thenReturn(response);
@@ -64,21 +67,22 @@ class ConsultaControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idConsulta").value(1))
-                .andExpect(jsonPath("$.descripcion").value("Necesito consultar stock"))
-                .andExpect(jsonPath("$.cantidad").value(2))
+                .andExpect(jsonPath("$.detalles[0].descripcion").value("Necesito consultar stock"))
+                .andExpect(jsonPath("$.detalles[0].cantidadSolicitada").value(2))
                 .andExpect(jsonPath("$.idCliente").value(10))
                 .andExpect(jsonPath("$.idAlmacen").value(20))
                 .andExpect(jsonPath("$.idEstadoConsulta").value(1));
 
         ArgumentCaptor<ConsultaRequest> requestCaptor = ArgumentCaptor.forClass(ConsultaRequest.class);
         verify(consultaService).crearConsulta(requestCaptor.capture());
-        assertThat(requestCaptor.getValue().getDescripcion()).isEqualTo("Necesito consultar stock");
+        assertThat(requestCaptor.getValue().getDetalles()).hasSize(1);
+        assertThat(requestCaptor.getValue().getDetalles().get(0).getDescripcion()).isEqualTo("Necesito consultar stock");
     }
 
     @Test
-    void crearConsulta_conDescripcionVacia_debeRetornar400() throws Exception {
+    void crearConsulta_conDetalleDescripcionVacia_debeRetornar400() throws Exception {
         ConsultaRequest request = requestValido();
-        request.setDescripcion(" ");
+        request.getDetalles().get(0).setDescripcion(" ");
 
         mockMvc.perform(post("/api/consultas")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,7 +98,7 @@ class ConsultaControllerTest {
         mockMvc.perform(get("/api/consultas/{id}", 5L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idConsulta").value(5))
-                .andExpect(jsonPath("$.descripcion").value("Consulta existente"));
+                .andExpect(jsonPath("$.detalles[0].descripcion").value("Consulta existente"));
 
         verify(consultaService).obtenerConsulta(5L);
     }
@@ -214,11 +218,9 @@ class ConsultaControllerTest {
 
     private ConsultaRequest requestValido() {
         ConsultaRequest request = new ConsultaRequest();
-        request.setDescripcion("Necesito consultar stock");
-        request.setCantidad(2);
         request.setIdCliente(10L);
         request.setIdAlmacen(20L);
-        request.setIdEstadoConsulta(1L);
+        request.setDetalles(List.of(detalleRequest("Necesito consultar stock", 2)));
         return request;
     }
 
@@ -226,12 +228,26 @@ class ConsultaControllerTest {
                                               Long idAlmacen, String respuesta, Long idEstadoConsulta) {
         ConsultaResponse response = new ConsultaResponse();
         response.setIdConsulta(idConsulta);
-        response.setDescripcion(descripcion);
-        response.setCantidad(cantidad);
         response.setIdCliente(idCliente);
         response.setIdAlmacen(idAlmacen);
         response.setRespuesta(respuesta);
         response.setIdEstadoConsulta(idEstadoConsulta);
+        response.setDetalles(List.of(detalleResponse(100L, descripcion, cantidad)));
+        return response;
+    }
+
+    private ConsultaDetalleRequest detalleRequest(String descripcion, Integer cantidadSolicitada) {
+        ConsultaDetalleRequest request = new ConsultaDetalleRequest();
+        request.setDescripcion(descripcion);
+        request.setCantidadSolicitada(cantidadSolicitada);
+        return request;
+    }
+
+    private ConsultaDetalleResponse detalleResponse(Long idConsultaDetalle, String descripcion, Integer cantidadSolicitada) {
+        ConsultaDetalleResponse response = new ConsultaDetalleResponse();
+        response.setIdConsultaDetalle(idConsultaDetalle);
+        response.setDescripcion(descripcion);
+        response.setCantidadSolicitada(cantidadSolicitada);
         return response;
     }
 }

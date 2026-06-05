@@ -1,11 +1,13 @@
 package com.alovecino.consultaservice.service;
 
-import com.alovecino.consultaservice.dto.ConsultaResponse;
 import com.alovecino.consultaservice.dto.ConsultaRequest;
+import com.alovecino.consultaservice.dto.ConsultaDetalleRequest;
+import com.alovecino.consultaservice.dto.ConsultaResponse;
 import com.alovecino.consultaservice.dto.DashboardAlmacenResponse;
 import com.alovecino.consultaservice.dto.ResponderConsultaRequest;
 import com.alovecino.consultaservice.model.Almacen;
 import com.alovecino.consultaservice.model.Consulta;
+import com.alovecino.consultaservice.model.ConsultaDetalle;
 import com.alovecino.consultaservice.model.EstadoConsulta;
 import com.alovecino.consultaservice.repository.AlmacenRepository;
 import com.alovecino.consultaservice.repository.ClienteRepository;
@@ -53,13 +55,11 @@ class ConsultaServiceTest {
     private ConsultaService consultaService;
 
     @Test
-    void crearConsulta_debeAsignarEstadoPendienteEIgnorarRespuestaYEstadoDelRequest() {
+    void crearConsulta_debeAsignarEstadoPendienteYGuardarDetallesMer() {
         ConsultaRequest request = nuevaConsultaRequest();
-        request.setRespuesta("Respuesta enviada indebidamente desde frontend");
-        request.setIdEstadoConsulta(999L);
 
         EstadoConsulta estadoPendiente = nuevoEstado(1L, "PENDIENTE");
-        Consulta consultaGuardada = nuevaConsulta(10L, request.getDescripcion(), request.getCantidad(),
+        Consulta consultaGuardada = nuevaConsulta(10L, "Necesito consultar disponibilidad de arroz", 2,
                 request.getIdCliente(), request.getIdAlmacen(), null, 1L);
 
         when(clienteRepository.existsById(5L)).thenReturn(true);
@@ -73,14 +73,17 @@ class ConsultaServiceTest {
         verify(consultaRepository).save(consultaCaptor.capture());
 
         Consulta consultaEnviadaAGuardar = consultaCaptor.getValue();
-        assertThat(consultaEnviadaAGuardar.getDescripcion()).isEqualTo(request.getDescripcion());
-        assertThat(consultaEnviadaAGuardar.getCantidad()).isEqualTo(request.getCantidad());
+        assertThat(consultaEnviadaAGuardar.getDetalles()).hasSize(1);
+        assertThat(consultaEnviadaAGuardar.getDetalles().get(0).getDescripcion())
+                .isEqualTo("Necesito consultar disponibilidad de arroz");
+        assertThat(consultaEnviadaAGuardar.getDetalles().get(0).getCantidadSolicitada()).isEqualTo(2);
         assertThat(consultaEnviadaAGuardar.getIdCliente()).isEqualTo(request.getIdCliente());
         assertThat(consultaEnviadaAGuardar.getIdAlmacen()).isEqualTo(request.getIdAlmacen());
         assertThat(consultaEnviadaAGuardar.getRespuesta()).isNull();
         assertThat(consultaEnviadaAGuardar.getIdEstadoConsulta()).isEqualTo(1L);
 
         assertThat(response.getIdConsulta()).isEqualTo(10L);
+        assertThat(response.getDetalles()).hasSize(1);
         assertThat(response.getRespuesta()).isNull();
         assertThat(response.getIdEstadoConsulta()).isEqualTo(1L);
     }
@@ -97,6 +100,35 @@ class ConsultaServiceTest {
                 .hasMessage("El estado PENDIENTE no está configurado en el sistema");
 
         verify(consultaRepository, never()).save(any(Consulta.class));
+    }
+
+    @Test
+    void crearConsulta_conMultiplesDetalles_debePersistirDetalleEnTablaSeparada() {
+        ConsultaRequest request = new ConsultaRequest();
+        request.setIdCliente(5L);
+        request.setIdAlmacen(7L);
+        request.setDetalles(List.of(
+                nuevoDetalleRequest("Necesito leche", 4),
+                nuevoDetalleRequest("Necesito pan", 2)));
+
+        EstadoConsulta estadoPendiente = nuevoEstado(1L, "PENDIENTE");
+        when(clienteRepository.existsById(5L)).thenReturn(true);
+        when(almacenRepository.existsById(7L)).thenReturn(true);
+        when(estadoConsultaRepository.findByNombre("PENDIENTE")).thenReturn(estadoPendiente);
+        when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ConsultaResponse response = consultaService.crearConsulta(request);
+
+        ArgumentCaptor<Consulta> consultaCaptor = ArgumentCaptor.forClass(Consulta.class);
+        verify(consultaRepository).save(consultaCaptor.capture());
+        Consulta consulta = consultaCaptor.getValue();
+
+        assertThat(consulta.getDetalles()).hasSize(2);
+        assertThat(consulta.getDetalles().get(0).getConsulta()).isSameAs(consulta);
+        assertThat(response.getDetalles()).hasSize(2);
+        assertThat(response.getDetalles())
+                .extracting("descripcion")
+                .containsExactly("Necesito leche", "Necesito pan");
     }
 
     @Test
@@ -134,8 +166,9 @@ class ConsultaServiceTest {
         ConsultaResponse response = consultaService.obtenerConsulta(1L);
 
         assertThat(response.getIdConsulta()).isEqualTo(1L);
-        assertThat(response.getDescripcion()).isEqualTo("Necesito arroz");
-        assertThat(response.getCantidad()).isEqualTo(3);
+        assertThat(response.getDetalles()).hasSize(1);
+        assertThat(response.getDetalles().get(0).getDescripcion()).isEqualTo("Necesito arroz");
+        assertThat(response.getDetalles().get(0).getCantidadSolicitada()).isEqualTo(3);
         assertThat(response.getIdCliente()).isEqualTo(5L);
         assertThat(response.getIdAlmacen()).isEqualTo(7L);
         assertThat(response.getIdEstadoConsulta()).isEqualTo(1L);
@@ -161,7 +194,8 @@ class ConsultaServiceTest {
         verify(consultaRepository).findConsultasByCliente(11L);
         assertThat(responses).hasSize(2);
         assertThat(responses).extracting(ConsultaResponse::getIdConsulta).containsExactly(1L, 2L);
-        assertThat(responses).extracting(ConsultaResponse::getDescripcion).containsExactly("Consulta 1", "Consulta 2");
+        assertThat(responses.get(0).getDetalles().get(0).getDescripcion()).isEqualTo("Consulta 1");
+        assertThat(responses.get(1).getDetalles().get(0).getDescripcion()).isEqualTo("Consulta 2");
     }
 
     @Test
@@ -309,10 +343,11 @@ class ConsultaServiceTest {
         EstadoConsulta respondida = nuevoEstado(2L, "RESPONDIDA");
         EstadoConsulta cerrada = nuevoEstado(3L, "CERRADA");
         Consulta consultaPendiente = nuevaConsulta(1L, "Consulta A", 4, 31L, 41L, null, 1L);
-        consultaPendiente.setCreatedAt(LocalDateTime.now().minusHours(1));
         Consulta consultaRespondida = nuevaConsulta(2L, "Consulta B", 5, 32L, 41L, "Disponible", 2L);
-        consultaRespondida.setCreatedAt(LocalDateTime.now().minusHours(2));
-        consultaRespondida.setFechaRespuesta(LocalDateTime.now().minusHours(1));
+        LocalDateTime hoyMediodia = LocalDateTime.now().toLocalDate().atTime(12, 0);
+        consultaPendiente.setCreatedAt(hoyMediodia.minusHours(1));
+        consultaRespondida.setCreatedAt(hoyMediodia.minusHours(2));
+        consultaRespondida.setFechaRespuesta(hoyMediodia.minusHours(1));
 
         when(almacenRepository.findById(41L)).thenReturn(Optional.of(almacen));
         when(consultaRepository.findConsultasByAlmacen(41L)).thenReturn(List.of(consultaPendiente, consultaRespondida));
@@ -345,11 +380,9 @@ class ConsultaServiceTest {
 
     private ConsultaRequest nuevaConsultaRequest() {
         ConsultaRequest request = new ConsultaRequest();
-        request.setDescripcion("Necesito consultar disponibilidad de arroz");
-        request.setCantidad(2);
         request.setIdCliente(5L);
         request.setIdAlmacen(7L);
-        request.setIdEstadoConsulta(1L);
+        request.setDetalles(List.of(nuevoDetalleRequest("Necesito consultar disponibilidad de arroz", 2)));
         return request;
     }
 
@@ -357,6 +390,13 @@ class ConsultaServiceTest {
         ResponderConsultaRequest request = new ResponderConsultaRequest();
         request.setRespuesta(respuesta);
         request.setIdEstadoConsulta(idEstadoConsulta);
+        return request;
+    }
+
+    private ConsultaDetalleRequest nuevoDetalleRequest(String descripcion, Integer cantidadSolicitada) {
+        ConsultaDetalleRequest request = new ConsultaDetalleRequest();
+        request.setDescripcion(descripcion);
+        request.setCantidadSolicitada(cantidadSolicitada);
         return request;
     }
 
@@ -372,14 +412,19 @@ class ConsultaServiceTest {
         LocalDateTime now = LocalDateTime.of(2026, 5, 13, 10, 30);
         Consulta consulta = new Consulta();
         consulta.setIdConsulta(idConsulta);
-        consulta.setDescripcion(descripcion);
-        consulta.setCantidad(cantidad);
         consulta.setIdCliente(idCliente);
         consulta.setIdAlmacen(idAlmacen);
         consulta.setRespuesta(respuesta);
         consulta.setIdEstadoConsulta(idEstadoConsulta);
         consulta.setCreatedAt(now);
         consulta.setUpdatedAt(now.plusMinutes(5));
+        ConsultaDetalle detalle = new ConsultaDetalle();
+        detalle.setIdConsultaDetalle(idConsulta * 10);
+        detalle.setDescripcion(descripcion);
+        detalle.setCantidadSolicitada(cantidad);
+        detalle.setCreatedAt(now);
+        detalle.setUpdatedAt(now.plusMinutes(5));
+        consulta.addDetalle(detalle);
         return consulta;
     }
 
