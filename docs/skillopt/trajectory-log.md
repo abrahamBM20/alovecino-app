@@ -89,3 +89,19 @@ Observación:
 Promoción:
 
 - Promovido a `best_skill.md`, `training-protocol.md`, `config.json` y `validation-set.json`.
+
+## 2026-06-05 - Consultas Cliente Reemplazan Chat
+
+Tipo: frontend
+Resultado: éxito
+Archivos/rutas: `frontend/src/features/consultas`, `frontend/src/features/valoracion/screens/NegocioDetailScreen.js`, `backend/chat-service`
+
+Observación:
+
+- El flujo cliente no debe navegar a chat cuando el dominio real es consulta estructurada.
+- El contrato normalizado para crear consultas usa `detalles[].descripcion` y `detalles[].cantidadSolicitada`.
+- Si se reemplaza un flujo legacy con una pantalla nueva, elimina la ruta legacy cuando no queden referencias desde `frontend/src`.
+
+Promoción:
+
+- No promovido todavía.

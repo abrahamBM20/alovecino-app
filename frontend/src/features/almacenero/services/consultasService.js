@@ -29,20 +29,23 @@ function formatFecha(value) {
 export function mapConsulta(apiConsulta) {
   const estadoNombre = apiConsulta.estadoNombre?.toUpperCase?.();
   const estado = ESTADO_BY_NAME[estadoNombre] ?? ESTADO_BY_ID[apiConsulta.idEstadoConsulta] ?? 'pendiente';
+  const detalles = Array.isArray(apiConsulta.detalles) ? apiConsulta.detalles : [];
+  const primerDetalle = detalles[0];
 
   return {
     id: String(apiConsulta.idConsulta),
     idConsulta: apiConsulta.idConsulta,
-    pregunta: apiConsulta.descripcion,
+    pregunta: primerDetalle?.descripcion ?? apiConsulta.descripcion,
     estado,
     estadoNombre: apiConsulta.estadoNombre,
     idEstadoConsulta: apiConsulta.idEstadoConsulta,
-    cantidad: apiConsulta.cantidad ?? 0,
+    cantidad: primerDetalle?.cantidadSolicitada ?? apiConsulta.cantidad ?? 0,
     fecha: formatFecha(apiConsulta.createdAt),
     cliente: apiConsulta.clienteNombre ?? `Cliente #${apiConsulta.idCliente ?? '-'}`,
     idCliente: apiConsulta.idCliente,
     respuesta: apiConsulta.respuesta,
     fechaRespuesta: apiConsulta.fechaRespuesta,
+    detalles,
     createdAt: apiConsulta.createdAt,
   };
 }

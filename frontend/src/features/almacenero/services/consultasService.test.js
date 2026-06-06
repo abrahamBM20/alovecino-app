@@ -22,8 +22,13 @@ describe('consultasService almacenero', () => {
   it('mapea una consulta real al modelo de UI', () => {
     const response = mapConsulta({
       idConsulta: 5,
-      descripcion: '¿Tiene arroz?',
-      cantidad: 2,
+      detalles: [
+        {
+          idConsultaDetalle: 9,
+          descripcion: '¿Tiene arroz?',
+          cantidadSolicitada: 2,
+        },
+      ],
       idCliente: 11,
       clienteNombre: 'Ana Pérez',
       idEstadoConsulta: 1,
@@ -46,7 +51,11 @@ describe('consultasService almacenero', () => {
 
   it('carga consultas reales por almacén', async () => {
     httpClient.get.mockResolvedValueOnce({
-      data: [{ idConsulta: 5, descripcion: '¿Tiene arroz?', idEstadoConsulta: 1 }],
+      data: [{
+        idConsulta: 5,
+        idEstadoConsulta: 1,
+        detalles: [{ descripcion: '¿Tiene arroz?', cantidadSolicitada: 2 }],
+      }],
     });
 
     const response = await fetchConsultasAlmacenero(7);
@@ -61,7 +70,11 @@ describe('consultasService almacenero', () => {
       data: {
         totalConsultas: 2,
         pendientes: 1,
-        consultasRecientes: [{ idConsulta: 8, descripcion: 'Pan', idEstadoConsulta: 2 }],
+        consultasRecientes: [{
+          idConsulta: 8,
+          idEstadoConsulta: 2,
+          detalles: [{ descripcion: 'Pan', cantidadSolicitada: 1 }],
+        }],
       },
     });
 

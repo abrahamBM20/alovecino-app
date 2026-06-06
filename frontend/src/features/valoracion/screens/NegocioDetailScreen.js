@@ -109,9 +109,11 @@ export default function NegocioDetailScreen({ id, nombre, comuna, region, distan
         <TouchableOpacity
           style={styles.fab}
           activeOpacity={0.85}
-          onPress={() => router.push({ pathname: '/home/chat/[id]', params: { id, nombre, logoUrl } })}
+          onPress={() => router.push({ pathname: '/home/consultas/nueva/[id]', params: { id, nombre, logoUrl } })}
+          accessibilityRole="button"
+          accessibilityLabel="Crear consulta"
         >
-          <Text style={styles.fabArrow}>›</Text>
+          <Ionicons name="create-outline" size={28} color={PRIMARY} />
         </TouchableOpacity>
       </SafeAreaView>
     </LinearGradient>
@@ -199,13 +201,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
-  },
-  fabArrow: {
-    fontSize: 44,
-    fontWeight: '900',
-    color: PRIMARY,
-    lineHeight: 48,
-    textAlign: 'center',
-    includeFontPadding: false,
   },
 });
