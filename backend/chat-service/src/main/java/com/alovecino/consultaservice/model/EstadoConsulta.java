@@ -17,6 +17,9 @@ public class EstadoConsulta {
     @Column(name = "id_estado_consulta")
     private Long idEstadoConsulta;
 
+    @Column(name = "codigo", nullable = false, length = 50)
+    private String codigo;
+
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
 
@@ -24,11 +27,11 @@ public class EstadoConsulta {
     private String descripcion;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "fecha_actualizacion")
     private LocalDateTime updatedAt;
 
     @PrePersist

@@ -42,11 +42,11 @@ public class ConsultaDetalle {
     private Integer cantidadSolicitada;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "fecha_actualizacion")
     private LocalDateTime updatedAt;
 
     @PrePersist

@@ -17,30 +17,30 @@ public class Usuario {
     @Column(name = "id_usuario")
     private Long idUsuario;
 
-    @Column(name = "email", nullable = false, unique = true, length = 255)
-    private String email;
+    @Column(name = "rut", nullable = false, unique = true, length = 12)
+    private String rut;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
+    @Column(name = "nombre_usuario", nullable = false, unique = true, length = 120)
+    private String nombreUsuario;
 
-    @Column(name = "nombre", nullable = false, length = 100)
+    @Column(name = "nombre", nullable = false, length = 160)
     private String nombre;
 
-    @Column(name = "apellido", nullable = false, length = 100)
-    private String apellido;
+    @Column(name = "correo", nullable = false, unique = true, length = 180)
+    private String correo;
 
-    @Column(name = "telefono", length = 20)
-    private String telefono;
+    @Column(name = "contrasena", nullable = false, length = 255)
+    private String contrasena;
 
-    @Column(name = "activo", nullable = false)
-    private Boolean activo = true;
+    @Column(name = "id_rol", nullable = false)
+    private Long idRol;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "fecha_actualizacion")
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -50,9 +50,6 @@ public class Usuario {
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
-        }
-        if (activo == null) {
-            activo = true;
         }
     }
 

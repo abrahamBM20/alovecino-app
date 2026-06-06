@@ -23,30 +23,18 @@ public class Almacen {
     @Column(name = "nombre", nullable = false, length = 200)
     private String nombre;
 
-    @Column(name = "descripcion", columnDefinition = "TEXT")
-    private String descripcion;
+    @Column(name = "id_direccion", nullable = false)
+    private Long idDireccion;
 
-    @Column(name = "direccion", columnDefinition = "TEXT")
-    private String direccion;
-
-    @Column(name = "ciudad", length = 100)
-    private String ciudad;
-
-    @Column(name = "codigo_postal", length = 10)
-    private String codigoPostal;
-
-    @Column(name = "telefono", length = 20)
-    private String telefono;
-
-    @Column(name = "activo", nullable = false)
-    private Boolean activo = true;
+    @Column(name = "id_estado_cuenta", nullable = false)
+    private Long idEstadoCuenta;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "fecha_actualizacion")
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -56,9 +44,6 @@ public class Almacen {
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
-        }
-        if (activo == null) {
-            activo = true;
         }
     }
 

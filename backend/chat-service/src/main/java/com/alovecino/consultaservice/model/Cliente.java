@@ -5,6 +5,7 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,24 +21,21 @@ public class Cliente {
     @Column(name = "id_usuario", nullable = false)
     private Long idUsuario;
 
-    @Column(name = "direccion", columnDefinition = "TEXT")
-    private String direccion;
+    @Column(name = "fecha_nacimiento", nullable = false)
+    private LocalDate fechaNacimiento;
 
-    @Column(name = "ciudad", length = 100)
-    private String ciudad;
+    @Column(name = "id_direccion", nullable = false)
+    private Long idDireccion;
 
-    @Column(name = "codigo_postal", length = 10)
-    private String codigoPostal;
-
-    @Column(name = "activo", nullable = false)
-    private Boolean activo = true;
+    @Column(name = "id_estado_cuenta", nullable = false)
+    private Long idEstadoCuenta;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "fecha_actualizacion")
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -47,9 +45,6 @@ public class Cliente {
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
-        }
-        if (activo == null) {
-            activo = true;
         }
     }
 

@@ -11,6 +11,7 @@ import com.alovecino.consultaservice.model.Cliente;
 import com.alovecino.consultaservice.model.Consulta;
 import com.alovecino.consultaservice.model.ConsultaDetalle;
 import com.alovecino.consultaservice.model.EstadoConsulta;
+import com.alovecino.consultaservice.model.Usuario;
 import com.alovecino.consultaservice.repository.AlmacenRepository;
 import com.alovecino.consultaservice.repository.ClienteRepository;
 import com.alovecino.consultaservice.repository.ConsultaRepository;
@@ -47,7 +48,7 @@ public class ConsultaService {
     public ConsultaResponse crearConsulta(ConsultaRequest request) {
         validarClienteYAlmacen(request.getIdCliente(), request.getIdAlmacen());
 
-        EstadoConsulta estadoPendiente = estadoConsultaRepository.findByNombre(ESTADO_PENDIENTE);
+        EstadoConsulta estadoPendiente = estadoConsultaRepository.findByCodigo(ESTADO_PENDIENTE);
         if (estadoPendiente == null) {
             throw new IllegalArgumentException("El estado PENDIENTE no está configurado en el sistema");
         }
@@ -98,7 +99,7 @@ public class ConsultaService {
         validarDuenoAlmacen(duenoIdentifier, idAlmacen);
         List<ConsultaResponse> consultas = obtenerConsultasPorAlmacen(idAlmacen);
         Map<Long, String> estados = estadoConsultaRepository.findAll().stream()
-                .collect(Collectors.toMap(EstadoConsulta::getIdEstadoConsulta, EstadoConsulta::getNombre));
+                .collect(Collectors.toMap(EstadoConsulta::getIdEstadoConsulta, EstadoConsulta::getCodigo));
         LocalDate hoy = LocalDate.now();
 
         DashboardAlmacenResponse response = new DashboardAlmacenResponse();
@@ -196,7 +197,7 @@ public class ConsultaService {
                     .orElseThrow(() -> new IllegalArgumentException("El estado de consulta no existe"));
         }
 
-        EstadoConsulta estado = estadoConsultaRepository.findByNombre(ESTADO_RESPONDIDA);
+        EstadoConsulta estado = estadoConsultaRepository.findByCodigo(ESTADO_RESPONDIDA);
         if (estado == null) {
             throw new IllegalArgumentException("El estado RESPONDIDA no está configurado en el sistema");
         }
@@ -282,7 +283,7 @@ public class ConsultaService {
         return clienteRepository.findById(idCliente)
                 .map(Cliente::getIdUsuario)
                 .flatMap(usuarioRepository::findById)
-                .map(usuario -> usuario.getNombre() + (usuario.getApellido() != null ? " " + usuario.getApellido() : ""))
+                .map(Usuario::getNombre)
                 .orElse(null);
     }
 
