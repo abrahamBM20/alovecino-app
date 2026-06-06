@@ -11,6 +11,7 @@ import com.alovecino.consultaservice.model.Cliente;
 import com.alovecino.consultaservice.model.Consulta;
 import com.alovecino.consultaservice.model.ConsultaDetalle;
 import com.alovecino.consultaservice.model.EstadoConsulta;
+import com.alovecino.consultaservice.model.Usuario;
 import com.alovecino.consultaservice.repository.AlmacenRepository;
 import com.alovecino.consultaservice.repository.ClienteRepository;
 import com.alovecino.consultaservice.repository.ConsultaRepository;
@@ -282,7 +283,7 @@ public class ConsultaService {
         return clienteRepository.findById(idCliente)
                 .map(Cliente::getIdUsuario)
                 .flatMap(usuarioRepository::findById)
-                .map(usuario -> usuario.getNombre() + (usuario.getApellido() != null ? " " + usuario.getApellido() : ""))
+                .map(Usuario::getNombre)
                 .orElse(null);
     }
 
