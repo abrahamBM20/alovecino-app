@@ -2,12 +2,9 @@ package com.alovecino.authservice.dto;
 
 import java.time.Instant;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public class TokenResponse {
 
     private String accessToken;
-    @JsonIgnore
     private String refreshToken;
     private String tokenType = "Bearer";
     private Instant accessTokenExpiresAt;

@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alovecino.authservice.config.JwtProperties;
 import com.alovecino.authservice.dto.LoginRequest;
+import com.alovecino.authservice.dto.LogoutRequest;
+import com.alovecino.authservice.dto.RefreshTokenRequest;
 import com.alovecino.authservice.dto.TokenResponse;
 import com.alovecino.authservice.service.AuthService;
 import com.alovecino.authservice.service.InvalidRefreshTokenException;
@@ -49,13 +51,15 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
-            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+            @RequestBody(required = false) RefreshTokenRequest request) {
+        String resolvedRefreshToken = resolveRefreshToken(refreshToken, request);
+        if (resolvedRefreshToken == null || resolvedRefreshToken.isBlank()) {
             return invalidRefreshToken();
         }
 
         try {
-            TokenResponse response = authService.refresh(refreshToken);
+            TokenResponse response = authService.refresh(resolvedRefreshToken);
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, refreshTokenCookie(response).toString())
                     .body(response);
@@ -66,9 +70,11 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
-        if (refreshToken != null && !refreshToken.isBlank()) {
-            authService.logout(refreshToken);
+            @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+            @RequestBody(required = false) LogoutRequest request) {
+        String resolvedRefreshToken = resolveRefreshToken(refreshToken, request);
+        if (resolvedRefreshToken != null && !resolvedRefreshToken.isBlank()) {
+            authService.logout(resolvedRefreshToken);
         }
 
         return ResponseEntity.noContent()
@@ -80,6 +86,22 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .header(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString())
                 .body(Map.of("message", "Refresh token inválido"));
+    }
+
+    private String resolveRefreshToken(String cookieRefreshToken, RefreshTokenRequest request) {
+        if (request != null && request.getRefreshToken() != null && !request.getRefreshToken().isBlank()) {
+            return request.getRefreshToken();
+        }
+
+        return cookieRefreshToken;
+    }
+
+    private String resolveRefreshToken(String cookieRefreshToken, LogoutRequest request) {
+        if (request != null && request.getRefreshToken() != null && !request.getRefreshToken().isBlank()) {
+            return request.getRefreshToken();
+        }
+
+        return cookieRefreshToken;
     }
 
     private ResponseCookie refreshTokenCookie(TokenResponse response) {

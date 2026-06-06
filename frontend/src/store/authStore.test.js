@@ -1,10 +1,12 @@
 const mockLoginService = jest.fn();
 const mockLogoutService = jest.fn();
+const mockRefreshSessionService = jest.fn();
 const mockMapApiError = jest.fn((error) => error?.message || 'Error mapeado');
 
 jest.mock('../features/auth/services/authService', () => ({
   loginService: (...args) => mockLoginService(...args),
   logoutService: (...args) => mockLogoutService(...args),
+  refreshSessionService: (...args) => mockRefreshSessionService(...args),
 }));
 
 jest.mock('../shared/api/errorMapper', () => ({
@@ -26,6 +28,9 @@ describe('useAuthStore', () => {
       status: 'unauthenticated',
       user: null,
       accessToken: null,
+      refreshToken: null,
+      accessTokenExpiresAt: null,
+      refreshTokenExpiresAt: null,
       isLoading: false,
       error: null,
     });
@@ -34,6 +39,9 @@ describe('useAuthStore', () => {
   it('autentica y persiste los datos de sesion cuando el login es exitoso', async () => {
     mockLoginService.mockResolvedValue({
       accessToken: 'token-qa',
+      refreshToken: 'refresh-qa',
+      accessTokenExpiresAt: '2026-06-05T12:15:00Z',
+      refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
       user: {
         id: '42',
         name: 'QA User',
@@ -53,6 +61,9 @@ describe('useAuthStore', () => {
     expect(useAuthStore.getState()).toMatchObject({
       status: 'authenticated',
       accessToken: 'token-qa',
+      refreshToken: 'refresh-qa',
+      accessTokenExpiresAt: '2026-06-05T12:15:00Z',
+      refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
       user: {
         email: 'qa@alovecino.test',
       },
@@ -76,8 +87,57 @@ describe('useAuthStore', () => {
       status: 'unauthenticated',
       user: null,
       accessToken: null,
+      refreshToken: null,
       isLoading: false,
       error: 'Correo o contraseña incorrectos',
+    });
+  });
+
+  it('renueva la sesion y rota tokens cuando el refresh remoto es exitoso', async () => {
+    useAuthStore.setState({
+      status: 'authenticated',
+      user: { id: '42', email: 'qa@alovecino.test' },
+      accessToken: 'access-old',
+      refreshToken: 'refresh-old',
+      error: 'error anterior',
+    });
+    mockRefreshSessionService.mockResolvedValue({
+      accessToken: 'access-new',
+      refreshToken: 'refresh-new',
+      accessTokenExpiresAt: '2026-06-05T12:30:00Z',
+      refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
+    });
+
+    await expect(useAuthStore.getState().refreshSession()).resolves.toBe('access-new');
+
+    expect(mockRefreshSessionService).toHaveBeenCalledWith({ refreshToken: 'refresh-old' });
+    expect(useAuthStore.getState()).toMatchObject({
+      status: 'authenticated',
+      accessToken: 'access-new',
+      refreshToken: 'refresh-new',
+      accessTokenExpiresAt: '2026-06-05T12:30:00Z',
+      refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
+      user: { email: 'qa@alovecino.test' },
+      error: null,
+    });
+  });
+
+  it('limpia la sesion cuando no existe refresh token local', async () => {
+    useAuthStore.setState({
+      status: 'authenticated',
+      user: { id: '42', email: 'qa@alovecino.test' },
+      accessToken: 'access-old',
+      refreshToken: null,
+    });
+
+    await expect(useAuthStore.getState().refreshSession()).rejects.toThrow('Refresh token no disponible');
+
+    expect(mockRefreshSessionService).not.toHaveBeenCalled();
+    expect(useAuthStore.getState()).toMatchObject({
+      status: 'unauthenticated',
+      user: null,
+      accessToken: null,
+      refreshToken: null,
     });
   });
 
@@ -87,16 +147,18 @@ describe('useAuthStore', () => {
       status: 'authenticated',
       user: { id: '42', email: 'qa@alovecino.test' },
       accessToken: 'token-qa',
+      refreshToken: 'refresh-qa',
       error: 'error anterior',
     });
 
     await useAuthStore.getState().logout();
 
-    expect(mockLogoutService).toHaveBeenCalled();
+    expect(mockLogoutService).toHaveBeenCalledWith('refresh-qa');
     expect(useAuthStore.getState()).toMatchObject({
       status: 'unauthenticated',
       user: null,
       accessToken: null,
+      refreshToken: null,
       error: null,
     });
   });

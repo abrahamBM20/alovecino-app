@@ -127,7 +127,7 @@ class AuthServiceApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").doesNotExist())
                 .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
-                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.user.email").value(TEST_EMAIL))
                 .andExpect(jsonPath("$.user.name").value("Usuario Test"))
@@ -193,7 +193,7 @@ class AuthServiceApplicationTests {
                 .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
-                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.token").doesNotExist())
                 .andReturn();
 
@@ -214,6 +214,37 @@ class AuthServiceApplicationTests {
                 .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Refresh token inválido"));
+    }
+
+    @Test
+    void refreshAcceptsRefreshTokenFromRequestBodyForMobileClients() throws Exception {
+        JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String oldRefreshToken = loginResponse.get("refreshToken").asText();
+        RefreshToken oldPersistedToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(oldRefreshToken)).orElseThrow();
+        Long sessionId = oldPersistedToken.getSesionUsuario().getIdSesionUsuario();
+
+        MvcResult refreshResult = mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "refreshToken": "%s"
+                        }
+                        """.formatted(oldRefreshToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
+                .andReturn();
+
+        JsonNode refreshResponse = objectMapper.readTree(refreshResult.getResponse().getContentAsString());
+        String newRefreshToken = refreshResponse.get("refreshToken").asText();
+
+        assertThat(newRefreshToken).isNotEqualTo(oldRefreshToken);
+        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(oldRefreshToken))).isEmpty();
+        RefreshToken newPersistedToken = refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(
+                refreshTokenService.hash(newRefreshToken)).orElseThrow();
+        assertThat(newPersistedToken.getSesionUsuario().getIdSesionUsuario()).isEqualTo(sessionId);
     }
 
     @Test
@@ -257,6 +288,27 @@ class AuthServiceApplicationTests {
         mockMvc.perform(post("/auth/refresh")
                 .cookie(currentRefreshTokenCookie))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logoutAcceptsRefreshTokenFromRequestBodyForMobileClients() throws Exception {
+        JsonNode loginResponse = login(TEST_EMAIL, TEST_PASSWORD);
+        String refreshToken = loginResponse.get("refreshToken").asText();
+        String refreshTokenHash = refreshTokenService.hash(refreshToken);
+
+        mockMvc.perform(post("/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "refreshToken": "%s"
+                        }
+                        """.formatted(refreshToken)))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+
+        assertThat(refreshTokenRepository.findByTokenHashAndRevokedAtIsNull(refreshTokenHash)).isEmpty();
+        assertThat(findTestSessions()).hasSize(1);
+        assertThat(findTestSessions().get(0).getRevokedAt()).isNotNull();
     }
 
     @Test
