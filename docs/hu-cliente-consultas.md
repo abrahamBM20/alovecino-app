@@ -33,6 +33,7 @@ Como cliente autenticado, quiero enviar consultas estructuradas a un almacén y 
 - [x] DoD-02: Existe ruta Expo Router para mis consultas cliente.
 - [x] DoD-03: Existe servicio frontend cliente para `POST /api/consultas` y `GET /api/consultas/cliente/{idCliente}`.
 - [x] DoD-04: Todas las llamadas HTTP pasan por `frontend/src/shared/api/httpClient.js`.
+- [x] DoD-04b: El frontend resuelve `cliente.idCliente` desde el perfil real antes de crear o listar consultas.
 - [x] DoD-05: La pantalla de creación maneja estados `idle`, `submitting`, `done` y `error`.
 - [x] DoD-06: La pantalla de mis consultas maneja estados `loading`, `error`, `empty` y `success`.
 - [x] DoD-07: La navegación principal ya no apunta a `ChatMinimarketScreen`.

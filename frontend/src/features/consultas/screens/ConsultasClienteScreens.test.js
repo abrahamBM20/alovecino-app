@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import CrearConsultaScreen from './CrearConsultaScreen';
 import MisConsultasScreen from './MisConsultasScreen';
 import { crearConsultaCliente, fetchConsultasCliente } from '../services/consultasClienteService';
+import { getPerfilUsuario } from '../../perfil/services/perfilService';
 
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -49,9 +50,17 @@ jest.mock('../services/consultasClienteService', () => ({
   fetchConsultasCliente: jest.fn(),
 }));
 
+jest.mock('../../perfil/services/perfilService', () => ({
+  getPerfilUsuario: jest.fn(),
+}));
+
 describe('pantallas cliente de consultas', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    getPerfilUsuario.mockResolvedValue({
+      idUsuario: 9,
+      cliente: { idCliente: 44 },
+    });
   });
 
   it('crea una consulta real desde el detalle de almacén', async () => {
@@ -64,12 +73,13 @@ describe('pantallas cliente de consultas', () => {
 
     const screen = render(<CrearConsultaScreen idAlmacen="7" nombreAlmacen="Almacén Los Queltehues" />);
 
+    await waitFor(() => expect(getPerfilUsuario).toHaveBeenCalledWith('9'));
     fireEvent.changeText(screen.getByLabelText('Descripción detalle 1'), 'Arroz grado 1');
     fireEvent.changeText(screen.getByLabelText('Cantidad detalle 1'), '2');
     fireEvent.press(screen.getByLabelText('Enviar consulta'));
 
     await waitFor(() => expect(crearConsultaCliente).toHaveBeenCalledWith({
-      idCliente: '9',
+      idCliente: 44,
       idAlmacen: '7',
       detalles: [{ descripcion: 'Arroz grado 1', cantidadSolicitada: '2' }],
     }));
@@ -87,6 +97,7 @@ describe('pantallas cliente de consultas', () => {
 
     const screen = render(<CrearConsultaScreen idAlmacen="7" nombreAlmacen="Almacén Los Queltehues" />);
 
+    await waitFor(() => expect(getPerfilUsuario).toHaveBeenCalledWith('9'));
     fireEvent.changeText(screen.getByLabelText('Descripción detalle 1'), 'Pan');
     fireEvent.changeText(screen.getByLabelText('Cantidad detalle 1'), '1');
     fireEvent.press(screen.getByLabelText('Enviar consulta'));
@@ -111,7 +122,8 @@ describe('pantallas cliente de consultas', () => {
 
     const screen = render(<MisConsultasScreen />);
 
-    await waitFor(() => expect(fetchConsultasCliente).toHaveBeenCalledWith('9'));
+    await waitFor(() => expect(getPerfilUsuario).toHaveBeenCalledWith('9'));
+    expect(fetchConsultasCliente).toHaveBeenCalledWith(44);
     expect(await screen.findByText('Arroz grado 1 (2)')).toBeTruthy();
     expect(screen.getByText('Sí, tenemos stock')).toBeTruthy();
   });
