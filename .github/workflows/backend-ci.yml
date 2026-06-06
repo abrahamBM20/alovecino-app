@@ -18,7 +18,7 @@ env:
   RENDER_DEV_API_GATEWAY_SERVICE_ID: ${{ vars.RENDER_DEV_API_GATEWAY_SERVICE_ID }}
   RENDER_DEV_API_GATEWAY_SERVICE_NAME: ${{ vars.RENDER_DEV_API_GATEWAY_SERVICE_NAME || 'alovecino-api-gateway-dev' }}
   RENDER_DEV_CHAT_SERVICE_ID: ${{ vars.RENDER_DEV_CHAT_SERVICE_ID }}
-  RENDER_DEV_CHAT_SERVICE_NAME: ${{ vars.RENDER_DEV_CHAT_SERVICE_NAME }}
+  RENDER_DEV_CHAT_SERVICE_NAME: ${{ vars.RENDER_DEV_CHAT_SERVICE_NAME || 'alovecino-chat-service-dev' }}
 
 jobs:
   api-gateway:
@@ -199,4 +199,4 @@ jobs:
           trigger_deploy "usuarios-service" "$RENDER_DEV_USUARIOS_SERVICE_ID" "$RENDER_DEV_USUARIOS_SERVICE_NAME"
           trigger_deploy "geo-service" "$RENDER_DEV_GEO_SERVICE_ID" "$RENDER_DEV_GEO_SERVICE_NAME"
           trigger_deploy "api-gateway" "$RENDER_DEV_API_GATEWAY_SERVICE_ID" "$RENDER_DEV_API_GATEWAY_SERVICE_NAME"
-          trigger_deploy "chat-service" "$RENDER_DEV_CHAT_SERVICE_ID" "$RENDER_DEV_CHAT_SERVICE_NAME" true
+          trigger_deploy "chat-service" "$RENDER_DEV_CHAT_SERVICE_ID" "$RENDER_DEV_CHAT_SERVICE_NAME"

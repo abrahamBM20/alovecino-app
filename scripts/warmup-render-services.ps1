@@ -31,6 +31,11 @@ $services = @(
         Url = "https://alovecino-geo-service-dev.onrender.com/actuator/health"
     },
     @{
+        Environment = "dev"
+        Name = "chat-service"
+        Url = "https://alovecino-chat-service-dev.onrender.com/actuator/health"
+    },
+    @{
         Environment = "qa"
         Name = "api-gateway"
         Url = "https://alovecino-api-gateway-qa.onrender.com/actuator/health"
@@ -49,6 +54,11 @@ $services = @(
         Environment = "qa"
         Name = "geo-service"
         Url = "https://alovecino-geo-service-qa.onrender.com/actuator/health"
+    },
+    @{
+        Environment = "qa"
+        Name = "chat-service"
+        Url = "https://alovecino-chat-service-qa.onrender.com/actuator/health"
     }
 )
 
