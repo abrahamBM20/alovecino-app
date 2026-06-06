@@ -113,9 +113,15 @@ jobs:
           APP_JWT_PRIVATE_KEY: ${{ secrets.APP_JWT_PRIVATE_KEY }}
           APP_JWT_PUBLIC_KEY: ${{ secrets.APP_JWT_PUBLIC_KEY }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          GEO_INTERNAL_API_KEY: ${{ secrets.GEO_INTERNAL_API_KEY }}
         shell: bash
         run: |
           set -euo pipefail
+          geo_internal_api_key="${GEO_INTERNAL_API_KEY:-}"
+          if [ -z "$geo_internal_api_key" ]; then
+            geo_internal_api_key="$(openssl rand -hex 32)"
+            echo "Generated deploy-scoped GEO_INTERNAL_API_KEY for QA services."
+          fi
 
           set_render_env() {
             local service_id="$1"
@@ -152,6 +158,7 @@ jobs:
           configure_backend_database "$RENDER_USUARIOS_SERVICE_ID"
           set_render_env "$RENDER_USUARIOS_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
           set_render_env "$RENDER_USUARIOS_SERVICE_ID" GEO_SERVICE_URL "https://alovecino-geo-service-qa.onrender.com"
+          set_render_env "$RENDER_USUARIOS_SERVICE_ID" GEO_INTERNAL_API_KEY "$geo_internal_api_key"
 
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" SERVER_PORT "10000"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" SPRING_PROFILES_ACTIVE "qa"
@@ -167,6 +174,7 @@ jobs:
             configure_backend_database "$RENDER_GEO_SERVICE_ID"
             set_render_env "$RENDER_GEO_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
             set_render_env "$RENDER_GEO_SERVICE_ID" GOOGLE_MAPS_API_KEY "${GOOGLE_MAPS_API_KEY:-}"
+            set_render_env "$RENDER_GEO_SERVICE_ID" GEO_INTERNAL_API_KEY "$geo_internal_api_key"
           fi
 
           if [ -n "${RENDER_CHAT_SERVICE_ID:-}" ]; then

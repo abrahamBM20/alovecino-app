@@ -23,6 +23,7 @@ En `push` hacia `dev`:
 ## Secretos Requeridos
 
 - `RENDER_API_KEY`: API key de Render para listar servicios y gatillar deploys.
+- `GEO_INTERNAL_API_KEY`: opcional. Si no existe, el workflow genera una clave por deploy y la configura en `usuarios-service` y `geo-service` para permitir geocodificacion interna durante registros publicos.
 
 ## Variables Opcionales
 

@@ -57,6 +57,14 @@ function Set-ManyRenderEnvVars($ServiceId, $Values, $ApiKey) {
 
 Assert-Command npx
 
+$geoInternalApiKey = $env:GEO_INTERNAL_API_KEY
+if ([string]::IsNullOrWhiteSpace($geoInternalApiKey)) {
+    $bytes = [byte[]]::new(32)
+    [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+    $geoInternalApiKey = [Convert]::ToHexString($bytes).ToLowerInvariant()
+    Write-Host "Generated deploy-scoped GEO_INTERNAL_API_KEY for QA services."
+}
+
 $renderApiKey = $env:RENDER_API_KEY
 if ([string]::IsNullOrWhiteSpace($renderApiKey)) {
     $renderApiKey = Read-PlainSecret "Render API key"
@@ -108,10 +116,12 @@ $authVars["APP_JWT_REFRESH_COOKIE_SAME_SITE"] = "None"
 $usuariosVars = $commonBackendVars.Clone()
 $usuariosVars["AUTH_JWK_SET_URI"] = "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
 $usuariosVars["GEO_SERVICE_URL"] = "https://alovecino-geo-service-qa.onrender.com"
+$usuariosVars["GEO_INTERNAL_API_KEY"] = $geoInternalApiKey
 
 $geoVars = $commonBackendVars.Clone()
 $geoVars["AUTH_JWK_SET_URI"] = "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
 $geoVars["GOOGLE_GEOCODE_DAILY_REQUEST_LIMIT"] = "100"
+$geoVars["GEO_INTERNAL_API_KEY"] = $geoInternalApiKey
 if (-not [string]::IsNullOrWhiteSpace($env:GOOGLE_MAPS_API_KEY)) {
     $geoVars["GOOGLE_MAPS_API_KEY"] = $env:GOOGLE_MAPS_API_KEY
 }
