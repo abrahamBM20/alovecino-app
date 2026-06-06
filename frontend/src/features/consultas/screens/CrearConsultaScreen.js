@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
+import { getPerfilUsuario } from '../../perfil/services/perfilService';
 import { crearConsultaCliente } from '../services/consultasClienteService';
 
 const PRIMARY = '#044E81';
@@ -38,15 +39,50 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const [idCliente, setIdCliente] = useState(null);
   const [detalles, setDetalles] = useState([emptyDetalle()]);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const [createdConsulta, setCreatedConsulta] = useState(null);
 
-  const idCliente = user?.id;
   const isSubmitting = status === 'submitting';
+  const isLoadingProfile = status === 'loading-profile';
   const isDone = status === 'done';
-  const canAddDetalle = detalles.length < MAX_DETALLES && !isSubmitting && !isDone;
+  const canAddDetalle = detalles.length < MAX_DETALLES && !isSubmitting && !isLoadingProfile && !isDone;
+
+  useEffect(() => {
+    let active = true;
+    async function loadClienteId() {
+      if (!user?.id) {
+        setError('No pudimos identificar tu usuario. Inicia sesión nuevamente.');
+        return;
+      }
+
+      setStatus('loading-profile');
+      setError(null);
+      try {
+        const perfil = await getPerfilUsuario(user.id);
+        if (!active) return;
+        const nextIdCliente = perfil?.cliente?.idCliente;
+        if (!nextIdCliente) {
+          setError('Tu usuario no tiene un perfil de cliente asociado.');
+          setStatus('idle');
+          return;
+        }
+        setIdCliente(nextIdCliente);
+        setStatus('idle');
+      } catch (loadError) {
+        if (!active) return;
+        setError(loadError?.message || 'No pudimos cargar tu perfil de cliente.');
+        setStatus('idle');
+      }
+    }
+
+    loadClienteId();
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const isValid = useMemo(() => {
     const validIds = Number(idCliente) > 0 && Number(idAlmacen) > 0;
@@ -76,7 +112,7 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
   }
 
   async function handleSubmit() {
-    if (!isValid || isSubmitting || isDone) return;
+    if (!isValid || isSubmitting || isLoadingProfile || isDone) return;
     setStatus('submitting');
     setError(null);
     try {
@@ -87,8 +123,8 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
       });
       setCreatedConsulta(consulta);
       setStatus('done');
-    } catch {
-      setError('No pudimos enviar la consulta. Intenta nuevamente.');
+    } catch (submitError) {
+      setError(submitError?.message || 'No pudimos enviar la consulta. Intenta nuevamente.');
       setStatus('idle');
     }
   }
@@ -161,7 +197,7 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
                     {detalles.length > 1 && (
                       <TouchableOpacity
                         onPress={() => removeDetalle(index)}
-                        disabled={isSubmitting || isDone}
+                        disabled={isSubmitting || isLoadingProfile || isDone}
                         style={styles.removeBtn}
                         accessibilityRole="button"
                         accessibilityLabel={`Eliminar detalle ${index + 1}`}
@@ -177,7 +213,7 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
                     placeholder="Producto o pregunta"
                     placeholderTextColor="rgba(15,45,69,0.35)"
                     multiline
-                    editable={!isSubmitting && !isDone}
+                    editable={!isSubmitting && !isLoadingProfile && !isDone}
                     maxLength={1000}
                     accessibilityLabel={`Descripción detalle ${index + 1}`}
                   />
@@ -188,7 +224,7 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
                     placeholder="Cantidad"
                     placeholderTextColor="rgba(15,45,69,0.35)"
                     keyboardType="number-pad"
-                    editable={!isSubmitting && !isDone}
+                    editable={!isSubmitting && !isLoadingProfile && !isDone}
                     accessibilityLabel={`Cantidad detalle ${index + 1}`}
                   />
                 </View>
@@ -208,14 +244,14 @@ export default function CrearConsultaScreen({ idAlmacen, nombreAlmacen }) {
             </View>
 
             <TouchableOpacity
-              style={[styles.submitBtn, (!isValid || isSubmitting || isDone) && styles.btnDisabled]}
+              style={[styles.submitBtn, (!isValid || isSubmitting || isLoadingProfile || isDone) && styles.btnDisabled]}
               onPress={handleSubmit}
-              disabled={!isValid || isSubmitting || isDone}
+              disabled={!isValid || isSubmitting || isLoadingProfile || isDone}
               activeOpacity={0.86}
               accessibilityRole="button"
               accessibilityLabel="Enviar consulta"
             >
-              {isSubmitting ? (
+              {isSubmitting || isLoadingProfile ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>

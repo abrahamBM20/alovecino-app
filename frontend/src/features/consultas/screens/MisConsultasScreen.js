@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
+import { getPerfilUsuario } from '../../perfil/services/perfilService';
 import { fetchConsultasCliente } from '../services/consultasClienteService';
 
 const PRIMARY = '#044E81';
@@ -65,17 +66,23 @@ export default function MisConsultasScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const idCliente = user?.id;
-
   const loadConsultas = useCallback(async () => {
-    if (!idCliente) {
+    if (!user?.id) {
       setConsultas([]);
+      setError('No pudimos identificar tu usuario. Inicia sesión nuevamente.');
       return;
     }
     setError(null);
+    const perfil = await getPerfilUsuario(user.id);
+    const idCliente = perfil?.cliente?.idCliente;
+    if (!idCliente) {
+      setConsultas([]);
+      setError('Tu usuario no tiene un perfil de cliente asociado.');
+      return;
+    }
     const data = await fetchConsultasCliente(idCliente);
     setConsultas(data);
-  }, [idCliente]);
+  }, [user?.id]);
 
   useFocusEffect(useCallback(() => {
     let active = true;
