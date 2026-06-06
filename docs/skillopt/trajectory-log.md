@@ -89,3 +89,19 @@ Observación:
 Promoción:
 
 - Promovido a `best_skill.md`, `training-protocol.md`, `config.json` y `validation-set.json`.
+
+## 2026-06-05 - Refresh Token Móvil
+
+Tipo: backend | frontend
+Resultado: éxito
+Archivos/rutas: `backend/auth-service`, `frontend/src/store/authStore.js`, `frontend/src/shared/api/httpClient.js`, `frontend/src/features/auth/services/authService.js`
+
+Observación:
+
+- `auth-service` ya persistía `sesion_usuario` y `refresh_token`, pero `TokenResponse` ocultaba `refreshToken` en JSON.
+- React Native no podía renovar sesión de forma confiable solo con cookie httpOnly; el flujo móvil necesita recibir `refreshToken` en login/refresh y enviarlo por body a `/auth/refresh` y `/auth/logout`.
+- El interceptor HTTP debe excluir endpoints `/auth/*`, usar un único refresh concurrente, reintentar una sola vez la request original y limpiar sesión si el refresh falla.
+
+Promoción:
+
+- Promovido a `best_skill.md`.

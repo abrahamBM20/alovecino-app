@@ -11,6 +11,7 @@ export async function loginService({ email, password }) {
   if (isMockEnvironment()) {
     return {
       accessToken: MOCK_CLIENTE_TOKEN,
+      refreshToken: 'mock-refresh-token',
       user: { id: '1', name: 'Demo Cliente', email },
     };
   }
@@ -19,14 +20,37 @@ export async function loginService({ email, password }) {
 
   return {
     accessToken: data?.accessToken,
+    refreshToken: data?.refreshToken,
+    accessTokenExpiresAt: data?.accessTokenExpiresAt,
+    refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
     user: data?.user,
   };
 }
 
-export async function logoutService() {
+export async function refreshSessionService({ refreshToken }) {
+  if (isMockEnvironment()) {
+    return {
+      accessToken: MOCK_CLIENTE_TOKEN,
+      refreshToken: 'mock-refresh-token',
+      user: { id: '1', name: 'Demo Cliente' },
+    };
+  }
+
+  const { data } = await httpClient.post('/auth/refresh', { refreshToken }, { skipAuthRefresh: true });
+
+  return {
+    accessToken: data?.accessToken,
+    refreshToken: data?.refreshToken,
+    accessTokenExpiresAt: data?.accessTokenExpiresAt,
+    refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
+    user: data?.user,
+  };
+}
+
+export async function logoutService(refreshToken) {
   if (isMockEnvironment()) {
     return;
   }
 
-  await httpClient.post('/auth/logout');
+  await httpClient.post('/auth/logout', refreshToken ? { refreshToken } : undefined, { skipAuthRefresh: true });
 }
