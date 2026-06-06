@@ -20,6 +20,7 @@ public class EstadoConsultaService {
 
     public EstadoConsultaResponse crearEstadoConsulta(EstadoConsultaRequest request) {
         EstadoConsulta estadoConsulta = new EstadoConsulta();
+        estadoConsulta.setCodigo(toCodigo(request.getNombre()));
         estadoConsulta.setNombre(request.getNombre());
         estadoConsulta.setDescripcion(request.getDescripcion());
 
@@ -46,6 +47,7 @@ public class EstadoConsultaService {
         EstadoConsulta estadoConsulta = estadoConsultaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Estado de consulta no encontrado"));
 
+        estadoConsulta.setCodigo(toCodigo(request.getNombre()));
         estadoConsulta.setNombre(request.getNombre());
         estadoConsulta.setDescripcion(request.getDescripcion());
 
@@ -68,5 +70,9 @@ public class EstadoConsultaService {
         response.setCreatedAt(estadoConsulta.getCreatedAt());
         response.setUpdatedAt(estadoConsulta.getUpdatedAt());
         return response;
+    }
+
+    private String toCodigo(String nombre) {
+        return nombre.trim().toUpperCase().replace(' ', '_');
     }
 }

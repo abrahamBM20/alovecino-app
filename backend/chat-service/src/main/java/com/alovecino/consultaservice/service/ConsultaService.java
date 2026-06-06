@@ -47,7 +47,7 @@ public class ConsultaService {
     public ConsultaResponse crearConsulta(ConsultaRequest request) {
         validarClienteYAlmacen(request.getIdCliente(), request.getIdAlmacen());
 
-        EstadoConsulta estadoPendiente = estadoConsultaRepository.findByNombre(ESTADO_PENDIENTE);
+        EstadoConsulta estadoPendiente = estadoConsultaRepository.findByCodigo(ESTADO_PENDIENTE);
         if (estadoPendiente == null) {
             throw new IllegalArgumentException("El estado PENDIENTE no está configurado en el sistema");
         }
@@ -98,7 +98,7 @@ public class ConsultaService {
         validarDuenoAlmacen(duenoIdentifier, idAlmacen);
         List<ConsultaResponse> consultas = obtenerConsultasPorAlmacen(idAlmacen);
         Map<Long, String> estados = estadoConsultaRepository.findAll().stream()
-                .collect(Collectors.toMap(EstadoConsulta::getIdEstadoConsulta, EstadoConsulta::getNombre));
+                .collect(Collectors.toMap(EstadoConsulta::getIdEstadoConsulta, EstadoConsulta::getCodigo));
         LocalDate hoy = LocalDate.now();
 
         DashboardAlmacenResponse response = new DashboardAlmacenResponse();
@@ -196,7 +196,7 @@ public class ConsultaService {
                     .orElseThrow(() -> new IllegalArgumentException("El estado de consulta no existe"));
         }
 
-        EstadoConsulta estado = estadoConsultaRepository.findByNombre(ESTADO_RESPONDIDA);
+        EstadoConsulta estado = estadoConsultaRepository.findByCodigo(ESTADO_RESPONDIDA);
         if (estado == null) {
             throw new IllegalArgumentException("El estado RESPONDIDA no está configurado en el sistema");
         }

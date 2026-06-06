@@ -64,7 +64,7 @@ class ConsultaServiceTest {
 
         when(clienteRepository.existsById(5L)).thenReturn(true);
         when(almacenRepository.existsById(7L)).thenReturn(true);
-        when(estadoConsultaRepository.findByNombre("PENDIENTE")).thenReturn(estadoPendiente);
+        when(estadoConsultaRepository.findByCodigo("PENDIENTE")).thenReturn(estadoPendiente);
         when(consultaRepository.save(any(Consulta.class))).thenReturn(consultaGuardada);
 
         ConsultaResponse response = consultaService.crearConsulta(request);
@@ -93,7 +93,7 @@ class ConsultaServiceTest {
         ConsultaRequest request = nuevaConsultaRequest();
         when(clienteRepository.existsById(5L)).thenReturn(true);
         when(almacenRepository.existsById(7L)).thenReturn(true);
-        when(estadoConsultaRepository.findByNombre("PENDIENTE")).thenReturn(null);
+        when(estadoConsultaRepository.findByCodigo("PENDIENTE")).thenReturn(null);
 
         assertThatThrownBy(() -> consultaService.crearConsulta(request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -114,7 +114,7 @@ class ConsultaServiceTest {
         EstadoConsulta estadoPendiente = nuevoEstado(1L, "PENDIENTE");
         when(clienteRepository.existsById(5L)).thenReturn(true);
         when(almacenRepository.existsById(7L)).thenReturn(true);
-        when(estadoConsultaRepository.findByNombre("PENDIENTE")).thenReturn(estadoPendiente);
+        when(estadoConsultaRepository.findByCodigo("PENDIENTE")).thenReturn(estadoPendiente);
         when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ConsultaResponse response = consultaService.crearConsulta(request);
@@ -141,7 +141,7 @@ class ConsultaServiceTest {
                 .hasMessage("El cliente no existe");
 
         verify(consultaRepository, never()).save(any(Consulta.class));
-        verify(estadoConsultaRepository, never()).findByNombre("PENDIENTE");
+        verify(estadoConsultaRepository, never()).findByCodigo("PENDIENTE");
     }
 
     @Test
@@ -155,7 +155,7 @@ class ConsultaServiceTest {
                 .hasMessage("El almacén no existe");
 
         verify(consultaRepository, never()).save(any(Consulta.class));
-        verify(estadoConsultaRepository, never()).findByNombre("PENDIENTE");
+        verify(estadoConsultaRepository, never()).findByCodigo("PENDIENTE");
     }
 
     @Test
@@ -245,13 +245,13 @@ class ConsultaServiceTest {
         ResponderConsultaRequest request = nuevaResponderRequest("Sí, tenemos stock", null);
 
         when(consultaRepository.findById(8L)).thenReturn(Optional.of(consulta));
-        when(estadoConsultaRepository.findByNombre("RESPONDIDA")).thenReturn(estadoRespondida);
+        when(estadoConsultaRepository.findByCodigo("RESPONDIDA")).thenReturn(estadoRespondida);
         when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ConsultaResponse response = consultaService.responderConsulta(8L, request);
 
         assertThat(response.getIdEstadoConsulta()).isEqualTo(2L);
-        verify(estadoConsultaRepository).findByNombre("RESPONDIDA");
+        verify(estadoConsultaRepository).findByCodigo("RESPONDIDA");
     }
 
     @Test
@@ -403,6 +403,7 @@ class ConsultaServiceTest {
     private EstadoConsulta nuevoEstado(Long id, String nombre) {
         EstadoConsulta estado = new EstadoConsulta();
         estado.setIdEstadoConsulta(id);
+        estado.setCodigo(nombre);
         estado.setNombre(nombre);
         return estado;
     }

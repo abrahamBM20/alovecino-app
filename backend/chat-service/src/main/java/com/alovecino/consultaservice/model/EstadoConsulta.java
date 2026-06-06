@@ -17,6 +17,9 @@ public class EstadoConsulta {
     @Column(name = "id_estado_consulta")
     private Long idEstadoConsulta;
 
+    @Column(name = "codigo", nullable = false, length = 50)
+    private String codigo;
+
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
 
