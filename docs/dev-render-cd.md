@@ -17,8 +17,8 @@ En `push` hacia `dev`:
 
 - Ejecuta pruebas backend.
 - Si todas pasan, ejecuta `Render dev deploy`.
-- Dispara deploys Render para `auth-service`, `usuarios-service`, `geo-service` y `api-gateway`.
-- `chat-service` es opcional: solo despliega si existe variable de servicio configurada.
+- Dispara deploys Render para `auth-service`, `usuarios-service`, `geo-service`, `chat-service` y `api-gateway`.
+- El `api-gateway` debe tener `CHAT_SERVICE_URL=https://alovecino-chat-service-dev.onrender.com` para enrutar `/api/consultas/**` y `/api/estados-consulta/**`.
 
 ## Secretos Requeridos
 
@@ -40,8 +40,18 @@ Tambien se pueden sobreescribir nombres:
 - `RENDER_DEV_USUARIOS_SERVICE_NAME` default `alovecino-usuarios-service-dev`
 - `RENDER_DEV_GEO_SERVICE_NAME` default `alovecino-geo-service-dev`
 - `RENDER_DEV_API_GATEWAY_SERVICE_NAME` default `alovecino-api-gateway-dev`
-- `RENDER_DEV_CHAT_SERVICE_NAME`
+- `RENDER_DEV_CHAT_SERVICE_NAME` default `alovecino-chat-service-dev`
+
+## Servicios Dev Activos
+
+- `alovecino-auth-service-dev`
+- `alovecino-usuarios-service-dev`
+- `alovecino-geo-service-dev`
+- `alovecino-chat-service-dev`
+- `alovecino-api-gateway-dev`
 
 ## Relacion Con QA
 
 QA ya despliega con `.github/workflows/qa-cd.yml` despues de un `push` hacia `qa`, siempre que pasen pruebas backend/frontend. La promocion hacia `qa` debe venir desde `dev` por el gate `dev-to-qa-gate.yml`.
+
+QA tambien debe desplegar `chat-service` para soportar `/api/consultas/**`. El servicio Render `alovecino-chat-service-qa` queda asociado a la rama `qa`; si esa rama no contiene aun `backend/chat-service`, el deploy fallara hasta promover `dev` a `qa`.

@@ -31,6 +31,7 @@ env:
   RENDER_USUARIOS_SERVICE_ID: srv-d7unl4n7f7vs73cqrmi0
   RENDER_API_GATEWAY_SERVICE_ID: srv-d7unl3rtqb8s73cob4hg
   RENDER_GEO_SERVICE_ID: ${{ vars.RENDER_GEO_SERVICE_ID || 'srv-d85s3ndi849s738dv1m0' }}
+  RENDER_CHAT_SERVICE_ID: ${{ vars.RENDER_QA_CHAT_SERVICE_ID || 'srv-d8i1r9q8qa3s73e052fg' }}
 
 jobs:
   backend-tests:
@@ -44,6 +45,7 @@ jobs:
           - backend/auth-service
           - backend/usuarios-service
           - backend/geo-service
+          - backend/chat-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -167,6 +169,17 @@ jobs:
             set_render_env "$RENDER_GEO_SERVICE_ID" GOOGLE_MAPS_API_KEY "${GOOGLE_MAPS_API_KEY:-}"
           fi
 
+          if [ -n "${RENDER_CHAT_SERVICE_ID:-}" ]; then
+            configure_backend_database "$RENDER_CHAT_SERVICE_ID"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_DATASOURCE_DRIVER_CLASS_NAME "org.postgresql.Driver"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_JPA_DATABASE_PLATFORM "org.hibernate.dialect.PostgreSQLDialect"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_JPA_HIBERNATE_DDL_AUTO "update"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_FLYWAY_ENABLED "false"
+          fi
+
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" CHAT_SERVICE_URL "https://alovecino-chat-service-qa.onrender.com"
+
       - name: Trigger auth-service deploy
         run: |
           curl --fail --request POST \
@@ -188,6 +201,15 @@ jobs:
         run: |
           curl --fail --request POST \
             --url "https://api.render.com/v1/services/${RENDER_GEO_SERVICE_ID}/deploys" \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            --data '{"clearCache":"do_not_clear"}'
+
+      - name: Trigger chat-service deploy
+        if: ${{ env.RENDER_CHAT_SERVICE_ID != '' }}
+        run: |
+          curl --fail --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_CHAT_SERVICE_ID}/deploys" \
             --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             --header "Content-Type: application/json" \
             --data '{"clearCache":"do_not_clear"}'
