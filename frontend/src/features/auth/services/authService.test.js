@@ -46,6 +46,9 @@ describe('loginService', () => {
     const postMock = jest.fn().mockResolvedValue({
       data: {
         accessToken: 'session-token',
+        refreshToken: 'refresh-token',
+        accessTokenExpiresAt: '2026-06-05T12:15:00Z',
+        refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
         user: {
           id: '1',
           name: 'admin@alovecino.com',
@@ -72,6 +75,9 @@ describe('loginService', () => {
     });
     expect(response).toEqual({
       accessToken: 'session-token',
+      refreshToken: 'refresh-token',
+      accessTokenExpiresAt: '2026-06-05T12:15:00Z',
+      refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
       user: {
         id: '1',
         name: 'admin@alovecino.com',
@@ -102,6 +108,61 @@ describe('loginService', () => {
     expect(postMock).toHaveBeenCalledWith('/auth/login', {
       email: 'admin@alovecino.com',
       password: 'wrong-password',
+    });
+  });
+});
+
+describe('refreshSessionService', () => {
+  function loadRefreshSessionService() {
+    let refreshSessionService;
+
+    jest.isolateModules(() => {
+      ({ refreshSessionService } = require('./authService'));
+    });
+
+    return refreshSessionService;
+  }
+
+  afterEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+  });
+
+  it('envia refresh token por body para renovar sesiones moviles', async () => {
+    jest.doMock('../../../config/environment', () => ({
+      API_BASE_URL: 'http://localhost:8080',
+    }));
+
+    const postMock = jest.fn().mockResolvedValue({
+      data: {
+        accessToken: 'access-new',
+        refreshToken: 'refresh-new',
+        accessTokenExpiresAt: '2026-06-05T12:30:00Z',
+        refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
+        user: { id: '1', email: 'admin@alovecino.com' },
+      },
+    });
+
+    jest.doMock('../../../shared/api/httpClient', () => ({
+      httpClient: {
+        post: postMock,
+      },
+    }));
+
+    const refreshSessionService = loadRefreshSessionService();
+    const response = await refreshSessionService({ refreshToken: 'refresh-old' });
+
+    expect(postMock).toHaveBeenCalledWith(
+      '/auth/refresh',
+      { refreshToken: 'refresh-old' },
+      { skipAuthRefresh: true },
+    );
+    expect(response).toEqual({
+      accessToken: 'access-new',
+      refreshToken: 'refresh-new',
+      accessTokenExpiresAt: '2026-06-05T12:30:00Z',
+      refreshTokenExpiresAt: '2026-07-05T12:00:00Z',
+      user: { id: '1', email: 'admin@alovecino.com' },
     });
   });
 });

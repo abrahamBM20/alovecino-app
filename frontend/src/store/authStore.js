@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginService, logoutService } from '../features/auth/services/authService';
+import { loginService, logoutService, refreshSessionService } from '../features/auth/services/authService';
 import { mapApiError } from '../shared/api/errorMapper';
 
 const { persist, createJSONStorage } = require('zustand/middleware');
@@ -27,11 +27,14 @@ function extractRoleFromToken(token) {
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       status: 'unauthenticated',
       user: null,
       role: null,
       accessToken: null,
+      refreshToken: null,
+      accessTokenExpiresAt: null,
+      refreshTokenExpiresAt: null,
       isLoading: false,
       error: null,
       async login(credentials) {
@@ -44,6 +47,9 @@ export const useAuthStore = create(
             user: response.user,
             role: extractRoleFromToken(response.accessToken),
             accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            accessTokenExpiresAt: response.accessTokenExpiresAt ?? null,
+            refreshTokenExpiresAt: response.refreshTokenExpiresAt ?? null,
             isLoading: false,
             error: null,
           });
@@ -53,24 +59,56 @@ export const useAuthStore = create(
             user: null,
             role: null,
             accessToken: null,
+            refreshToken: null,
+            accessTokenExpiresAt: null,
+            refreshTokenExpiresAt: null,
             isLoading: false,
             error: mapApiError(error),
           });
           throw error;
         }
       },
+      async refreshSession() {
+        const currentRefreshToken = get().refreshToken;
+        if (!currentRefreshToken) {
+          get().clearSession();
+          throw new Error('Refresh token no disponible');
+        }
+
+        const response = await refreshSessionService({ refreshToken: currentRefreshToken });
+        const nextUser = response.user ?? get().user;
+        set({
+          status: 'authenticated',
+          user: nextUser,
+          role: extractRoleFromToken(response.accessToken) ?? get().role,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          accessTokenExpiresAt: response.accessTokenExpiresAt ?? null,
+          refreshTokenExpiresAt: response.refreshTokenExpiresAt ?? null,
+          isLoading: false,
+          error: null,
+        });
+
+        return response.accessToken;
+      },
       async logout() {
         try {
-          await logoutService();
+          await logoutService(get().refreshToken);
         } catch {
           // Local logout still wins if the server-side session is already gone.
         }
 
+        get().clearSession();
+      },
+      clearSession() {
         set({
           status: 'unauthenticated',
           user: null,
           role: null,
           accessToken: null,
+          refreshToken: null,
+          accessTokenExpiresAt: null,
+          refreshTokenExpiresAt: null,
           error: null,
         });
       },
@@ -86,6 +124,9 @@ export const useAuthStore = create(
         user: state.user,
         role: state.role,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        accessTokenExpiresAt: state.accessTokenExpiresAt,
+        refreshTokenExpiresAt: state.refreshTokenExpiresAt,
       }),
     },
   ),

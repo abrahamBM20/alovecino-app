@@ -18,7 +18,8 @@ Usa este skill como primer contexto. Es compacto, reutilizable y validado; carga
 
 - Los tokens de autenticación vienen de `auth-service`.
 - El JWT usa RS256 y `roles` como `ROLE_CLIENTE` o `ROLE_ALMACEN`.
-- No asumas `user.rol` en frontend salvo que el contrato API lo garantice; deriva el rol del JWT o revisa `authStore`.
+- Móvil: `refreshToken` en JSON/body `/auth/refresh`; conserva cookie httpOnly.
+- No asumas `user.rol`; deriva rol del JWT o revisa `authStore`.
 - El estado auth del frontend vive en `frontend/src/store/authStore.js`.
 - Las llamadas HTTP del frontend deben pasar por `frontend/src/shared/api/httpClient.js`.
 - La respuesta de login conserva `token` y `accessToken` por compatibilidad.
@@ -49,18 +50,18 @@ Usa este skill como primer contexto. Es compacto, reutilizable y validado; carga
 - Antes de mergear varios PRs, valida también la interacción entre ellos, no solo cada PR contra base.
 - Todo PR debe mapear Jira/HU y completar `.github/pull_request_template.md`: Criterios de Aceptación, evidencia QA, checklist y despliegue.
 - No firmes, comentes, commitees ni interactúes en sistemas externos atribuyendo identidad del agente; usa lenguaje profesional del equipo/proyecto.
-- En workflows, distingue cambios de CI/CD de cambios de producto; si el YAML ya cubre el path y comando correcto, documenta la cobertura en vez de editarlo.
+- Workflows: distingue CI/CD de producto; si YAML ya cubre path/comando, documenta en vez de editar.
 
 ## Matriz Mínima De Validación
 
 - Frontend-only: `cd frontend; npm test -- --runInBand` o Jest dirigido.
 - Backend servicio único: `mvn -f backend/<service>/pom.xml test`.
-- Auth/gateway compartido: corre tests de `auth-service`, `api-gateway` y el servicio afectado.
+- Auth/gateway: tests de `auth-service`, `api-gateway` y servicio afectado.
 - Workflows/QA: usa `gh pr checks`, `gh run view --log-failed` e inspección YAML.
 - EAS mobile: `eas update` para OTA compatible; `eas build --profile dev-preview` si se necesita APK o cambia nativo/config.
 - Merge readiness: usa `gh pr view --json mergeable,mergeStateStatus,reviewDecision,statusCheckRollup` y `git merge-tree --write-tree`.
-- SkillOpt local: antes de promover cambios al skill, corre `scripts/measure-skill-budget.ps1` y `scripts/evaluate-skillopt.ps1`.
-- Fuera del sandbox: si falla o se requiere red/GitHub, pide permiso con justificación y alcance.
+- SkillOpt: antes de promover, corre `scripts/measure-skill-budget.ps1` y `scripts/evaluate-skillopt.ps1`.
+- Fuera del sandbox: si falla o requiere red/GitHub, pide permiso con justificación y alcance.
 
 ## Disciplina De Tokens
 
