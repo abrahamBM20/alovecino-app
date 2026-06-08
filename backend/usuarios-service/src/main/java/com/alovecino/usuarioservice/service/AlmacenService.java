@@ -78,12 +78,20 @@ public class AlmacenService {
     @Transactional
     public AlmacenResponse updateImagenUrl(String duenoIdentifier, Long idAlmacen, AlmacenImagenRequest request) {
         Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
-        Almacen almacen = almacenRepository.findById(idAlmacen)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Almacén no encontrado"));
-        if (!almacen.getDueno().getIdUsuario().equals(dueno.getIdUsuario())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar este almacén");
-        }
+        Almacen almacen = findOwnedAlmacen(dueno, idAlmacen, "modificar");
         almacen.setImagenUrl(request.getImagenUrl());
+        return toResponse(almacenRepository.save(almacen));
+    }
+
+    @Transactional
+    public AlmacenResponse updateAlmacen(String duenoIdentifier, Long idAlmacen, AlmacenRequest request) {
+        Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
+        Almacen almacen = findOwnedAlmacen(dueno, idAlmacen, "modificar");
+
+        almacen.setNombre(request.getNombre());
+        usuarioService.updateDireccionForAlmacen(almacen.getDireccion(), request.getDireccion());
+        upsertTelefonoPrincipal(almacen, request.getTelefono());
+
         return toResponse(almacenRepository.save(almacen));
     }
 
@@ -98,12 +106,37 @@ public class AlmacenService {
     @Transactional(readOnly = true)
     public AlmacenResponse getAlmacenByDueno(String duenoIdentifier, Long idAlmacen) {
         Usuario dueno = findUsuarioByPrincipal(duenoIdentifier);
+        return toResponse(findOwnedAlmacen(dueno, idAlmacen, "ver"));
+    }
+
+    private Almacen findOwnedAlmacen(Usuario dueno, Long idAlmacen, String accion) {
         Almacen almacen = almacenRepository.findById(idAlmacen)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Almacén no encontrado"));
         if (!almacen.getDueno().getIdUsuario().equals(dueno.getIdUsuario())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para ver este almacén");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "No tienes permiso para " + accion + " este almacén");
         }
-        return toResponse(almacen);
+        return almacen;
+    }
+
+    private void upsertTelefonoPrincipal(Almacen almacen, String telefono) {
+        TipoContacto tipoTelefono = tipoContactoRepository.findByCodigo("TELEFONO")
+                .orElseGet(() -> tipoContactoRepository.save(new TipoContacto("TELEFONO", "Telefono")));
+
+        AlmacenContacto contacto = almacenContactoRepository
+                .findFirstByAlmacenIdAlmacenAndEsPrincipalTrueOrderByIdAlmacenContactoAsc(almacen.getIdAlmacen())
+                .orElseGet(() -> {
+                    AlmacenContacto nuevo = new AlmacenContacto();
+                    nuevo.setAlmacen(almacen);
+                    nuevo.setTipoContacto(tipoTelefono);
+                    nuevo.setEsPrincipal(true);
+                    return nuevo;
+                });
+
+        contacto.setTipoContacto(tipoTelefono);
+        contacto.setValor(telefono);
+        contacto.setNombreContacto(almacen.getNombre());
+        almacenContactoRepository.save(contacto);
     }
 
     private Usuario findUsuarioByPrincipal(String identifier) {
@@ -128,6 +161,7 @@ public class AlmacenService {
                 almacen.getNombre(),
                 direccion.getCalle(),
                 direccion.getNumero(),
+                direccion.getCodigoPostal(),
                 direccion.getComuna().getNombre(),
                 direccion.getComuna().getRegion().getNombre(),
                 direccion.getLatitud().toPlainString(),

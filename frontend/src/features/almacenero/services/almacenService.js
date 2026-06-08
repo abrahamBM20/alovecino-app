@@ -21,6 +21,7 @@ export function mapAlmacen(apiAlmacen) {
     telefono: apiAlmacen.telefono,
     calle: apiAlmacen.calle,
     numero: apiAlmacen.numero,
+    codigoPostal: apiAlmacen.codigoPostal,
     comuna: apiAlmacen.comuna,
     region: apiAlmacen.region,
     latitud: apiAlmacen.latitud,
@@ -36,5 +37,10 @@ export async function fetchMisAlmacenes() {
 
 export async function fetchAlmacenPerfil(idAlmacen) {
   const { data } = await httpClient.get(`/api/almacenes/${idAlmacen}`);
+  return mapAlmacen(data);
+}
+
+export async function updateAlmacenPerfil(idAlmacen, payload) {
+  const { data } = await httpClient.patch(`/api/almacenes/${idAlmacen}`, payload);
   return mapAlmacen(data);
 }

@@ -6,6 +6,7 @@ public class AlmacenResponse {
     private String nombre;
     private String calle;
     private String numero;
+    private String codigoPostal;
     private String comuna;
     private String region;
     private String latitud;
@@ -20,15 +21,24 @@ public class AlmacenResponse {
 
     public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String comuna, String region,
             String latitud, String longitud, String estado, Long idDueno, String imagenUrl) {
-        this(idAlmacen, nombre, calle, numero, comuna, region, latitud, longitud, estado, idDueno, imagenUrl, null);
+        this(idAlmacen, nombre, calle, numero, null, comuna, region, latitud, longitud, estado, idDueno, imagenUrl,
+                null);
     }
 
     public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String comuna, String region,
             String latitud, String longitud, String estado, Long idDueno, String imagenUrl, String telefono) {
+        this(idAlmacen, nombre, calle, numero, null, comuna, region, latitud, longitud, estado, idDueno, imagenUrl,
+                telefono);
+    }
+
+    public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String codigoPostal,
+            String comuna, String region, String latitud, String longitud, String estado, Long idDueno,
+            String imagenUrl, String telefono) {
         this.idAlmacen = idAlmacen;
         this.nombre = nombre;
         this.calle = calle;
         this.numero = numero;
+        this.codigoPostal = codigoPostal;
         this.comuna = comuna;
         this.region = region;
         this.latitud = latitud;
@@ -69,6 +79,14 @@ public class AlmacenResponse {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCodigoPostal() {
+        return codigoPostal;
+    }
+
+    public void setCodigoPostal(String codigoPostal) {
+        this.codigoPostal = codigoPostal;
     }
 
     public String getComuna() {

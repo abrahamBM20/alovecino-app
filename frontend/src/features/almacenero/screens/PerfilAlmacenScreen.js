@@ -7,6 +7,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -14,7 +15,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { fetchAlmacenPerfil, fetchMisAlmacenes } from '../services/almacenService';
+import { useAuthStore } from '../../../store/authStore';
+import { fetchAlmacenPerfil, fetchMisAlmacenes, updateAlmacenPerfil } from '../services/almacenService';
 
 const PRIMARY = '#044E81';
 const TEXT_PRIMARY = '#0F2D45';
@@ -45,13 +47,47 @@ function InfoRow({ icon, label, value }) {
   );
 }
 
+function buildForm(almacen) {
+  return {
+    nombre: almacen?.nombre ?? '',
+    telefono: almacen?.telefono ?? '',
+    calle: almacen?.calle ?? '',
+    numero: almacen?.numero ?? '',
+    comuna: almacen?.comuna ?? '',
+    region: almacen?.region ?? '',
+    codigoPostal: almacen?.codigoPostal ?? '',
+  };
+}
+
+function Field({ label, value, onChangeText, placeholder, keyboardType = 'default' }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={TEXT_MUTED}
+        keyboardType={keyboardType}
+        style={styles.input}
+      />
+    </View>
+  );
+}
+
 export default function PerfilAlmacenScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const logout = useAuthStore((state) => state.logout);
   const [almacen, setAlmacen] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [form, setForm] = useState(buildForm(null));
 
   const loadPerfil = useCallback(async () => {
     setError(null);
@@ -64,7 +100,9 @@ export default function PerfilAlmacenScreen() {
     }
 
     const detalle = await fetchAlmacenPerfil(principal.id);
-    setAlmacen(detalle ?? principal);
+    const nextAlmacen = detalle ?? principal;
+    setAlmacen(nextAlmacen);
+    setForm(buildForm(nextAlmacen));
   }, []);
 
   useEffect(() => {
@@ -93,6 +131,65 @@ export default function PerfilAlmacenScreen() {
       setRefreshing(false);
     }
   }, [loadPerfil]);
+
+  const updateField = useCallback((field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setSaveError(null);
+    setSaveSuccess(false);
+  }, []);
+
+  const startEditing = useCallback(() => {
+    setForm(buildForm(almacen));
+    setIsEditing(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+  }, [almacen]);
+
+  const cancelEditing = useCallback(() => {
+    setForm(buildForm(almacen));
+    setIsEditing(false);
+    setSaveError(null);
+  }, [almacen]);
+
+  const savePerfil = useCallback(async () => {
+    if (!almacen?.id) return;
+
+    const required = ['nombre', 'telefono', 'calle', 'numero', 'comuna', 'region'];
+    if (required.some((field) => !String(form[field] ?? '').trim())) {
+      setSaveError('Completa nombre, teléfono y dirección del almacén.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+    try {
+      const actualizado = await updateAlmacenPerfil(almacen.id, {
+        nombre: form.nombre.trim(),
+        telefono: form.telefono.trim(),
+        direccion: {
+          calle: form.calle.trim(),
+          numero: form.numero.trim(),
+          comuna: form.comuna.trim(),
+          region: form.region.trim(),
+          codigoPostal: form.codigoPostal?.trim() || null,
+        },
+      });
+      setAlmacen(actualizado);
+      setForm(buildForm(actualizado));
+      setIsEditing(false);
+      setSaveSuccess(true);
+    } catch {
+      setSaveError('No pudimos guardar los cambios del almacén.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [almacen?.id, form]);
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    router.replace('/auth/login');
+  }, [logout, router]);
 
   const estadoPerfil = almacen?.estado ?? 'Sin estado';
   const estadoActivo = ['ACTIVO', 'APROBADO', 'HABILITADO'].includes(String(estadoPerfil).toUpperCase());
@@ -191,6 +288,69 @@ export default function PerfilAlmacenScreen() {
                 <InfoRow icon="navigate-outline" label="Coordenadas" value={coordenadas} />
               </View>
 
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Configuración</Text>
+                  {!isEditing && (
+                    <TouchableOpacity
+                      style={styles.iconAction}
+                      activeOpacity={0.8}
+                      onPress={startEditing}
+                      accessibilityRole="button"
+                      accessibilityLabel="Editar datos del almacén"
+                    >
+                      <Ionicons name="create-outline" size={18} color={PRIMARY} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {!isEditing ? (
+                  <Text style={styles.helpText}>Mantén actualizados los datos visibles para clientes.</Text>
+                ) : (
+                  <View style={styles.form}>
+                    <Field label="Nombre del almacén" value={form.nombre} onChangeText={(v) => updateField('nombre', v)} placeholder="Nombre comercial" />
+                    <Field label="Teléfono principal" value={form.telefono} onChangeText={(v) => updateField('telefono', v)} placeholder="+56 9 1234 5678" keyboardType="phone-pad" />
+                    <Field label="Calle" value={form.calle} onChangeText={(v) => updateField('calle', v)} placeholder="Calle o avenida" />
+                    <Field label="Número" value={form.numero} onChangeText={(v) => updateField('numero', v)} placeholder="1234" />
+                    <Field label="Comuna" value={form.comuna} onChangeText={(v) => updateField('comuna', v)} placeholder="Peñalolén" />
+                    <Field label="Región" value={form.region} onChangeText={(v) => updateField('region', v)} placeholder="Metropolitana de Santiago" />
+                    <Field label="Código postal" value={form.codigoPostal} onChangeText={(v) => updateField('codigoPostal', v)} placeholder="Opcional" keyboardType="number-pad" />
+
+                    {!!saveError && <Text style={styles.errorText}>{saveError}</Text>}
+
+                    <View style={styles.editActions}>
+                      <TouchableOpacity
+                        style={[styles.secondaryBtn, isSaving && styles.disabledBtn]}
+                        activeOpacity={0.85}
+                        onPress={cancelEditing}
+                        disabled={isSaving}
+                      >
+                        <Text style={styles.secondaryBtnText}>Cancelar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.saveBtn, isSaving && styles.disabledBtn]}
+                        activeOpacity={0.85}
+                        onPress={savePerfil}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Ionicons name="save-outline" size={18} color="#fff" />
+                            <Text style={styles.saveBtnText}>Guardar cambios</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {saveSuccess && !isEditing && (
+                  <Text style={styles.successText}>Datos del almacén actualizados.</Text>
+                )}
+              </View>
+
               <TouchableOpacity
                 style={styles.primaryBtn}
                 activeOpacity={0.85}
@@ -200,6 +360,17 @@ export default function PerfilAlmacenScreen() {
               >
                 <Ionicons name="mail-outline" size={18} color="#fff" />
                 <Text style={styles.primaryBtnText}>Ver bandeja de consultas</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.logoutBtn}
+                activeOpacity={0.85}
+                onPress={handleLogout}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar sesión"
+              >
+                <Ionicons name="log-out-outline" size={18} color="#B91C1C" />
+                <Text style={styles.logoutBtnText}>Cerrar sesión</Text>
               </TouchableOpacity>
             </>
           )}
@@ -315,6 +486,96 @@ const styles = StyleSheet.create({
     color: TEXT_PRIMARY,
     marginBottom: 12,
   },
+  sectionHeader: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  iconAction: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F1F8',
+  },
+  helpText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: TEXT_SECONDARY,
+  },
+  form: {
+    gap: 12,
+  },
+  field: {
+    gap: 6,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: TEXT_SECONDARY,
+  },
+  input: {
+    minHeight: 46,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    color: TEXT_PRIMARY,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  successText: {
+    marginTop: 12,
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  secondaryBtnText: {
+    color: TEXT_SECONDARY,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  saveBtn: {
+    flex: 1.35,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: PRIMARY,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  disabledBtn: {
+    opacity: 0.65,
+  },
   infoRow: {
     flexDirection: 'row',
     gap: 12,
@@ -356,6 +617,22 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  logoutBtn: {
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  logoutBtnText: {
+    color: '#B91C1C',
     fontSize: 15,
     fontWeight: '800',
   },
