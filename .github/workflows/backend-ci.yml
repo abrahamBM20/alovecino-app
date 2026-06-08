@@ -135,6 +135,7 @@ jobs:
     env:
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       GEO_INTERNAL_API_KEY: ${{ secrets.GEO_INTERNAL_API_KEY }}
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
     steps:
       - name: Validate Render API key
         run: test -n "$RENDER_API_KEY"
@@ -168,6 +169,14 @@ jobs:
               "$services_json"
           }
 
+          resolve_service_url() {
+            local service_id="$1"
+
+            jq -r --arg id "$service_id" \
+              '[.[] | (.service // .) | select(.id == $id) | .serviceDetails.url][0] // empty' \
+              "$services_json"
+          }
+
           set_render_env() {
             local service_id="$1"
             local key="$2"
@@ -182,16 +191,23 @@ jobs:
                 --data @- >/dev/null
           }
 
-          configure_internal_geocode_key() {
+          configure_geocode_runtime() {
             local usuarios_id
             local geo_id
+            local geo_url
             local internal_key="${GEO_INTERNAL_API_KEY:-}"
 
             usuarios_id="$(resolve_service_id "$RENDER_DEV_USUARIOS_SERVICE_ID" "$RENDER_DEV_USUARIOS_SERVICE_NAME")"
             geo_id="$(resolve_service_id "$RENDER_DEV_GEO_SERVICE_ID" "$RENDER_DEV_GEO_SERVICE_NAME")"
+            geo_url="$(resolve_service_url "$geo_id")"
 
             if [ -z "$usuarios_id" ] || [ -z "$geo_id" ]; then
-              echo "Skipping GEO_INTERNAL_API_KEY setup: usuarios-service or geo-service was not resolved."
+              echo "Skipping geocode runtime setup: usuarios-service or geo-service was not resolved."
+              return 0
+            fi
+
+            if [ -z "$geo_url" ]; then
+              echo "Skipping geocode runtime setup: geo-service URL was not resolved."
               return 0
             fi
 
@@ -200,8 +216,15 @@ jobs:
               echo "Generated deploy-scoped GEO_INTERNAL_API_KEY for dev services."
             fi
 
+            set_render_env "$usuarios_id" GEO_SERVICE_URL "$geo_url"
             set_render_env "$usuarios_id" GEO_INTERNAL_API_KEY "$internal_key"
             set_render_env "$geo_id" GEO_INTERNAL_API_KEY "$internal_key"
+
+            if [ -n "${GOOGLE_MAPS_API_KEY:-}" ]; then
+              set_render_env "$geo_id" GOOGLE_MAPS_API_KEY "$GOOGLE_MAPS_API_KEY"
+            else
+              echo "GOOGLE_MAPS_API_KEY secret is not configured; geo-service will keep using its existing Render value or fail real geocoding."
+            fi
           }
 
           trigger_deploy() {
@@ -232,7 +255,7 @@ jobs:
                 --data @- >/dev/null
           }
 
-          configure_internal_geocode_key
+          configure_geocode_runtime
           trigger_deploy "auth-service" "$RENDER_DEV_AUTH_SERVICE_ID" "$RENDER_DEV_AUTH_SERVICE_NAME"
           trigger_deploy "usuarios-service" "$RENDER_DEV_USUARIOS_SERVICE_ID" "$RENDER_DEV_USUARIOS_SERVICE_NAME"
           trigger_deploy "geo-service" "$RENDER_DEV_GEO_SERVICE_ID" "$RENDER_DEV_GEO_SERVICE_NAME"

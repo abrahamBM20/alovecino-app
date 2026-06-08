@@ -24,6 +24,7 @@ En `push` hacia `dev`:
 
 - `RENDER_API_KEY`: API key de Render para listar servicios y gatillar deploys.
 - `GEO_INTERNAL_API_KEY`: opcional. Si no existe, el workflow genera una clave por deploy y la configura en `usuarios-service` y `geo-service` para permitir geocodificacion interna durante registros publicos.
+- `GOOGLE_MAPS_API_KEY`: opcional, pero requerida para que `geo-service` geocodifique direcciones reales en registros publicos de almacenes. Si falta, `usuarios-service` conserva el fallback deterministico.
 
 ## Variables Opcionales
 
@@ -42,6 +43,16 @@ Tambien se pueden sobreescribir nombres:
 - `RENDER_DEV_GEO_SERVICE_NAME` default `alovecino-geo-service-dev`
 - `RENDER_DEV_API_GATEWAY_SERVICE_NAME` default `alovecino-api-gateway-dev`
 - `RENDER_DEV_CHAT_SERVICE_NAME` default `alovecino-chat-service-dev`
+
+## Geocodificacion De Registros
+
+Antes de gatillar deploys, el workflow configura:
+
+- `GEO_SERVICE_URL` en `usuarios-service`, usando la URL resuelta de `alovecino-geo-service-dev`.
+- `GEO_INTERNAL_API_KEY` en `usuarios-service` y `geo-service`, con el mismo valor.
+- `GOOGLE_MAPS_API_KEY` en `geo-service` si el secret existe.
+
+Si `GEO_SERVICE_URL` o `GOOGLE_MAPS_API_KEY` faltan, los registros de almacenes pueden quedar con coordenadas deterministicas y no aparecer cerca de la direccion ingresada.
 
 ## Servicios Dev Activos
 
