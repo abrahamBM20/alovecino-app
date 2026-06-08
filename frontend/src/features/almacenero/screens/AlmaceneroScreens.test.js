@@ -43,11 +43,14 @@ jest.mock('../../../store/authStore', () => ({
   useAuthStore: (selector) => selector({
     user: { nombre: 'Almacenero Test' },
     role: 'ALMACEN',
+    logout: jest.fn(),
   }),
 }));
 
 jest.mock('../services/almacenService', () => ({
   fetchMisAlmacenes: jest.fn(),
+  fetchAlmacenPerfil: jest.fn(),
+  updateAlmacenPerfil: jest.fn(),
 }));
 
 jest.mock('../services/consultasService', () => ({

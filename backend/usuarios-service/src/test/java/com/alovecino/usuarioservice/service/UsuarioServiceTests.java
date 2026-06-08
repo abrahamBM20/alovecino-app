@@ -15,9 +15,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.alovecino.usuarioservice.dto.DireccionRequest;
+import com.alovecino.usuarioservice.dto.AlmacenRequest;
+import com.alovecino.usuarioservice.dto.AlmacenResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioRequest.TipoCuenta;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.repository.AlmacenContactoRepository;
 import com.alovecino.usuarioservice.repository.AlmacenRepository;
 import com.alovecino.usuarioservice.repository.ClienteRepository;
 import com.alovecino.usuarioservice.repository.ConfiguracionUsuarioRepository;
@@ -33,6 +36,9 @@ class UsuarioServiceTests {
     private UsuarioService usuarioService;
 
     @Autowired
+    private AlmacenService almacenService;
+
+    @Autowired
     private UsuarioRepository usuarioRepository;
 
     @Autowired
@@ -40,6 +46,9 @@ class UsuarioServiceTests {
 
     @Autowired
     private AlmacenRepository almacenRepository;
+
+    @Autowired
+    private AlmacenContactoRepository almacenContactoRepository;
 
     @Autowired
     private DireccionRepository direccionRepository;
@@ -86,6 +95,43 @@ class UsuarioServiceTests {
         assertThat(configuracionUsuarioRepository.count()).isEqualTo(1);
         assertThat(direccionRepository.findAll().getFirst().getLatitud()).isNotNull();
         assertThat(almacenRepository.findAll().getFirst().getEstadoCuenta().getCodigo()).isEqualTo("PENDIENTE");
+    }
+
+    @Test
+    void shouldUpdateAlmacenProfileDireccionAndTelefono() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        UsuarioResponse saved = usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+
+        AlmacenRequest update = new AlmacenRequest();
+        update.setNombre("Botillería Queltehues Sur");
+        update.setTelefono("+56911112222");
+        DireccionRequest direccion = new DireccionRequest();
+        direccion.setCalle("Pasaje Los Queltehues");
+        direccion.setNumero("1450");
+        direccion.setComuna("Peñalolén");
+        direccion.setRegion("Metropolitana de Santiago");
+        direccion.setCodigoPostal("7910000");
+        update.setDireccion(direccion);
+
+        AlmacenResponse response = almacenService.updateAlmacen(String.valueOf(saved.getIdUsuario()), idAlmacen,
+                update);
+
+        assertThat(response.getNombre()).isEqualTo("Botillería Queltehues Sur");
+        assertThat(response.getTelefono()).isEqualTo("+56911112222");
+        assertThat(response.getCalle()).isEqualTo("Pasaje Los Queltehues");
+        assertThat(response.getNumero()).isEqualTo("1450");
+        assertThat(response.getCodigoPostal()).isEqualTo("7910000");
+        assertThat(response.getComuna()).isEqualTo("Peñalolén");
+        assertThat(almacenContactoRepository
+                .findFirstByAlmacenIdAlmacenAndEsPrincipalTrueOrderByIdAlmacenContactoAsc(idAlmacen))
+                .isPresent()
+                .get()
+                .satisfies(contacto -> {
+                    assertThat(contacto.getValor()).isEqualTo("+56911112222");
+                    assertThat(contacto.getNombreContacto()).isEqualTo("Botillería Queltehues Sur");
+                });
     }
 
     @Test
@@ -156,6 +202,7 @@ class UsuarioServiceTests {
 
     @AfterEach
     void tearDown() {
+        almacenContactoRepository.deleteAll();
         almacenRepository.deleteAll();
         clienteRepository.deleteAll();
         configuracionUsuarioRepository.deleteAll();

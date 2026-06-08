@@ -203,7 +203,15 @@ public class UsuarioService {
         return createDireccion(request);
     }
 
+    public Direccion updateDireccionForAlmacen(Direccion direccion, DireccionRequest request) {
+        return saveDireccion(direccion, request);
+    }
+
     private Direccion createDireccion(DireccionRequest request) {
+        return saveDireccion(new Direccion(), request);
+    }
+
+    private Direccion saveDireccion(Direccion direccion, DireccionRequest request) {
         Region region = regionRepository.findByNombreIgnoreCaseOrCodigoIgnoreCase(
                 request.getRegion(),
                 request.getRegion())
@@ -214,7 +222,6 @@ public class UsuarioService {
 
         GeocodingService.Coordinates coordinates = geocodingService.geocode(request);
 
-        Direccion direccion = new Direccion();
         direccion.setCalle(request.getCalle());
         direccion.setNumero(request.getNumero());
         direccion.setCodigoPostal(request.getCodigoPostal());

@@ -120,3 +120,19 @@ Observación:
 Promoción:
 
 - Promovido a `best_skill.md`.
+
+## 2026-06-07 - Configuración De Perfil De Almacén
+
+Tipo: backend | frontend
+Resultado: éxito
+Archivos/rutas: `backend/usuarios-service`, `frontend/src/features/almacenero`
+
+Observación:
+
+- La configuración editable del almacén debe apoyarse en el MER existente: `almacen` para nombre/estado/imagen, `direccion` para ubicación y `almacen_contacto` para teléfono principal.
+- Evita crear un contrato paralelo de "configuración de almacén" si los datos ya pertenecen a entidades normalizadas.
+- En frontend, el perfil de almacenero debe usar `httpClient` y el servicio de feature, no llamadas directas ni datos mock.
+
+Promoción:
+
+- No promovido todavía.
