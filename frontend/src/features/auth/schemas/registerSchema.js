@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const LATAM_PERSON_NAME_REGEX = /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u;
 const LATAM_TEXT_REGEX = /^[\p{L}\p{M}0-9 .,'’#°ºª/-]+$/u;
+const LATAM_PHONE_REGEX = /^[0-9+() -]+$/;
 const USERNAME_REGEX = /^[\p{L}\p{M}0-9._-]+$/u;
 const RUT_REGEX = /^\d{1,8}[\dkK]$/;
 
@@ -76,6 +77,12 @@ export const registerSchema = z
       .max(140, 'El nombre del almacén no puede superar 140 caracteres')
       .refine((value) => !value || LATAM_TEXT_REGEX.test(value), 'Ingresa un nombre de almacén válido')
       .optional(),
+    telefono: z
+      .string()
+      .trim()
+      .max(30, 'El teléfono no puede superar 30 caracteres')
+      .refine((value) => !value || LATAM_PHONE_REGEX.test(value), 'Ingresa un teléfono válido')
+      .optional(),
     calle: z
       .string()
       .trim()
@@ -116,6 +123,10 @@ export const registerSchema = z
   .refine((data) => data.tipoUsuario !== 'almacen' || !!data.nombreAlmacen?.trim(), {
     message: 'Ingresa el nombre del almacén',
     path: ['nombreAlmacen'],
+  })
+  .refine((data) => data.tipoUsuario !== 'almacen' || String(data.telefono ?? '').trim().length >= 8, {
+    message: 'Ingresa un teléfono válido',
+    path: ['telefono'],
   })
   .refine((data) => data.password === data.confirmarPassword, {
     message: 'Las contraseñas no coinciden',

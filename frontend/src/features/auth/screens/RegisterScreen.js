@@ -126,21 +126,41 @@ export default function RegisterScreen() {
         />
 
         {tipoUsuario === 'almacen' && (
-          <Controller
-            control={control}
-            name="nombreAlmacen"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <AppInput
-                label="Nombre del almacén"
-                autoCapitalize="words"
-                autoCorrect={false}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={errors.nombreAlmacen?.message}
-              />
-            )}
-          />
+          <>
+            <Controller
+              control={control}
+              name="nombreAlmacen"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="Nombre del almacén"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  error={errors.nombreAlmacen?.message}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="telefono"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="Teléfono del almacén"
+                  placeholder="+56 9 1234 5678"
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  error={errors.telefono?.message}
+                />
+              )}
+            />
+          </>
         )}
 
         {tipoUsuario === 'cliente' && (

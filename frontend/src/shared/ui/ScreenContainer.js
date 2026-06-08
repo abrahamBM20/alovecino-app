@@ -5,7 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ScreenContainer({ children, scroll = false, keyboard = false }) {
   const content = scroll ? (
-    <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={[styles.scrollContent, keyboard && styles.scrollContentKeyboard]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      showsVerticalScrollIndicator={false}
+    >
       {children}
     </ScrollView>
   ) : (
@@ -16,7 +21,7 @@ export default function ScreenContainer({ children, scroll = false, keyboard = f
     <LinearGradient colors={['#ffffff', '#044e81']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.gradient}>
       <SafeAreaView style={styles.safeArea}>
         {keyboard ? (
-          <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             {content}
           </KeyboardAvoidingView>
         ) : (
@@ -44,5 +49,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 28,
+  },
+  scrollContentKeyboard: {
+    paddingBottom: 140,
   },
 });

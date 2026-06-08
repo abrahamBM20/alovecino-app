@@ -259,6 +259,11 @@ export default function PanelAlmaceneroScreen() {
             <Text style={styles.estadoNombreText}>
               {almacen?.direccion ?? 'Perfil del almacén'}
             </Text>
+            {!estadoActivo && String(estadoPerfil).toUpperCase() === 'PENDIENTE' && (
+              <Text style={styles.estadoHelpText}>
+                Tu almacén está pendiente de aprobación. Cuando pase a ACTIVO aparecerá en el mapa y podrá recibir consultas.
+              </Text>
+            )}
           </TouchableOpacity>
 
           {isLoading && (
@@ -467,6 +472,13 @@ const styles = StyleSheet.create({
   estadoNombreText: {
     fontSize: 13,
     color: TEXT_MUTED,
+  },
+  estadoHelpText: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#92400E',
+    fontWeight: '600',
   },
   messageCard: {
     backgroundColor: SURFACE,

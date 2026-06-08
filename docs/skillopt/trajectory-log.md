@@ -136,3 +136,20 @@ Observación:
 Promoción:
 
 - No promovido todavía.
+
+## 2026-06-07 - Aprobación Y Visibilidad De Almacenes
+
+Tipo: backend | frontend
+Resultado: éxito
+Archivos/rutas: `backend/usuarios-service`, `backend/geo-service`, `frontend/src/features/home`, `frontend/src/features/auth`
+
+Observación:
+
+- `PENDIENTE` no debe tratarse como error: representa almacén registrado pero no publicado.
+- La publicación en el mapa debe depender de `estado_cuenta.codigo = ACTIVO` para evitar mostrar negocios no aprobados.
+- Si frontend ofrece radios de búsqueda, `geo-service` debe aceptar exactamente esos radios o la UI debe ocultarlos.
+- En móvil conviene priorizar ubicación actual antes de `lastKnownPosition`, porque el emulador puede conservar ubicaciones antiguas.
+
+Promoción:
+
+- No promovido todavía.

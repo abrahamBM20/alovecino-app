@@ -13,18 +13,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.alovecino.usuarioservice.dto.DireccionRequest;
+import com.alovecino.usuarioservice.dto.AlmacenEstadoRequest;
 import com.alovecino.usuarioservice.dto.AlmacenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioRequest.TipoCuenta;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.model.Rol;
+import com.alovecino.usuarioservice.model.Usuario;
 import com.alovecino.usuarioservice.repository.AlmacenContactoRepository;
 import com.alovecino.usuarioservice.repository.AlmacenRepository;
 import com.alovecino.usuarioservice.repository.ClienteRepository;
 import com.alovecino.usuarioservice.repository.ConfiguracionUsuarioRepository;
 import com.alovecino.usuarioservice.repository.DireccionRepository;
+import com.alovecino.usuarioservice.repository.RolRepository;
 import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @SpringBootTest
@@ -40,6 +45,9 @@ class UsuarioServiceTests {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private ClienteRepository clienteRepository;
@@ -81,6 +89,8 @@ class UsuarioServiceTests {
         assertThat(configuracionUsuarioRepository.count()).isEqualTo(1);
         assertThat(direccionRepository.findAll().getFirst().getLatitud()).isNotNull();
         assertThat(direccionRepository.findAll().getFirst().getLongitud()).isNotNull();
+        assertThat(direccionRepository.findAll().getFirst().getComuna().getRegion().getNombre())
+                .isEqualTo("Metropolitana de Santiago");
     }
 
     @Test
@@ -95,6 +105,12 @@ class UsuarioServiceTests {
         assertThat(configuracionUsuarioRepository.count()).isEqualTo(1);
         assertThat(direccionRepository.findAll().getFirst().getLatitud()).isNotNull();
         assertThat(almacenRepository.findAll().getFirst().getEstadoCuenta().getCodigo()).isEqualTo("PENDIENTE");
+        assertThat(almacenContactoRepository.findAll()).hasSize(1)
+                .first()
+                .satisfies(contacto -> {
+                    assertThat(contacto.getValor()).isEqualTo("+56912345678");
+                    assertThat(contacto.isEsPrincipal()).isTrue();
+                });
     }
 
     @Test
@@ -132,6 +148,40 @@ class UsuarioServiceTests {
                     assertThat(contacto.getValor()).isEqualTo("+56911112222");
                     assertThat(contacto.getNombreContacto()).isEqualTo("Botillería Queltehues Sur");
                 });
+    }
+
+    @Test
+    void shouldAllowAdminToActivateAlmacen() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+        Usuario admin = adminUser();
+        AlmacenEstadoRequest estadoRequest = new AlmacenEstadoRequest();
+        estadoRequest.setEstado("ACTIVO");
+
+        AlmacenResponse response = almacenService.updateEstadoAlmacen(String.valueOf(admin.getIdUsuario()), idAlmacen,
+                estadoRequest);
+
+        assertThat(response.getEstado()).isEqualTo("ACTIVO");
+        assertThat(almacenRepository.findById(idAlmacen)).isPresent()
+                .get()
+                .satisfies(almacen -> assertThat(almacen.getEstadoCuenta().getCodigo()).isEqualTo("ACTIVO"));
+    }
+
+    @Test
+    void shouldRejectEstadoChangeFromNonAdmin() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        UsuarioResponse saved = usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+        AlmacenEstadoRequest estadoRequest = new AlmacenEstadoRequest();
+        estadoRequest.setEstado("ACTIVO");
+
+        assertThatThrownBy(() -> almacenService.updateEstadoAlmacen(String.valueOf(saved.getIdUsuario()), idAlmacen,
+                estadoRequest))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("administradores");
     }
 
     @Test
@@ -187,6 +237,7 @@ class UsuarioServiceTests {
         request.setFechaNacimiento(null);
         request.setNombre("Dueño Almacén");
         request.setNombreAlmacen("Almacén Test");
+        request.setTelefono("+56912345678");
         return request;
     }
 
@@ -198,6 +249,24 @@ class UsuarioServiceTests {
         direccion.setRegion("RM");
         direccion.setCodigoPostal("7500000");
         return direccion;
+    }
+
+    private Usuario adminUser() {
+        return usuarioRepository.findByCorreo("admin@alovecino.com")
+                .orElseGet(this::createAdminUser);
+    }
+
+    private Usuario createAdminUser() {
+        Rol adminRol = rolRepository.findByNombreRol("ADMIN")
+                .orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
+        Usuario admin = new Usuario();
+        admin.setRut("111111111");
+        admin.setNombreUsuario("admin-" + UUID.randomUUID());
+        admin.setNombre("Administrador Test");
+        admin.setCorreo("admin-" + UUID.randomUUID() + "@alovecino.test");
+        admin.setContrasena(passwordEncoder.encode("Password123"));
+        admin.setRol(adminRol);
+        return usuarioRepository.save(admin);
     }
 
     @AfterEach

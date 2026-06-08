@@ -44,6 +44,9 @@ public class DataInitializer implements ApplicationRunner {
         ensureRole("ADMIN");
         ensureEstadoCuenta("ACTIVO", "Activo", "Cuenta habilitada para operar");
         ensureEstadoCuenta("PENDIENTE", "Pendiente", "Cuenta pendiente de revisión o activación");
+        ensureEstadoCuenta("RECHAZADO", "Rechazado", "Cuenta rechazada durante revisión");
+        ensureEstadoCuenta("SUSPENDIDO", "Suspendido", "Cuenta suspendida temporalmente");
+        ensureEstadoCuenta("INACTIVO", "Inactivo", "Cuenta inactiva");
         ensureTipoContacto("TELEFONO", "Telefono");
         ensureRegion("Metropolitana de Santiago", "RM");
 

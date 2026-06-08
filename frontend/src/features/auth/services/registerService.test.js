@@ -6,6 +6,7 @@ describe('registerService', () => {
     nombreCompleto: 'María José Peña',
     fechaNacimiento: '12/10/1992',
     nombreAlmacen: '',
+    telefono: '',
     calle: 'Los Alerces',
     numero: '123',
     comuna: 'Santiago',
@@ -60,11 +61,13 @@ describe('registerService', () => {
       tipoUsuario: 'almacen',
       fechaNacimiento: '',
       nombreAlmacen: 'Minimarket Central',
+      telefono: '+56 9 1234 5678',
     });
 
     expect(payload).toMatchObject({
       tipoCuenta: 'ALMACEN',
       nombreAlmacen: 'Minimarket Central',
+      telefono: '+56 9 1234 5678',
     });
     expect(payload).not.toHaveProperty('fechaNacimiento');
   });

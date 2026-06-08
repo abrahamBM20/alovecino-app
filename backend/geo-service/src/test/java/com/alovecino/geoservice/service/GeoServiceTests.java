@@ -56,6 +56,20 @@ class GeoServiceTests {
     }
 
     @Test
+    void shouldAcceptExtendedRadiusOptionsUsedByMobileFilters() {
+        BigDecimal originLat = new BigDecimal("-33.4488900");
+        BigDecimal originLng = new BigDecimal("-70.6692650");
+        Almacen farStore = store(2L, "Almacen dentro de 10 km", "-33.4578900", "-70.6692650");
+
+        when(repository.findCandidatesWithinBoundingBox(any(), any(), any(), any()))
+                .thenReturn(List.of(farStore));
+
+        List<StoreGeoResponse> stores = geoService.findStores(originLat, originLng, 10000);
+
+        assertThat(stores).extracting(StoreGeoResponse::getIdAlmacen).containsExactly(2L);
+    }
+
+    @Test
     void shouldDelegateGeocoding() {
         GeocodeRequest request = geocodeRequest();
         GeocodeResponse expected = new GeocodeResponse(

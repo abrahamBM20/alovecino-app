@@ -26,6 +26,7 @@ export function useRegisterForm() {
       nombreCompleto: '',
       fechaNacimiento: '',
       nombreAlmacen: '',
+      telefono: '',
       calle: '',
       numero: '',
       comuna: '',

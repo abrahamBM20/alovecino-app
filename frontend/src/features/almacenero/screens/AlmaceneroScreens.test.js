@@ -93,6 +93,7 @@ describe('pantallas de almacenero con datos reales', () => {
     await waitFor(() => expect(fetchMisAlmacenes).toHaveBeenCalledTimes(1));
     expect(fetchDashboardAlmacenero).toHaveBeenCalledWith(7);
     expect(await screen.findByText(/Almacén Los Queltehues/)).toBeTruthy();
+    expect(screen.getByText(/pendiente de aprobación/i)).toBeTruthy();
     expect(screen.getByText('¿Tiene arroz?')).toBeTruthy();
   });
 
