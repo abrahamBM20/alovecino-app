@@ -1,6 +1,7 @@
 package com.alovecino.usuarioservice.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.alovecino.usuarioservice.dto.AlmacenEstadoRequest;
 import com.alovecino.usuarioservice.dto.AlmacenImagenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenResponse;
@@ -26,6 +28,9 @@ import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @Service
 public class AlmacenService {
+
+    private static final Set<String> ESTADOS_ADMINISTRABLES = Set.of(
+            "PENDIENTE", "ACTIVO", "RECHAZADO", "SUSPENDIDO", "INACTIVO");
 
     private final AlmacenRepository almacenRepository;
     private final UsuarioRepository usuarioRepository;
@@ -92,6 +97,28 @@ public class AlmacenService {
         usuarioService.updateDireccionForAlmacen(almacen.getDireccion(), request.getDireccion());
         upsertTelefonoPrincipal(almacen, request.getTelefono());
 
+        return toResponse(almacenRepository.save(almacen));
+    }
+
+    @Transactional
+    public AlmacenResponse updateEstadoAlmacen(String adminIdentifier, Long idAlmacen, AlmacenEstadoRequest request) {
+        Usuario admin = findUsuarioByPrincipal(adminIdentifier);
+        if (!"ADMIN".equalsIgnoreCase(admin.getRol().getNombreRol())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo usuarios administradores pueden cambiar el estado de un almacén");
+        }
+
+        String estadoCodigo = request.getEstado().trim().toUpperCase();
+        if (!ESTADOS_ADMINISTRABLES.contains(estadoCodigo)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Estado de almacén no permitido: " + estadoCodigo);
+        }
+
+        Almacen almacen = almacenRepository.findById(idAlmacen)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Almacén no encontrado"));
+        EstadoCuenta estadoCuenta = estadoCuentaRepository.findByCodigo(estadoCodigo)
+                .orElseGet(() -> estadoCuentaRepository.save(new EstadoCuenta(estadoCodigo, estadoCodigo, null)));
+        almacen.setEstadoCuenta(estadoCuenta);
         return toResponse(almacenRepository.save(almacen));
     }
 

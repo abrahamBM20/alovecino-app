@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.alovecino.usuarioservice.dto.AlmacenEstadoRequest;
 import com.alovecino.usuarioservice.dto.AlmacenImagenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenRequest;
 import com.alovecino.usuarioservice.dto.AlmacenResponse;
@@ -53,6 +54,13 @@ public class AlmacenController {
             @PathVariable Long id,
             @Valid @RequestBody AlmacenRequest request) {
         return almacenService.updateAlmacen(jwt.getSubject(), id, request);
+    }
+
+    @PatchMapping("/{id}/estado")
+    public AlmacenResponse updateEstado(@AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long id,
+            @Valid @RequestBody AlmacenEstadoRequest request) {
+        return almacenService.updateEstadoAlmacen(jwt.getSubject(), id, request);
     }
 
     @PatchMapping("/{id}/imagen")

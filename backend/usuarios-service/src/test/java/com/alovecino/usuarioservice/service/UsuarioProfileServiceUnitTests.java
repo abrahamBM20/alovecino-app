@@ -34,6 +34,7 @@ import com.alovecino.usuarioservice.model.Region;
 import com.alovecino.usuarioservice.model.Rol;
 import com.alovecino.usuarioservice.model.Usuario;
 import com.alovecino.usuarioservice.repository.AlmacenRepository;
+import com.alovecino.usuarioservice.repository.AlmacenContactoRepository;
 import com.alovecino.usuarioservice.repository.ClienteRepository;
 import com.alovecino.usuarioservice.repository.ComunaRepository;
 import com.alovecino.usuarioservice.repository.ConfiguracionUsuarioRepository;
@@ -41,6 +42,7 @@ import com.alovecino.usuarioservice.repository.DireccionRepository;
 import com.alovecino.usuarioservice.repository.EstadoCuentaRepository;
 import com.alovecino.usuarioservice.repository.RegionRepository;
 import com.alovecino.usuarioservice.repository.RolRepository;
+import com.alovecino.usuarioservice.repository.TipoContactoRepository;
 import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +79,12 @@ class UsuarioProfileServiceUnitTests {
     private ConfiguracionUsuarioRepository configuracionUsuarioRepository;
 
     @Mock
+    private TipoContactoRepository tipoContactoRepository;
+
+    @Mock
+    private AlmacenContactoRepository almacenContactoRepository;
+
+    @Mock
     private RutValidator rutValidator;
 
     @Mock
@@ -100,6 +108,8 @@ class UsuarioProfileServiceUnitTests {
                 comunaRepository,
                 estadoCuentaRepository,
                 configuracionUsuarioRepository,
+                tipoContactoRepository,
+                almacenContactoRepository,
                 rutValidator,
                 geocodingService,
                 imageService);

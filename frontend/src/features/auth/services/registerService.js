@@ -17,6 +17,7 @@ export function buildRegisterPayload({
   nombreCompleto,
   fechaNacimiento,
   nombreAlmacen,
+  telefono,
   calle,
   numero,
   comuna,
@@ -48,6 +49,7 @@ export function buildRegisterPayload({
 
   if (tipoCuenta === 'ALMACEN') {
     payload.nombreAlmacen = nombreAlmacen;
+    payload.telefono = telefono;
   }
 
   return payload;

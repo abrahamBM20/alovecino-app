@@ -8,10 +8,11 @@ describe('registerSchema', () => {
     nombreCompleto: 'María José Peña Núñez',
     fechaNacimiento: '12/10/1992',
     nombreAlmacen: '',
+    telefono: '',
     calle: 'Los Alerces',
     numero: '123',
     comuna: 'Santiago',
-    region: 'Metropolitana',
+    region: 'Metropolitana de Santiago',
     codigoPostal: '',
     email: 'maria.pena@example.com',
     password: 'Password123',
@@ -58,10 +59,24 @@ describe('registerSchema', () => {
       nombreCompleto: 'Ñusta Camila Muñoz Álvarez',
       calle: 'Pasaje Ñuble',
       comuna: 'Peñalolén',
-      region: 'Biobío',
+      region: 'Metropolitana de Santiago',
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('rechaza comuna o región fuera del catálogo configurado', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      comuna: 'Comuna Inventada',
+      region: 'Biobío',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(expect.arrayContaining([
+      'comuna',
+      'region',
+    ]));
   });
 
   it('rechaza RUT con digito verificador inválido', () => {
@@ -84,6 +99,7 @@ describe('registerSchema', () => {
       tipoUsuario: 'almacen',
       fechaNacimiento: '',
       nombreAlmacen: 'Almacén Ñuñoa',
+      telefono: '+56 9 1234 5678',
     });
 
     expect(clientResult.success).toBe(false);
@@ -95,10 +111,23 @@ describe('registerSchema', () => {
       ...validClient,
       tipoUsuario: 'almacen',
       nombreAlmacen: '',
+      telefono: '+56 9 1234 5678',
     });
 
     expect(result.success).toBe(false);
     expect(result.error.issues[0].message).toBe('Ingresa el nombre del almacén');
+  });
+
+  it('exige teléfono válido para cuentas almacén', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      tipoUsuario: 'almacen',
+      nombreAlmacen: 'Almacén Ñuñoa',
+      telefono: '',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.some((issue) => issue.path.includes('telefono'))).toBe(true);
   });
 
   it('rechaza fecha de nacimiento con formato invalido, imposible o futura', () => {

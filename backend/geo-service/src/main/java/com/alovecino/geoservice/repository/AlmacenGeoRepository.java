@@ -17,8 +17,10 @@ public interface AlmacenGeoRepository extends JpaRepository<Almacen, Long> {
             join fetch a.direccion d
             join fetch d.comuna c
             join fetch c.region
+            join a.estadoCuenta ec
             where d.latitud is not null
               and d.longitud is not null
+              and upper(ec.codigo) = 'ACTIVO'
               and d.latitud between :minLatitud and :maxLatitud
               and d.longitud between :minLongitud and :maxLongitud
             """)

@@ -136,3 +136,36 @@ Observación:
 Promoción:
 
 - No promovido todavía.
+
+## 2026-06-07 - Aprobación Y Visibilidad De Almacenes
+
+Tipo: backend | frontend
+Resultado: éxito
+Archivos/rutas: `backend/usuarios-service`, `backend/geo-service`, `frontend/src/features/home`, `frontend/src/features/auth`
+
+Observación:
+
+- `PENDIENTE` no debe tratarse como error: representa almacén registrado pero no publicado.
+- La publicación en el mapa debe depender de `estado_cuenta.codigo = ACTIVO` para evitar mostrar negocios no aprobados.
+- Si frontend ofrece radios de búsqueda, `geo-service` debe aceptar exactamente esos radios o la UI debe ocultarlos.
+- En móvil conviene priorizar ubicación actual antes de `lastKnownPosition`, porque el emulador puede conservar ubicaciones antiguas.
+
+Promoción:
+
+- No promovido todavía.
+
+## 2026-06-10 - Catálogo De Ubicación Y Geocodificación
+
+Tipo: backend | frontend
+Resultado: éxito
+Archivos/rutas: `backend/usuarios-service`, `frontend/src/features/auth`
+
+Observación:
+
+- `region` y `comuna` pertenecen al MER como catálogos; no deben crearse desde input libre del formulario.
+- `usuarios-service` debe geocodificar con región/comuna normalizadas y existentes en catálogo para que `geo-service` y `GoogleGeocodingClient` trabajen con direcciones canónicas.
+- Si la geocodificación real falla o falta `GEO_SERVICE_URL`, `GEO_INTERNAL_API_KEY` o `GOOGLE_MAPS_API_KEY`, el fallback determinístico puede dejar coordenadas válidas pero incorrectas para el negocio.
+
+Promoción:
+
+- No promovido todavía.

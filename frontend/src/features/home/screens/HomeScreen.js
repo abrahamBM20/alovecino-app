@@ -131,7 +131,29 @@ export default function HomeScreen() {
     setUserLocation({ latitude, longitude });
   };
 
-  const loadNearbyStores = useCallback(async (isActive = () => true) => {
+  const getCurrentLocation = useCallback(async () => withTimeout(
+    Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    }),
+    LOCATION_TIMEOUT_MS,
+    'Timeout al obtener la ubicación actual',
+  ), []);
+
+  const refreshCurrentLocation = useCallback(async () => {
+    setLoadingStores(true);
+    setStoresError(false);
+    try {
+      const location = await getCurrentLocation();
+      applyLocation(location.coords);
+    } catch (error) {
+      console.warn('No se pudo actualizar la ubicación actual', error);
+      setStoresError(true);
+    } finally {
+      setLoadingStores(false);
+    }
+  }, [getCurrentLocation]);
+
+  const loadNearbyStores = useCallback(async (isActive = () => true, radiusOverride = radiusMeters) => {
     if (!userLocation) return;
 
     setLoadingStores(true);
@@ -141,7 +163,7 @@ export default function HomeScreen() {
       const nearbyStores = await fetchNearbyStores({
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        radiusMeters,
+        radiusMeters: radiusOverride,
       });
 
       if (isActive()) {
@@ -169,25 +191,22 @@ export default function HomeScreen() {
           return;
         }
 
-        const lastKnownLocation = await Location.getLastKnownPositionAsync({
-          maxAge: 10 * 60 * 1000,
-          requiredAccuracy: 1000,
-        });
+        try {
+          const location = await getCurrentLocation();
+          applyLocation(location.coords);
+        } catch {
+          const lastKnownLocation = await Location.getLastKnownPositionAsync({
+            maxAge: 10 * 60 * 1000,
+            requiredAccuracy: 1000,
+          });
 
-        if (lastKnownLocation?.coords) {
-          applyLocation(lastKnownLocation.coords);
-          return;
+          if (lastKnownLocation?.coords) {
+            applyLocation(lastKnownLocation.coords);
+            return;
+          }
+
+          throw new Error('No se pudo obtener una ubicación utilizable');
         }
-
-        const location = await withTimeout(
-          Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          }),
-          LOCATION_TIMEOUT_MS,
-          'Timeout al obtener la ubicación actual',
-        );
-
-        applyLocation(location.coords);
       } catch (error) {
         console.warn('No se pudo obtener la ubicación actual', error);
 
@@ -200,7 +219,7 @@ export default function HomeScreen() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [getCurrentLocation]);
 
   useFocusEffect(useCallback(() => {
     let isMounted = true;
@@ -228,8 +247,32 @@ export default function HomeScreen() {
     });
   };
 
+  const handleHomePress = () => {
+    setActiveTab('inicio');
+    setRadiusMeters(DEFAULT_RADIUS_METERS);
+    if (userLocation) {
+      setRegion({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.025,
+        longitudeDelta: 0.025,
+      });
+    }
+    loadNearbyStores(() => true, DEFAULT_RADIUS_METERS);
+  };
+
   const handleTabPress = (id, route) => {
     setActiveTab(id);
+
+    if (id === 'ubicacion') {
+      refreshCurrentLocation();
+      return;
+    }
+
+    if (id === 'inicio') {
+      handleHomePress();
+      return;
+    }
 
     if (route) {
       router.push(route);
@@ -382,7 +425,7 @@ export default function HomeScreen() {
             key={id}
             activeOpacity={0.75}
             accessibilityRole="button"
-            accessibilityLabel={`Tab ${id}`}
+            accessibilityLabel={id === 'ubicacion' ? 'Actualizar ubicación' : `Tab ${id}`}
             onPress={() => handleTabPress(id, route)}
           >
             <Component width={63} height={63} opacity={activeTab === id ? 1 : 0.65} />

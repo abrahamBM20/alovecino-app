@@ -18,7 +18,9 @@ import com.alovecino.usuarioservice.dto.UsuarioProfileResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
 import com.alovecino.usuarioservice.exception.UsuarioNotFoundException;
+import com.alovecino.usuarioservice.service.LocationCatalog.RegionInput;
 import com.alovecino.usuarioservice.model.Almacen;
+import com.alovecino.usuarioservice.model.AlmacenContacto;
 import com.alovecino.usuarioservice.model.Cliente;
 import com.alovecino.usuarioservice.model.Comuna;
 import com.alovecino.usuarioservice.model.ConfiguracionUsuario;
@@ -26,7 +28,9 @@ import com.alovecino.usuarioservice.model.Direccion;
 import com.alovecino.usuarioservice.model.EstadoCuenta;
 import com.alovecino.usuarioservice.model.Region;
 import com.alovecino.usuarioservice.model.Rol;
+import com.alovecino.usuarioservice.model.TipoContacto;
 import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.AlmacenContactoRepository;
 import com.alovecino.usuarioservice.repository.AlmacenRepository;
 import com.alovecino.usuarioservice.repository.ClienteRepository;
 import com.alovecino.usuarioservice.repository.ComunaRepository;
@@ -35,6 +39,7 @@ import com.alovecino.usuarioservice.repository.DireccionRepository;
 import com.alovecino.usuarioservice.repository.EstadoCuentaRepository;
 import com.alovecino.usuarioservice.repository.RegionRepository;
 import com.alovecino.usuarioservice.repository.RolRepository;
+import com.alovecino.usuarioservice.repository.TipoContactoRepository;
 import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @Service
@@ -50,6 +55,8 @@ public class UsuarioService {
     private final ComunaRepository comunaRepository;
     private final EstadoCuentaRepository estadoCuentaRepository;
     private final ConfiguracionUsuarioRepository configuracionUsuarioRepository;
+    private final TipoContactoRepository tipoContactoRepository;
+    private final AlmacenContactoRepository almacenContactoRepository;
     private final RutValidator rutValidator;
     private final GeocodingService geocodingService;
     private final ImageService imageService;
@@ -58,7 +65,8 @@ public class UsuarioService {
             PasswordEncoder passwordEncoder, ClienteRepository clienteRepository, AlmacenRepository almacenRepository,
             DireccionRepository direccionRepository, RegionRepository regionRepository, ComunaRepository comunaRepository,
             EstadoCuentaRepository estadoCuentaRepository,
-            ConfiguracionUsuarioRepository configuracionUsuarioRepository, RutValidator rutValidator,
+            ConfiguracionUsuarioRepository configuracionUsuarioRepository, TipoContactoRepository tipoContactoRepository,
+            AlmacenContactoRepository almacenContactoRepository, RutValidator rutValidator,
             GeocodingService geocodingService,
             ImageService imageService) {
         this.usuarioRepository = usuarioRepository;
@@ -71,6 +79,8 @@ public class UsuarioService {
         this.comunaRepository = comunaRepository;
         this.estadoCuentaRepository = estadoCuentaRepository;
         this.configuracionUsuarioRepository = configuracionUsuarioRepository;
+        this.tipoContactoRepository = tipoContactoRepository;
+        this.almacenContactoRepository = almacenContactoRepository;
         this.rutValidator = rutValidator;
         this.geocodingService = geocodingService;
         this.imageService = imageService;
@@ -106,7 +116,8 @@ public class UsuarioService {
             almacen.setDueno(saved);
             almacen.setDireccion(direccion);
             almacen.setEstadoCuenta(estadoCuenta);
-            almacenRepository.save(almacen);
+            Almacen savedAlmacen = almacenRepository.save(almacen);
+            createTelefonoPrincipal(savedAlmacen, request.getTelefono());
         }
 
         ConfiguracionUsuario configuracion = new ConfiguracionUsuario();
@@ -197,6 +208,23 @@ public class UsuarioService {
                 && (request.getNombreAlmacen() == null || request.getNombreAlmacen().isBlank())) {
             throw new IllegalArgumentException("El nombre del almacén es obligatorio");
         }
+
+        if (request.getTipoCuenta() == UsuarioRequest.TipoCuenta.ALMACEN
+                && (request.getTelefono() == null || request.getTelefono().isBlank())) {
+            throw new IllegalArgumentException("El teléfono del almacén es obligatorio");
+        }
+    }
+
+    private void createTelefonoPrincipal(Almacen almacen, String telefono) {
+        TipoContacto tipoTelefono = tipoContactoRepository.findByCodigo("TELEFONO")
+                .orElseGet(() -> tipoContactoRepository.save(new TipoContacto("TELEFONO", "Telefono")));
+        AlmacenContacto contacto = new AlmacenContacto();
+        contacto.setAlmacen(almacen);
+        contacto.setTipoContacto(tipoTelefono);
+        contacto.setValor(telefono);
+        contacto.setNombreContacto(almacen.getNombre());
+        contacto.setEsPrincipal(true);
+        almacenContactoRepository.save(contacto);
     }
 
     public Direccion createDireccionForAlmacen(DireccionRequest request) {
@@ -212,15 +240,22 @@ public class UsuarioService {
     }
 
     private Direccion saveDireccion(Direccion direccion, DireccionRequest request) {
+        RegionInput regionInput = LocationCatalog.resolveRegion(request.getRegion())
+                .orElseThrow(() -> new IllegalArgumentException("La región no está configurada en el sistema"));
+        String comunaNombre = LocationCatalog.resolveComuna(request.getComuna())
+                .orElseThrow(() -> new IllegalArgumentException("La comuna no está configurada en el sistema"));
         Region region = regionRepository.findByNombreIgnoreCaseOrCodigoIgnoreCase(
-                request.getRegion(),
-                request.getRegion())
-                .orElseGet(() -> regionRepository.save(new Region(request.getRegion(), request.getRegion())));
+                regionInput.nombre(),
+                regionInput.codigo())
+                .orElseThrow(() -> new IllegalArgumentException("La región no está configurada en el sistema"));
 
-        Comuna comuna = comunaRepository.findByNombreIgnoreCaseAndRegion(request.getComuna(), region)
-                .orElseGet(() -> comunaRepository.save(new Comuna(request.getComuna(), region)));
+        Comuna comuna = comunaRepository.findByNombreIgnoreCaseAndRegion(comunaNombre, region)
+                .orElseThrow(() -> new IllegalArgumentException("La comuna no está configurada en el sistema"));
 
-        GeocodingService.Coordinates coordinates = geocodingService.geocode(request);
+        GeocodingService.Coordinates coordinates = geocodingService.geocode(normalizedDireccionRequest(
+                request,
+                comunaNombre,
+                regionInput.nombre()));
 
         direccion.setCalle(request.getCalle());
         direccion.setNumero(request.getNumero());
@@ -308,5 +343,15 @@ public class UsuarioService {
                 direccion.getComuna().getRegion().getNombre(),
                 direccion.getLatitud(),
                 direccion.getLongitud());
+    }
+
+    private DireccionRequest normalizedDireccionRequest(DireccionRequest request, String comuna, String region) {
+        DireccionRequest normalized = new DireccionRequest();
+        normalized.setCalle(request.getCalle());
+        normalized.setNumero(request.getNumero());
+        normalized.setCodigoPostal(request.getCodigoPostal());
+        normalized.setComuna(comuna);
+        normalized.setRegion(region);
+        return normalized;
     }
 }

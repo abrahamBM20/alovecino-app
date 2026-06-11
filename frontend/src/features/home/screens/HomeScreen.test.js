@@ -160,6 +160,46 @@ describe('HomeScreen', () => {
     });
   });
 
+  it('prioriza la ubicación actual sobre una última ubicación conocida antigua', async () => {
+    Location.getLastKnownPositionAsync.mockResolvedValueOnce({
+      coords: {
+        latitude: -33.4400,
+        longitude: -70.7570,
+      },
+    });
+    Location.getCurrentPositionAsync.mockResolvedValueOnce({
+      coords: {
+        latitude: -33.4876,
+        longitude: -70.5389,
+      },
+    });
+
+    await renderHomeScreen();
+
+    await waitFor(() => expect(fetchNearbyStores).toHaveBeenCalledWith({
+      latitude: -33.4876,
+      longitude: -70.5389,
+      radiusMeters: 500,
+    }));
+  });
+
+  it('actualiza la ubicación al presionar el tab de ubicación', async () => {
+    Location.getCurrentPositionAsync
+      .mockResolvedValueOnce(currentLocation)
+      .mockResolvedValueOnce({
+        coords: {
+          latitude: -33.4876,
+          longitude: -70.5389,
+        },
+      });
+
+    const { getByLabelText } = await renderHomeScreen();
+
+    fireEvent.press(getByLabelText('Actualizar ubicación'));
+
+    await waitFor(() => expect(Location.getCurrentPositionAsync).toHaveBeenCalledTimes(2));
+  });
+
   it('muestra estado vacio y permite buscar nuevamente cuando no hay almacenes cercanos', async () => {
     fetchNearbyStores
       .mockResolvedValueOnce([])
@@ -210,6 +250,29 @@ describe('HomeScreen', () => {
       longitude: -70.669265,
       radiusMeters: 2000,
     });
+  });
+
+  it('el tab inicio vuelve al radio por defecto y recarga almacenes', async () => {
+    fetchNearbyStores.mockResolvedValue([]);
+
+    const { getByLabelText, getAllByLabelText, getByText } = await renderHomeScreen();
+
+    await waitFor(() => expect(getByText('No hay almacenes cercanos en 500 m.')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buscar almacenes en 2 km'));
+    await waitFor(() => expect(fetchNearbyStores).toHaveBeenLastCalledWith({
+      latitude: -33.44889,
+      longitude: -70.669265,
+      radiusMeters: 2000,
+    }));
+
+    fireEvent.press(getAllByLabelText('Tab inicio')[0]);
+
+    await waitFor(() => expect(fetchNearbyStores).toHaveBeenLastCalledWith({
+      latitude: -33.44889,
+      longitude: -70.669265,
+      radiusMeters: 500,
+    }));
   });
 
   it('muestra error de carga de almacenes y permite reintentar', async () => {
