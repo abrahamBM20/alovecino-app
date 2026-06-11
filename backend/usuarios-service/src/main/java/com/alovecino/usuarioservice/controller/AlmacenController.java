@@ -63,6 +63,16 @@ public class AlmacenController {
         return almacenService.updateEstadoAlmacen(jwt.getSubject(), id, request);
     }
 
+    @PatchMapping("/{id}/geocodificacion")
+    public AlmacenResponse refreshGeocoding(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+        return almacenService.refreshGeocoding(jwt.getSubject(), id);
+    }
+
+    @PatchMapping("/geocodificacion")
+    public List<AlmacenResponse> refreshAllGeocoding(@AuthenticationPrincipal Jwt jwt) {
+        return almacenService.refreshAllGeocoding(jwt.getSubject());
+    }
+
     @PatchMapping("/{id}/imagen")
     public AlmacenResponse updateImagenUrl(@AuthenticationPrincipal Jwt jwt,
             @PathVariable Long id,

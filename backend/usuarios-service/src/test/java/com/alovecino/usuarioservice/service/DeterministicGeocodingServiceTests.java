@@ -1,6 +1,7 @@
 package com.alovecino.usuarioservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,6 +57,39 @@ class DeterministicGeocodingServiceTests {
         assertThat(apiKey.get()).isEqualTo("dev-secret");
         assertThat(coordinates.latitud()).isEqualByComparingTo(new BigDecimal("-33.4876000"));
         assertThat(coordinates.longitud()).isEqualByComparingTo(new BigDecimal("-70.5389000"));
+    }
+
+    @Test
+    void failsWhenRemoteGeocodingIsConfiguredButUnavailable() throws IOException {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/api/geo/internal/geocode", exchange -> {
+            byte[] body = """
+                    {"message":"Google Maps no retornó resultados"}
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(500, body.length);
+            try (OutputStream output = exchange.getResponseBody()) {
+                output.write(body);
+            }
+        });
+        server.start();
+
+        String baseUrl = "http://localhost:" + server.getAddress().getPort();
+        DeterministicGeocodingService service = new DeterministicGeocodingService(baseUrl, 500, "dev-secret");
+
+        assertThatThrownBy(() -> service.geocode(direccion()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("geo-service");
+    }
+
+    @Test
+    void keepsDeterministicFallbackWhenRemoteGeocodingIsNotConfigured() {
+        DeterministicGeocodingService service = new DeterministicGeocodingService("http://localhost:1", 100, "");
+
+        GeocodingService.Coordinates coordinates = service.geocode(direccion());
+
+        assertThat(coordinates.latitud()).isNotNull();
+        assertThat(coordinates.longitud()).isNotNull();
     }
 
     private DireccionRequest direccion() {

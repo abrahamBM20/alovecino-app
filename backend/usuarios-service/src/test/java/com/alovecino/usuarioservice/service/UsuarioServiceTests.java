@@ -217,6 +217,41 @@ class UsuarioServiceTests {
     }
 
     @Test
+    void shouldAllowAdminToRefreshAlmacenGeocoding() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+        Usuario admin = adminUser();
+        geocodingService.useCoordinates("-33.4801011", "-70.5431336");
+
+        AlmacenResponse response = almacenService.refreshGeocoding(String.valueOf(admin.getIdUsuario()), idAlmacen);
+
+        assertThat(response.getLatitud()).isEqualTo("-33.4801011");
+        assertThat(response.getLongitud()).isEqualTo("-70.5431336");
+        assertThat(geocodingService.lastRequest().getCalle()).isEqualTo("Avenida Siempre Viva");
+        assertThat(geocodingService.lastRequest().getComuna()).isEqualTo("Providencia");
+        assertThat(almacenRepository.findById(idAlmacen)).isPresent()
+                .get()
+                .satisfies(almacen -> {
+                    assertThat(almacen.getDireccion().getLatitud()).isEqualByComparingTo("-33.4801011");
+                    assertThat(almacen.getDireccion().getLongitud()).isEqualByComparingTo("-70.5431336");
+                });
+    }
+
+    @Test
+    void shouldRejectGeocodingRefreshFromNonAdmin() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        UsuarioResponse saved = usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+
+        assertThatThrownBy(() -> almacenService.refreshGeocoding(String.valueOf(saved.getIdUsuario()), idAlmacen))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("administradores");
+    }
+
+    @Test
     void shouldRejectDuplicateRutCorreoAndNombreUsuario() {
         UsuarioRequest original = clienteRequest("333333333", "original-" + UUID.randomUUID() + "@alovecino.test",
                 "original-" + UUID.randomUUID());
@@ -324,15 +359,22 @@ class UsuarioServiceTests {
     static class CapturingGeocodingService implements GeocodingService {
 
         private DireccionRequest lastRequest;
+        private BigDecimal latitud = new BigDecimal("-33.4876000");
+        private BigDecimal longitud = new BigDecimal("-70.5389000");
 
         @Override
         public Coordinates geocode(DireccionRequest direccion) {
             lastRequest = direccion;
-            return new Coordinates(new BigDecimal("-33.4876000"), new BigDecimal("-70.5389000"));
+            return new Coordinates(latitud, longitud);
         }
 
         DireccionRequest lastRequest() {
             return lastRequest;
+        }
+
+        void useCoordinates(String latitud, String longitud) {
+            this.latitud = new BigDecimal(latitud);
+            this.longitud = new BigDecimal(longitud);
         }
     }
 }

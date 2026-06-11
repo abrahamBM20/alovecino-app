@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -20,6 +22,7 @@ import com.alovecino.usuarioservice.dto.DireccionRequest;
 @Service
 public class DeterministicGeocodingService implements GeocodingService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeterministicGeocodingService.class);
     private static final String INTERNAL_API_KEY_HEADER = "X-Internal-Api-Key";
 
     private final RestClient geoClient;
@@ -27,7 +30,7 @@ public class DeterministicGeocodingService implements GeocodingService {
 
     public DeterministicGeocodingService(
             @Value("${usuarios.geo-service.base-url:http://localhost:8083}") String geoServiceUrl,
-            @Value("${usuarios.geo-service.timeout-ms:2500}") long timeoutMs,
+            @Value("${usuarios.geo-service.timeout-ms:10000}") long timeoutMs,
             @Value("${usuarios.geo-service.internal-api-key:${GEO_INTERNAL_API_KEY:}}") String internalApiKey) {
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
         requestFactory.setReadTimeout(Duration.ofMillis(timeoutMs));
@@ -40,8 +43,10 @@ public class DeterministicGeocodingService implements GeocodingService {
 
     @Override
     public Coordinates geocode(DireccionRequest direccion) {
+        boolean remoteConfigured = false;
         String token = currentAccessToken();
         if (StringUtils.hasText(token)) {
+            remoteConfigured = true;
             Coordinates coordinates = geocodeWithToken(direccion, token);
             if (coordinates != null) {
                 return coordinates;
@@ -49,10 +54,15 @@ public class DeterministicGeocodingService implements GeocodingService {
         }
 
         if (StringUtils.hasText(internalApiKey)) {
+            remoteConfigured = true;
             Coordinates coordinates = geocodeWithInternalKey(direccion);
             if (coordinates != null) {
                 return coordinates;
             }
+        }
+
+        if (remoteConfigured) {
+            throw new IllegalStateException("No se pudo geocodificar la dirección mediante geo-service");
         }
 
         return deterministicCoordinates(direccion);
@@ -82,6 +92,7 @@ public class DeterministicGeocodingService implements GeocodingService {
                 return new Coordinates(response.latitud(), response.longitud());
             }
         } catch (RestClientException | IllegalStateException ex) {
+            LOGGER.warn("No se pudo geocodificar dirección mediante geo-service: {}", ex.getMessage());
             return null;
         }
         return null;

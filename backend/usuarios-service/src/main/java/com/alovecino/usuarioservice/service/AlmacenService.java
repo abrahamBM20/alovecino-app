@@ -102,11 +102,7 @@ public class AlmacenService {
 
     @Transactional
     public AlmacenResponse updateEstadoAlmacen(String adminIdentifier, Long idAlmacen, AlmacenEstadoRequest request) {
-        Usuario admin = findUsuarioByPrincipal(adminIdentifier);
-        if (!"ADMIN".equalsIgnoreCase(admin.getRol().getNombreRol())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Solo usuarios administradores pueden cambiar el estado de un almacén");
-        }
+        assertAdmin(adminIdentifier);
 
         String estadoCodigo = request.getEstado().trim().toUpperCase();
         if (!ESTADOS_ADMINISTRABLES.contains(estadoCodigo)) {
@@ -120,6 +116,26 @@ public class AlmacenService {
                 .orElseGet(() -> estadoCuentaRepository.save(new EstadoCuenta(estadoCodigo, estadoCodigo, null)));
         almacen.setEstadoCuenta(estadoCuenta);
         return toResponse(almacenRepository.save(almacen));
+    }
+
+    @Transactional
+    public AlmacenResponse refreshGeocoding(String adminIdentifier, Long idAlmacen) {
+        assertAdmin(adminIdentifier);
+        Almacen almacen = almacenRepository.findById(idAlmacen)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Almacén no encontrado"));
+        usuarioService.refreshGeocodingForAlmacen(almacen.getDireccion());
+        return toResponse(almacenRepository.save(almacen));
+    }
+
+    @Transactional
+    public List<AlmacenResponse> refreshAllGeocoding(String adminIdentifier) {
+        assertAdmin(adminIdentifier);
+        return almacenRepository.findAll().stream()
+                .map(almacen -> {
+                    usuarioService.refreshGeocodingForAlmacen(almacen.getDireccion());
+                    return toResponse(almacenRepository.save(almacen));
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -171,6 +187,14 @@ public class AlmacenService {
                 .or(() -> usuarioRepository.findByNombreUsuario(identifier))
                 .or(() -> usuarioRepository.findByCorreo(identifier))
                 .orElseThrow(() -> new UsuarioNotFoundException(identifier));
+    }
+
+    private void assertAdmin(String identifier) {
+        Usuario admin = findUsuarioByPrincipal(identifier);
+        if (!"ADMIN".equalsIgnoreCase(admin.getRol().getNombreRol())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo usuarios administradores pueden administrar almacenes");
+        }
     }
 
     private java.util.Optional<Usuario> findUsuarioById(String identifier) {

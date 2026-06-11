@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.alovecino.usuarioservice.dto.AlmacenProfileResponse;
 import com.alovecino.usuarioservice.dto.ClienteProfileResponse;
@@ -235,6 +237,13 @@ public class UsuarioService {
         return saveDireccion(direccion, request);
     }
 
+    public Direccion refreshGeocodingForAlmacen(Direccion direccion) {
+        GeocodingService.Coordinates coordinates = geocodeOrFail(toDireccionRequest(direccion));
+        direccion.setLatitud(coordinates.latitud());
+        direccion.setLongitud(coordinates.longitud());
+        return direccionRepository.save(direccion);
+    }
+
     private Direccion createDireccion(DireccionRequest request) {
         return saveDireccion(new Direccion(), request);
     }
@@ -252,7 +261,7 @@ public class UsuarioService {
         Comuna comuna = comunaRepository.findByNombreIgnoreCaseAndRegion(comunaNombre, region)
                 .orElseThrow(() -> new IllegalArgumentException("La comuna no está configurada en el sistema"));
 
-        GeocodingService.Coordinates coordinates = geocodingService.geocode(normalizedDireccionRequest(
+        GeocodingService.Coordinates coordinates = geocodeOrFail(normalizedDireccionRequest(
                 request,
                 comunaNombre,
                 regionInput.nombre()));
@@ -265,6 +274,15 @@ public class UsuarioService {
         direccion.setLongitud(coordinates.longitud());
 
         return direccionRepository.save(direccion);
+    }
+
+    private GeocodingService.Coordinates geocodeOrFail(DireccionRequest request) {
+        try {
+            return geocodingService.geocode(request);
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "No se pudo geocodificar la dirección. Intenta nuevamente.", ex);
+        }
     }
 
     private Rol findRol(String nombreRol) {
@@ -353,5 +371,15 @@ public class UsuarioService {
         normalized.setComuna(comuna);
         normalized.setRegion(region);
         return normalized;
+    }
+
+    private DireccionRequest toDireccionRequest(Direccion direccion) {
+        DireccionRequest request = new DireccionRequest();
+        request.setCalle(direccion.getCalle());
+        request.setNumero(direccion.getNumero());
+        request.setCodigoPostal(direccion.getCodigoPostal());
+        request.setComuna(direccion.getComuna().getNombre());
+        request.setRegion(direccion.getComuna().getRegion().getNombre());
+        return request;
     }
 }
