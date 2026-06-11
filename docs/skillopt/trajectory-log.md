@@ -169,3 +169,19 @@ Observación:
 Promoción:
 
 - No promovido todavía.
+
+## 2026-06-11 - Geocodificación Sin Fallback Silencioso
+
+Tipo: backend
+Resultado: éxito
+Archivos/rutas: `backend/usuarios-service`, `backend/geo-service`
+
+Observación:
+
+- Si `usuarios-service` tiene JWT o `GEO_INTERNAL_API_KEY`, la geocodificación debe depender de `geo-service`; no debe persistir fallback determinístico ante timeouts o errores.
+- En Render dev/qa, los cold starts pueden superar timeouts cortos y causar datos incorrectos si el fallback queda habilitado en flujos productivos.
+- Para corregir registros previos, conviene exponer una operación admin de re-geocodificación que actualice `direccion.latitud` y `direccion.longitud` sin romper el MER.
+
+Promoción:
+
+- No promovido todavía.
