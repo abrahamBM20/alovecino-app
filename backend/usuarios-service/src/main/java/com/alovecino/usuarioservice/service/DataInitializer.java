@@ -5,11 +5,13 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.alovecino.usuarioservice.model.Comuna;
 import com.alovecino.usuarioservice.model.EstadoCuenta;
 import com.alovecino.usuarioservice.model.Region;
 import com.alovecino.usuarioservice.model.Rol;
 import com.alovecino.usuarioservice.model.TipoContacto;
 import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.ComunaRepository;
 import com.alovecino.usuarioservice.repository.EstadoCuentaRepository;
 import com.alovecino.usuarioservice.repository.RegionRepository;
 import com.alovecino.usuarioservice.repository.RolRepository;
@@ -24,16 +26,19 @@ public class DataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final EstadoCuentaRepository estadoCuentaRepository;
     private final RegionRepository regionRepository;
+    private final ComunaRepository comunaRepository;
     private final TipoContactoRepository tipoContactoRepository;
 
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository,
             PasswordEncoder passwordEncoder, EstadoCuentaRepository estadoCuentaRepository,
-            RegionRepository regionRepository, TipoContactoRepository tipoContactoRepository) {
+            RegionRepository regionRepository, ComunaRepository comunaRepository,
+            TipoContactoRepository tipoContactoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.estadoCuentaRepository = estadoCuentaRepository;
         this.regionRepository = regionRepository;
+        this.comunaRepository = comunaRepository;
         this.tipoContactoRepository = tipoContactoRepository;
     }
 
@@ -48,7 +53,10 @@ public class DataInitializer implements ApplicationRunner {
         ensureEstadoCuenta("SUSPENDIDO", "Suspendido", "Cuenta suspendida temporalmente");
         ensureEstadoCuenta("INACTIVO", "Inactivo", "Cuenta inactiva");
         ensureTipoContacto("TELEFONO", "Telefono");
-        ensureRegion("Metropolitana de Santiago", "RM");
+        Region regionMetropolitana = ensureRegion(
+                LocationCatalog.REGION_METROPOLITANA.nombre(),
+                LocationCatalog.REGION_METROPOLITANA.codigo());
+        LocationCatalog.COMUNAS_REGION_METROPOLITANA.forEach(comuna -> ensureComuna(comuna, regionMetropolitana));
 
         Rol adminRol = rolRepository.findByNombreRol("ADMIN")
                 .orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
@@ -75,9 +83,14 @@ public class DataInitializer implements ApplicationRunner {
                 .orElseGet(() -> estadoCuentaRepository.save(new EstadoCuenta(codigo, nombre, descripcion)));
     }
 
-    private void ensureRegion(String nombre, String codigo) {
-        regionRepository.findByNombreIgnoreCaseOrCodigoIgnoreCase(nombre, codigo)
+    private Region ensureRegion(String nombre, String codigo) {
+        return regionRepository.findByNombreIgnoreCaseOrCodigoIgnoreCase(nombre, codigo)
                 .orElseGet(() -> regionRepository.save(new Region(nombre, codigo)));
+    }
+
+    private void ensureComuna(String nombre, Region region) {
+        comunaRepository.findByNombreIgnoreCaseAndRegion(nombre, region)
+                .orElseGet(() -> comunaRepository.save(new Comuna(nombre, region)));
     }
 
     private void ensureTipoContacto(String codigo, String nombre) {

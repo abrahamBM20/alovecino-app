@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import ScreenContainer from '../../../shared/ui/ScreenContainer';
 import AppButton from '../../../shared/ui/AppButton';
 import AppInput from '../../../shared/ui/AppInput';
+import AppSelect from '../../../shared/ui/AppSelect';
+import { COMUNA_OPTIONS, REGION_OPTIONS } from '../constants/locationCatalog';
 import { useRegisterForm } from '../hooks/useRegisterForm';
 
 const USER_TYPES = [
@@ -216,13 +218,11 @@ export default function RegisterScreen() {
         <Controller
           control={control}
           name="comuna"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
+          render={({ field: { onChange, value } }) => (
+            <AppSelect
               label="Comuna"
-              autoCapitalize="words"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
+              options={COMUNA_OPTIONS}
+              onChange={onChange}
               value={value}
               error={errors.comuna?.message}
             />
@@ -232,13 +232,11 @@ export default function RegisterScreen() {
         <Controller
           control={control}
           name="region"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <AppInput
+          render={({ field: { onChange, value } }) => (
+            <AppSelect
               label="Región"
-              autoCapitalize="words"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
+              options={REGION_OPTIONS}
+              onChange={onChange}
               value={value}
               error={errors.region?.message}
             />

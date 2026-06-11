@@ -3,6 +3,7 @@ package com.alovecino.usuarioservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -10,8 +11,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -67,6 +71,9 @@ class UsuarioServiceTests {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private CapturingGeocodingService geocodingService;
+
     @Test
     void shouldCreateClienteWithDireccionConfiguracionAndBcryptPassword() {
         UsuarioRequest request = clienteRequest("123456785", "cliente-" + UUID.randomUUID() + "@alovecino.test",
@@ -111,6 +118,31 @@ class UsuarioServiceTests {
                     assertThat(contacto.getValor()).isEqualTo("+56912345678");
                     assertThat(contacto.isEsPrincipal()).isTrue();
                 });
+    }
+
+    @Test
+    void shouldGeocodeWithNormalizedComunaAndRegionAliases() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        request.getDireccion().setComuna("Penalolen");
+        request.getDireccion().setRegion("RM");
+
+        usuarioService.createUsuario(request);
+
+        assertThat(geocodingService.lastRequest().getComuna()).isEqualTo("Peñalolén");
+        assertThat(geocodingService.lastRequest().getRegion()).isEqualTo("Metropolitana de Santiago");
+    }
+
+    @Test
+    void shouldRejectDireccionOutsideConfiguredLocationCatalog() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        request.getDireccion().setComuna("Comuna Inventada");
+        request.getDireccion().setRegion("RM");
+
+        assertThatThrownBy(() -> usuarioService.createUsuario(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("comuna no está configurada");
     }
 
     @Test
@@ -277,6 +309,31 @@ class UsuarioServiceTests {
         configuracionUsuarioRepository.deleteAll();
         direccionRepository.deleteAll();
         usuarioRepository.deleteAll();
+    }
+
+    @TestConfiguration
+    static class GeocodingTestConfig {
+
+        @Bean
+        @Primary
+        CapturingGeocodingService capturingGeocodingService() {
+            return new CapturingGeocodingService();
+        }
+    }
+
+    static class CapturingGeocodingService implements GeocodingService {
+
+        private DireccionRequest lastRequest;
+
+        @Override
+        public Coordinates geocode(DireccionRequest direccion) {
+            lastRequest = direccion;
+            return new Coordinates(new BigDecimal("-33.4876000"), new BigDecimal("-70.5389000"));
+        }
+
+        DireccionRequest lastRequest() {
+            return lastRequest;
+        }
     }
 }
 

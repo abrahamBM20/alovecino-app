@@ -1,7 +1,6 @@
 package com.alovecino.usuarioservice.service;
 
 import java.io.IOException;
-import java.text.Normalizer;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +18,7 @@ import com.alovecino.usuarioservice.dto.UsuarioProfileResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
 import com.alovecino.usuarioservice.exception.UsuarioNotFoundException;
+import com.alovecino.usuarioservice.service.LocationCatalog.RegionInput;
 import com.alovecino.usuarioservice.model.Almacen;
 import com.alovecino.usuarioservice.model.AlmacenContacto;
 import com.alovecino.usuarioservice.model.Cliente;
@@ -240,17 +240,22 @@ public class UsuarioService {
     }
 
     private Direccion saveDireccion(Direccion direccion, DireccionRequest request) {
-        RegionInput regionInput = normalizeRegion(request.getRegion());
-        String comunaNombre = normalizeComuna(request.getComuna());
+        RegionInput regionInput = LocationCatalog.resolveRegion(request.getRegion())
+                .orElseThrow(() -> new IllegalArgumentException("La región no está configurada en el sistema"));
+        String comunaNombre = LocationCatalog.resolveComuna(request.getComuna())
+                .orElseThrow(() -> new IllegalArgumentException("La comuna no está configurada en el sistema"));
         Region region = regionRepository.findByNombreIgnoreCaseOrCodigoIgnoreCase(
                 regionInput.nombre(),
                 regionInput.codigo())
-                .orElseGet(() -> regionRepository.save(new Region(regionInput.nombre(), regionInput.codigo())));
+                .orElseThrow(() -> new IllegalArgumentException("La región no está configurada en el sistema"));
 
         Comuna comuna = comunaRepository.findByNombreIgnoreCaseAndRegion(comunaNombre, region)
-                .orElseGet(() -> comunaRepository.save(new Comuna(comunaNombre, region)));
+                .orElseThrow(() -> new IllegalArgumentException("La comuna no está configurada en el sistema"));
 
-        GeocodingService.Coordinates coordinates = geocodingService.geocode(request);
+        GeocodingService.Coordinates coordinates = geocodingService.geocode(normalizedDireccionRequest(
+                request,
+                comunaNombre,
+                regionInput.nombre()));
 
         direccion.setCalle(request.getCalle());
         direccion.setNumero(request.getNumero());
@@ -340,33 +345,13 @@ public class UsuarioService {
                 direccion.getLongitud());
     }
 
-    private RegionInput normalizeRegion(String region) {
-        String cleaned = region == null ? "" : region.trim();
-        String key = removeAccents(cleaned).toUpperCase();
-        if (key.equals("RM")
-                || key.equals("METROPOLITANA")
-                || key.equals("REGION METROPOLITANA")
-                || key.equals("METROPOLITANA DE SANTIAGO")
-                || key.equals("REGION METROPOLITANA DE SANTIAGO")) {
-            return new RegionInput("Metropolitana de Santiago", "RM");
-        }
-        return new RegionInput(cleaned, cleaned);
-    }
-
-    private String normalizeComuna(String comuna) {
-        String cleaned = comuna == null ? "" : comuna.trim();
-        String key = removeAccents(cleaned).toUpperCase();
-        if (key.equals("PENALOLEN")) {
-            return "Peñalolén";
-        }
-        return cleaned;
-    }
-
-    private String removeAccents(String value) {
-        return Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
-    }
-
-    private record RegionInput(String nombre, String codigo) {
+    private DireccionRequest normalizedDireccionRequest(DireccionRequest request, String comuna, String region) {
+        DireccionRequest normalized = new DireccionRequest();
+        normalized.setCalle(request.getCalle());
+        normalized.setNumero(request.getNumero());
+        normalized.setCodigoPostal(request.getCodigoPostal());
+        normalized.setComuna(comuna);
+        normalized.setRegion(region);
+        return normalized;
     }
 }

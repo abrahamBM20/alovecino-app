@@ -12,7 +12,7 @@ describe('registerSchema', () => {
     calle: 'Los Alerces',
     numero: '123',
     comuna: 'Santiago',
-    region: 'Metropolitana',
+    region: 'Metropolitana de Santiago',
     codigoPostal: '',
     email: 'maria.pena@example.com',
     password: 'Password123',
@@ -59,10 +59,24 @@ describe('registerSchema', () => {
       nombreCompleto: 'Ñusta Camila Muñoz Álvarez',
       calle: 'Pasaje Ñuble',
       comuna: 'Peñalolén',
-      region: 'Biobío',
+      region: 'Metropolitana de Santiago',
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('rechaza comuna o región fuera del catálogo configurado', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      comuna: 'Comuna Inventada',
+      region: 'Biobío',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(expect.arrayContaining([
+      'comuna',
+      'region',
+    ]));
   });
 
   it('rechaza RUT con digito verificador inválido', () => {

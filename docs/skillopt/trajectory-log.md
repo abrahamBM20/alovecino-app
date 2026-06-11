@@ -153,3 +153,19 @@ Observación:
 Promoción:
 
 - No promovido todavía.
+
+## 2026-06-10 - Catálogo De Ubicación Y Geocodificación
+
+Tipo: backend | frontend
+Resultado: éxito
+Archivos/rutas: `backend/usuarios-service`, `frontend/src/features/auth`
+
+Observación:
+
+- `region` y `comuna` pertenecen al MER como catálogos; no deben crearse desde input libre del formulario.
+- `usuarios-service` debe geocodificar con región/comuna normalizadas y existentes en catálogo para que `geo-service` y `GoogleGeocodingClient` trabajen con direcciones canónicas.
+- Si la geocodificación real falla o falta `GEO_SERVICE_URL`, `GEO_INTERNAL_API_KEY` o `GOOGLE_MAPS_API_KEY`, el fallback determinístico puede dejar coordenadas válidas pero incorrectas para el negocio.
+
+Promoción:
+
+- No promovido todavía.

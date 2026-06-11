@@ -10,7 +10,7 @@ describe('registerService', () => {
     calle: 'Los Alerces',
     numero: '123',
     comuna: 'Santiago',
-    region: 'Metropolitana',
+    region: 'Metropolitana de Santiago',
     codigoPostal: '',
     email: 'maria.pena@example.com',
     password: 'Password123',
@@ -47,7 +47,7 @@ describe('registerService', () => {
         calle: 'Los Alerces',
         numero: '123',
         comuna: 'Santiago',
-        region: 'Metropolitana',
+        region: 'Metropolitana de Santiago',
         codigoPostal: null,
       },
     });

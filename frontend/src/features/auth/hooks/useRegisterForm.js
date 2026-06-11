@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { registerSchema } from '../schemas/registerSchema';
 import { registerService } from '../services/registerService';
+import { REGION_OPTIONS } from '../constants/locationCatalog';
 
 export function useRegisterForm() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export function useRegisterForm() {
       calle: '',
       numero: '',
       comuna: '',
-      region: '',
+      region: REGION_OPTIONS[0].value,
       codigoPostal: '',
       email: '',
       password: '',

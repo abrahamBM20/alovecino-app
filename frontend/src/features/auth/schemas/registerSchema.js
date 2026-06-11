@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { COMUNA_VALUES, REGION_VALUES } from '../constants/locationCatalog';
 
 const LATAM_PERSON_NAME_REGEX = /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u;
 const LATAM_TEXT_REGEX = /^[\p{L}\p{M}0-9 .,'’#°ºª/-]+$/u;
@@ -98,15 +99,13 @@ export const registerSchema = z
     comuna: z
       .string()
       .trim()
-      .min(1, 'Ingresa la comuna')
-      .max(120, 'La comuna no puede superar 120 caracteres')
-      .regex(LATAM_TEXT_REGEX, 'Ingresa una comuna válida'),
+      .min(1, 'Selecciona la comuna')
+      .refine((value) => COMUNA_VALUES.includes(value), 'Selecciona una comuna configurada'),
     region: z
       .string()
       .trim()
-      .min(1, 'Ingresa la región')
-      .max(120, 'La región no puede superar 120 caracteres')
-      .regex(LATAM_TEXT_REGEX, 'Ingresa una región válida'),
+      .min(1, 'Selecciona la región')
+      .refine((value) => REGION_VALUES.includes(value), 'Selecciona una región configurada'),
     codigoPostal: z
       .string()
       .trim()
