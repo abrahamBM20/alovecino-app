@@ -33,7 +33,7 @@ const TEXT_MUTED = '#8FA3B3';
 const BORDER = '#d8eef8';
 
 const TAB_ITEMS = [
-  { id: 'ubicacion', Component: BotonFiltro, route: '/home' },
+  { id: 'ubicacion', Component: BotonFiltro, route: '/home/ubicacion' },
   { id: 'inicio', Component: BotonInicio, route: '/home' },
   { id: 'configuracion', Component: BotonConfiguracion, route: '/home/configuracion' },
   { id: 'perfil', Component: BotonPerfil, route: '/home/perfil' },
