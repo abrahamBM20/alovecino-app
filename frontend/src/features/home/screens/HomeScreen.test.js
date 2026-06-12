@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as Location from 'expo-location';
 import { fetchNearbyStores } from '../services/geoService';
+import { getConfiguracion } from '../../configuracion/services/configuracionService';
 import HomeScreen from './HomeScreen';
 
 const mockPush = jest.fn();
@@ -11,7 +12,6 @@ jest.mock('expo-location', () => ({
     Balanced: 3,
   },
   requestForegroundPermissionsAsync: jest.fn(),
-  getLastKnownPositionAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
 }));
 
@@ -28,10 +28,6 @@ jest.mock('expo-router', () => {
   };
 });
 
-jest.mock('expo-constants', () => ({
-  appOwnership: 'standalone',
-}));
-
 jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
 
@@ -41,6 +37,10 @@ jest.mock('expo-linear-gradient', () => {
 });
 
 jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }) => {
+    const { View } = require('react-native');
+    return <View {...props}>{children}</View>;
+  },
   useSafeAreaInsets: () => ({
     top: 0,
     bottom: 0,
@@ -48,36 +48,6 @@ jest.mock('react-native-safe-area-context', () => ({
     right: 0,
   }),
 }));
-
-jest.mock('react-native-maps', () => {
-  const React = require('react');
-  const { Pressable, Text, View } = require('react-native');
-
-  function MapView({ children }) {
-    return <View testID="map-view">{children}</View>;
-  }
-
-  function Marker({ title, description, onPress }) {
-    return (
-      <Pressable testID={`marker-${title}`} accessibilityLabel={title} onPress={onPress}>
-        <Text>{title}</Text>
-        {!!description && <Text>{description}</Text>}
-      </Pressable>
-    );
-  }
-
-  function Circle() {
-    return <View testID="map-radius" />;
-  }
-
-  return {
-    __esModule: true,
-    default: MapView,
-    Marker,
-    Circle,
-    PROVIDER_GOOGLE: 'google',
-  };
-});
 
 jest.mock('../../../../assets/boton_filtro.svg', () => function MockFiltro(props) {
   const { View } = require('react-native');
@@ -101,8 +71,17 @@ jest.mock('../../../../assets/boton_perfil.svg', () => function MockPerfil(props
 
 jest.mock('../services/geoService', () => ({
   DEFAULT_RADIUS_METERS: 500,
-  RADIUS_OPTIONS: [500, 2000, 10000, 100000],
   fetchNearbyStores: jest.fn(),
+}));
+
+jest.mock('../../configuracion/services/configuracionService', () => ({
+  getConfiguracion: jest.fn(),
+}));
+
+jest.mock('../../../store/authStore', () => ({
+  useAuthStore: (selector) => selector({
+    user: { id: 3, name: 'Cliente Test' },
+  }),
 }));
 
 describe('HomeScreen', () => {
@@ -116,208 +95,62 @@ describe('HomeScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
-    Location.getLastKnownPositionAsync.mockResolvedValue(currentLocation);
     Location.getCurrentPositionAsync.mockResolvedValue(currentLocation);
-    fetchNearbyStores.mockResolvedValue([]);
+    getConfiguracion.mockResolvedValue({ radioOfertasKm: 2 });
+    fetchNearbyStores.mockResolvedValue([
+      {
+        id: 7,
+        name: 'Almacén Central',
+        latitude: -33.4489,
+        longitude: -70.6692,
+        distanceMeters: 214,
+        address: 'Av. Matta 123, Santiago, Metropolitana',
+        comuna: 'Santiago',
+        region: 'Metropolitana',
+      },
+      {
+        id: 8,
+        name: 'Botillería Norte',
+        latitude: -33.449,
+        longitude: -70.669,
+        distanceMeters: 650,
+        address: 'San Diego 90, Santiago, Metropolitana',
+        comuna: 'Santiago',
+        region: 'Metropolitana',
+      },
+    ]);
   });
 
   const renderHomeScreen = async () => {
     const screen = render(<HomeScreen />);
 
-    await waitFor(
-      () => expect(screen.queryByText('Obteniendo tu ubicación...')).toBeNull(),
-      { timeout: 5000 },
-    );
+    await waitFor(() => expect(screen.queryByText('Cargando almacenes cercanos...')).toBeNull());
 
     return screen;
   };
 
-  it('muestra markers de almacenes cercanos con nombre, direccion y distancia', async () => {
-    fetchNearbyStores.mockResolvedValueOnce([
-      {
-        id: 7,
-        name: 'Almacén Central',
-        latitude: -33.4489,
-        longitude: -70.6692,
-        distanceMeters: 214,
-        address: 'Av. Matta 123, Santiago, Metropolitana',
-        comuna: 'Santiago',
-        region: 'Metropolitana',
-      },
-    ]);
+  it('muestra un panel informativo con almacenes cercanos y radio de ofertas', async () => {
+    const { getAllByText, getByText, queryByTestId } = await renderHomeScreen();
 
-    const { getByText, getByTestId, queryByText } = await renderHomeScreen();
-
-    expect(getByTestId('map-view')).toBeTruthy();
-    await waitFor(() => expect(getByText('Almacén Central')).toBeTruthy());
-
-    expect(getByText('Av. Matta 123, Santiago, Metropolitana - 214 m')).toBeTruthy();
-    expect(queryByText(/No hay almacenes cercanos/)).toBeNull();
+    expect(queryByTestId('map-view')).toBeNull();
+    expect(getByText('Inicio')).toBeTruthy();
+    expect(getByText('2')).toBeTruthy();
+    expect(getByText('Almacenes activos')).toBeTruthy();
+    expect(getByText('2 km')).toBeTruthy();
+    expect(getByText('Radio de ofertas')).toBeTruthy();
+    expect(getAllByText('Almacén Central').length).toBeGreaterThanOrEqual(1);
+    expect(getByText('Botillería Norte')).toBeTruthy();
     expect(fetchNearbyStores).toHaveBeenCalledWith({
       latitude: -33.44889,
       longitude: -70.669265,
-      radiusMeters: 500,
+      radiusMeters: 2000,
     });
   });
 
-  it('prioriza la ubicación actual sobre una última ubicación conocida antigua', async () => {
-    Location.getLastKnownPositionAsync.mockResolvedValueOnce({
-      coords: {
-        latitude: -33.4400,
-        longitude: -70.7570,
-      },
-    });
-    Location.getCurrentPositionAsync.mockResolvedValueOnce({
-      coords: {
-        latitude: -33.4876,
-        longitude: -70.5389,
-      },
-    });
-
-    await renderHomeScreen();
-
-    await waitFor(() => expect(fetchNearbyStores).toHaveBeenCalledWith({
-      latitude: -33.4876,
-      longitude: -70.5389,
-      radiusMeters: 500,
-    }));
-  });
-
-  it('actualiza la ubicación al presionar el tab de ubicación', async () => {
-    Location.getCurrentPositionAsync
-      .mockResolvedValueOnce(currentLocation)
-      .mockResolvedValueOnce({
-        coords: {
-          latitude: -33.4876,
-          longitude: -70.5389,
-        },
-      });
-
+  it('navega al perfil del almacén desde una card', async () => {
     const { getByLabelText } = await renderHomeScreen();
 
-    fireEvent.press(getByLabelText('Actualizar ubicación'));
-
-    await waitFor(() => expect(Location.getCurrentPositionAsync).toHaveBeenCalledTimes(2));
-  });
-
-  it('muestra estado vacio y permite buscar nuevamente cuando no hay almacenes cercanos', async () => {
-    fetchNearbyStores
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 8,
-          name: 'Almacén Nuevo',
-          latitude: -33.449,
-          longitude: -70.669,
-          distanceMeters: 120,
-          address: 'Las Flores 45, Santiago, Metropolitana',
-        },
-      ]);
-
-    const { getByText } = await renderHomeScreen();
-
-    await waitFor(() => expect(getByText('No hay almacenes cercanos en 500 m.')).toBeTruthy());
-
-    fireEvent.press(getByText('Buscar nuevamente'));
-
-    await waitFor(() => expect(getByText('Almacén Nuevo')).toBeTruthy());
-    expect(fetchNearbyStores).toHaveBeenCalledTimes(2);
-  });
-
-  it('permite ampliar el radio de busqueda y vuelve a cargar almacenes', async () => {
-    fetchNearbyStores
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 10,
-          name: 'Almacén Vicuña',
-          latitude: -33.5193,
-          longitude: -70.5986,
-          distanceMeters: 1800,
-          address: 'Vicuña Mackenna 1000, La Florida, Metropolitana',
-        },
-      ]);
-
-    const { getByLabelText, getByText } = await renderHomeScreen();
-
-    await waitFor(() => expect(getByText('No hay almacenes cercanos en 500 m.')).toBeTruthy());
-
-    fireEvent.press(getByLabelText('Buscar almacenes en 2 km'));
-
-    await waitFor(() => expect(getByText('Almacén Vicuña')).toBeTruthy());
-    expect(fetchNearbyStores).toHaveBeenLastCalledWith({
-      latitude: -33.44889,
-      longitude: -70.669265,
-      radiusMeters: 2000,
-    });
-  });
-
-  it('el tab inicio vuelve al radio por defecto y recarga almacenes', async () => {
-    fetchNearbyStores.mockResolvedValue([]);
-
-    const { getByLabelText, getAllByLabelText, getByText } = await renderHomeScreen();
-
-    await waitFor(() => expect(getByText('No hay almacenes cercanos en 500 m.')).toBeTruthy());
-
-    fireEvent.press(getByLabelText('Buscar almacenes en 2 km'));
-    await waitFor(() => expect(fetchNearbyStores).toHaveBeenLastCalledWith({
-      latitude: -33.44889,
-      longitude: -70.669265,
-      radiusMeters: 2000,
-    }));
-
-    fireEvent.press(getAllByLabelText('Tab inicio')[0]);
-
-    await waitFor(() => expect(fetchNearbyStores).toHaveBeenLastCalledWith({
-      latitude: -33.44889,
-      longitude: -70.669265,
-      radiusMeters: 500,
-    }));
-  });
-
-  it('muestra error de carga de almacenes y permite reintentar', async () => {
-    fetchNearbyStores
-      .mockRejectedValueOnce(new Error('Network Error'))
-      .mockResolvedValueOnce([
-        {
-          id: 9,
-          name: 'Almacén Recuperado',
-          latitude: -33.449,
-          longitude: -70.669,
-          distanceMeters: 90,
-          address: 'San Diego 90, Santiago, Metropolitana',
-        },
-      ]);
-
-    const { getByText } = await renderHomeScreen();
-
-    await waitFor(() => expect(getByText('No se pudieron cargar los negocios cercanos.')).toBeTruthy());
-
-    fireEvent.press(getByText('Reintentar'));
-
-    await waitFor(() => expect(getByText('Almacén Recuperado')).toBeTruthy());
-    expect(fetchNearbyStores).toHaveBeenCalledTimes(2);
-  });
-
-  it('navega al detalle con direccion al presionar un marker', async () => {
-    fetchNearbyStores.mockResolvedValueOnce([
-      {
-        id: 7,
-        name: 'Almacén Central',
-        latitude: -33.4489,
-        longitude: -70.6692,
-        distanceMeters: 214,
-        address: 'Av. Matta 123, Santiago, Metropolitana',
-        comuna: 'Santiago',
-        region: 'Metropolitana',
-      },
-    ]);
-
-    const { getByTestId } = await renderHomeScreen();
-
-    await waitFor(() => expect(getByTestId('marker-Almacén Central')).toBeTruthy());
-
-    fireEvent.press(getByTestId('marker-Almacén Central'));
+    fireEvent.press(getByLabelText('Ver perfil de Almacén Central'));
 
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/home/negocio/[id]',
@@ -332,20 +165,30 @@ describe('HomeScreen', () => {
     });
   });
 
-  it('navega a configuracion al presionar el tab de configuracion', async () => {
-    const { getAllByLabelText } = await renderHomeScreen();
+  it('navega al formulario de consulta desde una card', async () => {
+    const { getByLabelText } = await renderHomeScreen();
 
-    fireEvent.press(getAllByLabelText('Tab configuracion')[0]);
+    fireEvent.press(getByLabelText('Consultar a Almacén Central'));
 
-    expect(mockPush).toHaveBeenCalledWith('/home/configuracion');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/home/consultas/nueva/[id]',
+      params: { id: '7', nombre: 'Almacén Central' },
+    });
   });
 
-  it('muestra mensaje claro cuando el permiso de ubicacion fue denegado', async () => {
-    Location.requestForegroundPermissionsAsync.mockResolvedValueOnce({ status: 'denied' });
+  it('abre la pantalla de mapa desde el primer tab', async () => {
+    const { getAllByLabelText } = await renderHomeScreen();
+
+    fireEvent.press(getAllByLabelText('Tab ubicacion')[0]);
+
+    expect(mockPush).toHaveBeenCalledWith('/home/ubicacion');
+  });
+
+  it('muestra estado vacío cuando no hay almacenes activos en el radio', async () => {
+    fetchNearbyStores.mockResolvedValue([]);
 
     const { getByText } = await renderHomeScreen();
 
-    await waitFor(() => expect(getByText('Permiso de ubicación denegado')).toBeTruthy());
-    expect(fetchNearbyStores).not.toHaveBeenCalled();
+    expect(getByText('Sin almacenes cercanos')).toBeTruthy();
   });
 });

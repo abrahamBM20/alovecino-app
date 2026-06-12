@@ -27,7 +27,7 @@ const STEP_KM = 0.5;
 const THUMB_SIZE = 26;
 
 const TAB_ITEMS = [
-  { id: 'ubicacion', Component: BotonFiltro, route: '/home' },
+  { id: 'ubicacion', Component: BotonFiltro, route: '/home/ubicacion' },
   { id: 'inicio', Component: BotonInicio, route: '/home' },
   { id: 'configuracion', Component: BotonConfiguracion, route: '/home/configuracion' },
   { id: 'perfil', Component: BotonPerfil, route: '/home/perfil' },
@@ -192,7 +192,7 @@ export default function ConfiguracionScreen() {
 
               <Section title="Radio de búsqueda">
                 <Text style={styles.sliderDesc}>
-                  Negocios dentro del radio seleccionado aparecerán en el mapa.
+                  Negocios dentro del radio seleccionado aparecerán en inicio y mapa.
                 </Text>
                 <RadioSlider
                   value={config.radioOfertasKm}
