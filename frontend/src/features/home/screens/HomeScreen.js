@@ -135,6 +135,20 @@ function StoreCard({ store, onPress, onConsult }) {
   );
 }
 
+function QuickAction({ title, subtitle, onPress, accessibilityLabel }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      onPress={onPress}
+      style={({ pressed }) => [styles.quickAction, pressed && styles.cardPressed]}
+    >
+      <Text style={styles.quickActionTitle}>{title}</Text>
+      <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -330,6 +344,21 @@ export default function HomeScreen() {
                 </View>
               </View>
 
+              <View style={styles.quickActions}>
+                <QuickAction
+                  title="Mis consultas"
+                  subtitle="Revisa respuestas e historial"
+                  accessibilityLabel="Abrir historial de consultas"
+                  onPress={() => router.push('/home/consultas/mis')}
+                />
+                <QuickAction
+                  title="Explorar mapa"
+                  subtitle="Busca almacenes por radio"
+                  accessibilityLabel="Abrir mapa de almacenes"
+                  onPress={() => router.push('/home/ubicacion')}
+                />
+              </View>
+
               <View style={styles.featuredPanel}>
                 <Text style={styles.sectionTitle}>Más cercano</Text>
                 {nearestStore ? (
@@ -481,6 +510,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     fontWeight: '600',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 14,
+  },
+  quickAction: {
+    flex: 1,
+    minHeight: 76,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    padding: 12,
+    justifyContent: 'center',
+  },
+  quickActionTitle: {
+    color: TEXT_PRIMARY,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  quickActionSubtitle: {
+    color: TEXT_SECONDARY,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
   },
   featuredPanel: {
     borderRadius: 8,

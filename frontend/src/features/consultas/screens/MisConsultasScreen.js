@@ -30,8 +30,9 @@ const ESTADO_CFG = {
   cancelada: { label: 'Cancelada', color: '#475569', bg: '#F1F5F9', icon: 'remove-circle-outline' },
 };
 
-function ConsultaCard({ item }) {
+function ConsultaCard({ item, onOpenStore, onNewConsult }) {
   const cfg = ESTADO_CFG[item.estado] ?? ESTADO_CFG.pendiente;
+  const almacenLabel = item.nombreAlmacen || `Almacén #${item.idAlmacen}`;
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -41,6 +42,7 @@ function ConsultaCard({ item }) {
         </View>
         <Text style={styles.fecha}>{item.fecha}</Text>
       </View>
+      <Text style={styles.almacenName}>{almacenLabel}</Text>
       <Text style={styles.resumen}>{item.resumen}</Text>
       {item.detalles.slice(1).map((detalle) => (
         <Text key={detalle.id} style={styles.detalleExtra}>
@@ -53,6 +55,28 @@ function ConsultaCard({ item }) {
           <Text style={styles.respuestaText}>{item.respuesta}</Text>
         </View>
       )}
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`Ver perfil de ${almacenLabel}`}
+          activeOpacity={0.8}
+          onPress={onOpenStore}
+          style={styles.cardAction}
+        >
+          <Ionicons name="storefront-outline" size={15} color={PRIMARY} />
+          <Text style={styles.cardActionText}>Perfil</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`Nueva consulta a ${almacenLabel}`}
+          activeOpacity={0.8}
+          onPress={onNewConsult}
+          style={styles.cardAction}
+        >
+          <Ionicons name="send-outline" size={15} color={PRIMARY} />
+          <Text style={styles.cardActionText}>Consultar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -111,6 +135,26 @@ export default function MisConsultasScreen() {
     }
   }
 
+  function openStore(item) {
+    router.push({
+      pathname: '/home/negocio/[id]',
+      params: {
+        id: String(item.idAlmacen),
+        nombre: item.nombreAlmacen || '',
+      },
+    });
+  }
+
+  function newConsult(item) {
+    router.push({
+      pathname: '/home/consultas/nueva/[id]',
+      params: {
+        id: String(item.idAlmacen),
+        nombre: item.nombreAlmacen || '',
+      },
+    });
+  }
+
   const emptyTitle = isLoading ? 'Cargando consultas' : error ? 'No se pudo cargar' : 'Sin consultas';
   const emptySubtitle = isLoading
     ? 'Estamos revisando tus consultas reales.'
@@ -146,7 +190,13 @@ export default function MisConsultasScreen() {
         <FlatList
           data={consultas}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ConsultaCard item={item} />}
+          renderItem={({ item }) => (
+            <ConsultaCard
+              item={item}
+              onOpenStore={() => openStore(item)}
+              onNewConsult={() => newConsult(item)}
+            />
+          )}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 28 }]}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           refreshControl={(
@@ -220,6 +270,12 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, fontWeight: '800' },
   fecha: { fontSize: 11, color: TEXT_MUTED },
+  almacenName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: PRIMARY,
+    marginBottom: 6,
+  },
   resumen: { fontSize: 15, fontWeight: '800', color: TEXT_PRIMARY, lineHeight: 21 },
   detalleExtra: { fontSize: 13, color: TEXT_SECONDARY, marginTop: 4 },
   respuestaBox: {
@@ -236,6 +292,28 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   respuestaText: { fontSize: 13, color: TEXT_SECONDARY, lineHeight: 19 },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  cardAction: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: '#F8FCFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  cardActionText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: PRIMARY,
+  },
   emptyWrap: {
     alignItems: 'center',
     paddingTop: 70,

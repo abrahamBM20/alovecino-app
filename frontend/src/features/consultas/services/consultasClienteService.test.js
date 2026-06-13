@@ -22,6 +22,7 @@ describe('consultasClienteService', () => {
       idConsulta: 21,
       idCliente: 9,
       idAlmacen: 7,
+      nombreAlmacen: 'Almacén Los Queltehues',
       idEstadoConsulta: 2,
       estadoNombre: 'RESPONDIDA',
       respuesta: 'Sí, tenemos stock',
@@ -39,6 +40,7 @@ describe('consultasClienteService', () => {
     expect(consulta).toMatchObject({
       id: '21',
       estado: 'respondida',
+      nombreAlmacen: 'Almacén Los Queltehues',
       resumen: 'Arroz grado 1 (2)',
       respuesta: 'Sí, tenemos stock',
       detalles: [
