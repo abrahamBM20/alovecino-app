@@ -46,6 +46,7 @@ export function mapConsultaCliente(apiConsulta) {
     idConsulta: apiConsulta.idConsulta,
     idCliente: apiConsulta.idCliente,
     idAlmacen: apiConsulta.idAlmacen,
+    nombreAlmacen: apiConsulta.nombreAlmacen,
     estado: ESTADO_BY_NAME[estadoNombre] ?? ESTADO_BY_ID[apiConsulta.idEstadoConsulta] ?? 'pendiente',
     estadoNombre: apiConsulta.estadoNombre,
     idEstadoConsulta: apiConsulta.idEstadoConsulta,

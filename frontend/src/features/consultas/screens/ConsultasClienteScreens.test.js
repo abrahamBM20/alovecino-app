@@ -7,11 +7,12 @@ import { getPerfilUsuario } from '../../perfil/services/perfilService';
 
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock('expo-router', () => {
   const ReactMock = require('react');
   return {
-    useRouter: () => ({ back: mockBack, replace: mockReplace }),
+    useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace }),
     useFocusEffect: (callback) => ReactMock.useEffect(callback, [callback]),
   };
 });
@@ -113,6 +114,8 @@ describe('pantallas cliente de consultas', () => {
       {
         id: '21',
         estado: 'respondida',
+        idAlmacen: 7,
+        nombreAlmacen: 'Almacén Los Queltehues',
         fecha: '05 jun, 12:30',
         resumen: 'Arroz grado 1 (2)',
         detalles: [{ id: '31', descripcion: 'Arroz grado 1', cantidadSolicitada: 2 }],
@@ -126,5 +129,43 @@ describe('pantallas cliente de consultas', () => {
     expect(fetchConsultasCliente).toHaveBeenCalledWith(44);
     expect(await screen.findByText('Arroz grado 1 (2)')).toBeTruthy();
     expect(screen.getByText('Sí, tenemos stock')).toBeTruthy();
+    expect(screen.getByText('Almacén Los Queltehues')).toBeTruthy();
+  });
+
+  it('permite abrir perfil y nueva consulta desde el historial', async () => {
+    fetchConsultasCliente.mockResolvedValue([
+      {
+        id: '21',
+        idAlmacen: 7,
+        nombreAlmacen: 'Almacén Los Queltehues',
+        estado: 'pendiente',
+        fecha: '05 jun, 12:30',
+        resumen: 'Pan (1)',
+        detalles: [{ id: '31', descripcion: 'Pan', cantidadSolicitada: 1 }],
+      },
+    ]);
+
+    const screen = render(<MisConsultasScreen />);
+
+    await screen.findByText('Pan (1)');
+    fireEvent.press(screen.getByLabelText('Ver perfil de Almacén Los Queltehues'));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/home/negocio/[id]',
+      params: {
+        id: '7',
+        nombre: 'Almacén Los Queltehues',
+      },
+    });
+
+    fireEvent.press(screen.getByLabelText('Nueva consulta a Almacén Los Queltehues'));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/home/consultas/nueva/[id]',
+      params: {
+        id: '7',
+        nombre: 'Almacén Los Queltehues',
+      },
+    });
   });
 });

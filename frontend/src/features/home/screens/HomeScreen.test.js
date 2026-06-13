@@ -184,6 +184,14 @@ describe('HomeScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/home/ubicacion');
   });
 
+  it('abre el historial de consultas desde el panel', async () => {
+    const { getByLabelText } = await renderHomeScreen();
+
+    fireEvent.press(getByLabelText('Abrir historial de consultas'));
+
+    expect(mockPush).toHaveBeenCalledWith('/home/consultas/mis');
+  });
+
   it('muestra estado vacío cuando no hay almacenes activos en el radio', async () => {
     fetchNearbyStores.mockResolvedValue([]);
 
