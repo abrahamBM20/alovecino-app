@@ -12,6 +12,8 @@ Como cliente, necesito que la pantalla Home sea un panel informativo con almacen
 - CA-04: Cada almacén cercano permite abrir el perfil público existente en `/home/negocio/[id]`.
 - CA-05: Cada almacén cercano permite iniciar una consulta estructurada en `/home/consultas/nueva/[id]`.
 - CA-06: El panel muestra señales basadas en el MER actual: almacenes activos, radio de ofertas y estado de ofertas publicadas.
+- CA-07: El panel permite acceder al historial de consultas en `/home/consultas/mis`.
+- CA-08: El historial de consultas permite abrir el perfil del almacén o crear una nueva consulta para el mismo almacén.
 
 ## Definition Of Done
 
@@ -20,8 +22,9 @@ Como cliente, necesito que la pantalla Home sea un panel informativo con almacen
 - Las rutas Expo Router incluyen `/home/ubicacion`.
 - Los tabs de cliente en home, configuración y perfil diferencian ubicación e inicio.
 - Tests frontend cubren panel, navegación a mapa, perfil, consulta y preservación del mapa.
+- Tests frontend cubren acceso a historial y acciones desde consultas históricas.
 
 ## Pruebas Por Código
 
 - `cd frontend; npm test -- HomeScreen.test.js MapScreen.test.js --runInBand`
-
+- `cd frontend; npm test -- HomeScreen.test.js ConsultasClienteScreens.test.js consultasClienteService.test.js --runInBand`
