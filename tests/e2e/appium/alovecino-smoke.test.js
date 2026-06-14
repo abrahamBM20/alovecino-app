@@ -85,8 +85,23 @@ async function main() {
       await setValueByLabel(driver, 'Correo electrónico', process.env.APPIUM_LOGIN_EMAIL);
       await setValueByLabel(driver, 'Contraseña', process.env.APPIUM_LOGIN_PASSWORD);
       await tapIfPresent(driver, 'Iniciar sesion');
-      await waitForSource(driver, /Mapa de almacenes cercanos|Tab ubicacion|No hay almacenes cercanos|No se pudieron cargar/i);
-      await captureScreenshot(driver, '05-home-map-after-login');
+      source = await waitForSource(driver, /Almacenes cercanos|Mis consultas|Abrir mapa de almacenes|Panel almacenero|Ver perfil del almacén|No hay almacenes activos/i);
+      assert.match(source, /Almacenes cercanos|Panel almacenero|Ver perfil del almacén|No hay almacenes activos/i);
+      await captureScreenshot(driver, '05-home-after-login');
+
+      if (/Mis consultas|Abrir historial de consultas/i.test(source)) {
+        await tapIfPresent(driver, 'Abrir historial de consultas');
+        source = await waitForSource(driver, /Mis consultas|registradas|Sin consultas|Volver/i);
+        assert.match(source, /Mis consultas|Sin consultas/i);
+        await captureScreenshot(driver, '06-client-consultas-history');
+      }
+
+      if (/Panel almacenero|Ver perfil del almacén/i.test(source)) {
+        await tapIfPresent(driver, 'Ver perfil del almacén');
+        source = await waitForSource(driver, /Configuración|Dirección|Teléfono principal|Cerrar sesión/i);
+        assert.match(source, /Configuración/i);
+        await captureScreenshot(driver, '06-store-profile');
+      }
     }
   } catch (error) {
     await captureScreenshot(driver, '99-failure');

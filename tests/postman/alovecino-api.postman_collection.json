@@ -101,6 +101,7 @@
               "  pm.expect(body).to.have.property('user');",
               "  pm.expect(body.user).to.have.property('email', pm.variables.get('qaLoginEmail'));",
               "  pm.collectionVariables.set('accessToken', body.accessToken);",
+              "  if (body.user && body.user.id) { pm.collectionVariables.set('authenticatedUserId', body.user.id); }",
               "});"
             ],
             "type": "text/javascript"
@@ -270,6 +271,555 @@
               "  pm.expect(body).to.have.property('correo', pm.variables.get('qaRegisterEmail'));",
               "  pm.expect(body).to.have.property('nombreUsuario', pm.variables.get('qaRegisterUsername'));",
               "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Configuracion usuario autenticado",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/configuracion/{{qaAuthenticatedUserId}}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('accessToken')) { pm.execution.skipRequest(); }",
+              "const userId = pm.collectionVariables.get('authenticatedUserId');",
+              "if (!userId) { pm.execution.skipRequest(); }",
+              "pm.variables.set('qaAuthenticatedUserId', userId);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('configuracion responde para usuario autenticado', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('configuracion incluye radio y preferencias', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('idUsuario');",
+              "  pm.expect(body).to.have.property('radioOfertasKm');",
+              "  pm.expect(body).to.have.property('notificacionesActivas');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Geo stores acepta radios extendidos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/geo/stores?latitud={{qaMapLatitude}}&longitud={{qaMapLongitude}}&radio_metros=10000"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('accessToken')) { pm.execution.skipRequest(); }",
+              "pm.variables.set('qaMapLatitude', pm.variables.get('qaMapLatitude') || '-33.44889');",
+              "pm.variables.set('qaMapLongitude', pm.variables.get('qaMapLongitude') || '-70.669265');"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('radio 10km es aceptado', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('respuesta geo extendida es arreglo', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultas MER rechaza payload legacy",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/consultas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"idCliente\": 1,\n  \"idAlmacen\": 1,\n  \"descripcion\": \"Pan\",\n  \"cantidad\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('accessToken')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('payload legacy sin detalles es rechazado', function () { pm.expect([400, 422]).to.include(pm.response.code); });",
+              "pm.test('respuesta legacy rechazada no esta vacia', function () { pm.expect(pm.response.text()).to.not.equal(''); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consulta estructurada se crea cuando smoke esta habilitado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/consultas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"idCliente\": \"{{qaClienteId}}\",\n  \"idAlmacen\": \"{{qaAlmacenId}}\",\n  \"detalles\": [\n    {\n      \"descripcion\": \"Pan hallulla QA\",\n      \"cantidadSolicitada\": 2\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('runRegisterSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "if (!pm.collectionVariables.get('accessToken') || !pm.variables.get('qaClienteId') || !pm.variables.get('qaAlmacenId')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('consulta estructurada se crea', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+              "pm.test('consulta creada usa detalles normalizados', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('detalles').that.is.an('array').and.is.not.empty;",
+              "  pm.expect(body.detalles[0]).to.have.property('descripcion');",
+              "  pm.expect(body.detalles[0]).to.have.property('cantidadSolicitada');",
+              "  if (body.idConsulta || body.id) { pm.collectionVariables.set('createdConsultaId', body.idConsulta || body.id); }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultas cliente devuelve detalles normalizados",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/consultas/cliente/{{qaClienteId}}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('accessToken') || !pm.variables.get('qaClienteId')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('consultas por cliente responde', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('consultas por cliente exponen detalles normalizados', function () {",
+              "  const consultas = pm.response.json();",
+              "  pm.expect(consultas).to.be.an('array');",
+              "  consultas.forEach(function (consulta) {",
+              "    pm.expect(consulta).to.have.property('detalles');",
+              "    pm.expect(consulta.detalles).to.be.an('array');",
+              "  });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth acepta login almacenero configurado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{qaAlmacenLoginEmail}}\",\n  \"password\": \"{{qaAlmacenLoginPassword}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.variables.get('qaAlmacenLoginEmail') || !pm.variables.get('qaAlmacenLoginPassword')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('login almacenero configurado responde ok', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('login almacenero retorna token', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('accessToken').that.is.a('string').and.is.not.empty;",
+              "  pm.collectionVariables.set('almacenAccessToken', body.accessToken);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Almacenero obtiene mis almacenes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{almacenAccessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/almacenes/mis-almacenes"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('almacenAccessToken')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('mis almacenes responde para almacenero', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('mis almacenes tiene contrato de perfil', function () {",
+              "  const stores = pm.response.json();",
+              "  pm.expect(stores).to.be.an('array');",
+              "  stores.forEach(function (store) {",
+              "    pm.expect(store).to.have.property('idAlmacen');",
+              "    pm.expect(store).to.have.property('nombre');",
+              "    pm.expect(store).to.have.property('estado');",
+              "    pm.expect(store).to.have.property('latitud');",
+              "    pm.expect(store).to.have.property('longitud');",
+              "  });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard almacenero devuelve metricas reales",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{almacenAccessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/consultas/almacen/{{qaAlmacenId}}/dashboard"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('almacenAccessToken') || !pm.variables.get('qaAlmacenId')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('dashboard almacenero responde', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('dashboard contiene metricas', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('totalConsultas');",
+              "  pm.expect(body).to.have.property('consultasPendientes');",
+              "  pm.expect(body).to.have.property('consultasRespondidas');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro de almacen informa error legible si direccion no geocodifica",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/usuarios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rut\": \"{{qaBadGeoRut}}\",\n  \"nombreUsuario\": \"{{qaBadGeoUsername}}\",\n  \"nombre\": \"QA Bad Geo Store\",\n  \"correo\": \"{{qaBadGeoEmail}}\",\n  \"contrasena\": \"Password123\",\n  \"tipoCuenta\": \"ALMACEN\",\n  \"nombreAlmacen\": \"QA Bad Geo Store\",\n  \"telefono\": \"+56912345678\",\n  \"direccion\": {\n    \"calle\": \"Direccion Inexistente ZZYYXX\",\n    \"numero\": \"999999\",\n    \"comuna\": \"Peñalolén\",\n    \"region\": \"Metropolitana de Santiago\",\n    \"codigoPostal\": null\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('runRegisterSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "function rutDv(body) { let sum = 0; let m = 2; for (let i = body.length - 1; i >= 0; i -= 1) { sum += Number(body[i]) * m; m = m === 7 ? 2 : m + 1; } const r = 11 - (sum % 11); return r === 11 ? '0' : r === 10 ? 'K' : String(r); }",
+              "const unique = Date.now().toString();",
+              "const body = String(20000000 + (Number(unique.slice(-7)) % 6999999));",
+              "pm.variables.set('qaBadGeoRut', `${body}-${rutDv(body)}`);",
+              "pm.variables.set('qaBadGeoUsername', `qa_bad_geo_${unique}`);",
+              "pm.variables.set('qaBadGeoEmail', `qa-bad-geo-${unique}@alovecino.test`);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('direccion no geocodificable no se registra silenciosamente', function () { pm.expect([400, 422, 502]).to.include(pm.response.code); });",
+              "pm.test('error de geocodificacion es legible', function () {",
+              "  const text = pm.response.text();",
+              "  pm.expect(text).to.not.equal('');",
+              "  try { pm.expect(pm.response.json()).to.have.property('message'); } catch (e) { pm.expect(text).to.match(/geocod|direccion|direcci/i); }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro de almacen usa geocodificacion real cuando smoke esta habilitado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/usuarios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rut\": \"{{qaStoreRut}}\",\n  \"nombreUsuario\": \"{{qaStoreUsername}}\",\n  \"nombre\": \"QA Almacenero Smoke\",\n  \"correo\": \"{{qaStoreEmail}}\",\n  \"contrasena\": \"Password123\",\n  \"tipoCuenta\": \"ALMACEN\",\n  \"nombreAlmacen\": \"{{qaStoreName}}\",\n  \"telefono\": \"+56912345678\",\n  \"direccion\": {\n    \"calle\": \"Los Queltehues\",\n    \"numero\": \"1998\",\n    \"comuna\": \"Peñalolén\",\n    \"region\": \"Metropolitana de Santiago\",\n    \"codigoPostal\": \"7940000\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('runRegisterSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "function rutDv(body) { let sum = 0; let m = 2; for (let i = body.length - 1; i >= 0; i -= 1) { sum += Number(body[i]) * m; m = m === 7 ? 2 : m + 1; } const r = 11 - (sum % 11); return r === 11 ? '0' : r === 10 ? 'K' : String(r); }",
+              "const unique = Date.now().toString();",
+              "const body = String(30000000 + (Number(unique.slice(-7)) % 5999999));",
+              "pm.variables.set('qaStoreRut', `${body}-${rutDv(body)}`);",
+              "pm.variables.set('qaStoreUsername', `qa_store_${unique}`);",
+              "pm.variables.set('qaStoreEmail', `qa-store-${unique}@alovecino.test`);",
+              "pm.variables.set('qaStoreName', `QA Store ${unique}`);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('registro de almacen geocodificable responde exitoso', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+              "pm.test('registro de almacen retorna rol almacen', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('nombreRol', 'ALMACEN');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro de almacen queda pendiente cuando smoke esta habilitado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{qaStoreEmail}}\",\n  \"password\": \"Password123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (pm.variables.get('runRegisterSmoke') !== 'true' || !pm.variables.get('qaStoreEmail')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('almacen registrado puede iniciar sesion', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('almacen queda disponible para revisar estado pendiente en app', function () { pm.expect(pm.response.json()).to.have.property('accessToken'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth acepta login admin configurado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{qaAdminLoginEmail}}\",\n  \"password\": \"{{qaAdminLoginPassword}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.variables.get('qaAdminLoginEmail') || !pm.variables.get('qaAdminLoginPassword')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('login admin configurado responde ok', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('login admin retorna token', function () { const body = pm.response.json(); pm.expect(body).to.have.property('accessToken'); pm.collectionVariables.set('adminAccessToken', body.accessToken); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin puede cambiar estado de almacen cuando esta configurado",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/almacenes/{{qaAlmacenId}}/estado",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ACTIVO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('adminAccessToken') || !pm.variables.get('qaAlmacenId')) { pm.execution.skipRequest(); }"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('admin cambia estado de almacen', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "pm.test('estado queda activo', function () { pm.expect(pm.response.json()).to.have.property('estado', 'ACTIVO'); });"
             ],
             "type": "text/javascript"
           }
