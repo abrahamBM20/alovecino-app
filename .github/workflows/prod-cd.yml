@@ -43,6 +43,7 @@ jobs:
           - backend/auth-service
           - backend/usuarios-service
           - backend/geo-service
+          - backend/chat-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -129,6 +130,7 @@ jobs:
           mvn -f backend/auth-service/pom.xml -DskipTests package
           mvn -f backend/usuarios-service/pom.xml -DskipTests package
           mvn -f backend/geo-service/pom.xml -DskipTests package
+          mvn -f backend/chat-service/pom.xml -DskipTests package
 
       - name: Create deployment bundle
         run: |
@@ -137,7 +139,8 @@ jobs:
             backend/api-gateway/Dockerfile.prod backend/api-gateway/target/*.jar \
             backend/auth-service/Dockerfile.prod backend/auth-service/target/*.jar \
             backend/usuarios-service/Dockerfile.prod backend/usuarios-service/target/*.jar \
-            backend/geo-service/Dockerfile.prod backend/geo-service/target/*.jar
+            backend/geo-service/Dockerfile.prod backend/geo-service/target/*.jar \
+            backend/chat-service/Dockerfile.prod backend/chat-service/target/*.jar
 
       - name: Configure SSH
         run: |
