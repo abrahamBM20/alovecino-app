@@ -306,12 +306,18 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('configuracion responde para usuario autenticado', function () { pm.expect(pm.response.code).to.equal(200); });",
-              "pm.test('configuracion incluye radio y preferencias', function () {",
+              "pm.test('configuracion responde', function () {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "pm.test('configuracion incluye radio y preferencias normalizadas', function () {",
               "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('idConfiguracionUsuario');",
               "  pm.expect(body).to.have.property('idUsuario');",
-              "  pm.expect(body).to.have.property('radioOfertasKm');",
-              "  pm.expect(body).to.have.property('notificacionesActivas');",
+              "  pm.expect(body).to.have.property('notificacionesPush');",
+              "  pm.expect(body).to.have.property('notificacionesEmail');",
+              "  pm.expect(body).to.have.property('recibirOfertas');",
+              "  pm.expect(body).to.have.property('perfilVisible');",
+              "  pm.expect(Number.isFinite(Number(body.radioOfertasKm))).to.eql(true);",
               "});"
             ],
             "type": "text/javascript"

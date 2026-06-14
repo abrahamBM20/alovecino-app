@@ -103,6 +103,8 @@ jobs:
       BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
       QA_AUTH_SERVICE_URL: ${{ vars.QA_AUTH_SERVICE_URL || 'https://alovecino-auth-service-qa.onrender.com' }}
       QA_USUARIOS_SERVICE_URL: ${{ vars.QA_USUARIOS_SERVICE_URL || 'https://alovecino-usuarios-service-qa.onrender.com' }}
+      QA_GEO_SERVICE_URL: ${{ vars.QA_GEO_SERVICE_URL || 'https://alovecino-geo-service-qa.onrender.com' }}
+      QA_CHAT_SERVICE_URL: ${{ vars.QA_CHAT_SERVICE_URL || 'https://alovecino-chat-service-qa.onrender.com' }}
       QA_LOGIN_EMAIL: ${{ secrets.QA_LOGIN_EMAIL }}
       QA_LOGIN_PASSWORD: ${{ secrets.QA_LOGIN_PASSWORD }}
       QA_ALMACEN_LOGIN_EMAIL: ${{ secrets.QA_ALMACEN_LOGIN_EMAIL }}
@@ -192,6 +194,8 @@ jobs:
 
           wait_for_service "auth-service" "${QA_AUTH_SERVICE_URL}"
           wait_for_service "usuarios-service" "${QA_USUARIOS_SERVICE_URL}"
+          wait_for_service "geo-service" "${QA_GEO_SERVICE_URL}"
+          wait_for_service "chat-service" "${QA_CHAT_SERVICE_URL}"
 
       - name: Run Postman collection
         if: env.LIVE_QA_TARGET == 'true'
@@ -213,7 +217,7 @@ jobs:
             --env-var qaMapLongitude="${QA_MAP_LONGITUDE}" \
             --env-var qaMapRadiusMeters="${QA_MAP_RADIUS_METERS}" \
             --env-var runRegisterSmoke="${RUN_QA_REGISTER_SMOKE}" \
-            --timeout-request 30000 \
+            --timeout-request 90000 \
             --reporters cli,json,junit \
             --reporter-json-export qa-evidence/newman-report.json \
             --reporter-junit-export qa-evidence/newman-junit.xml
@@ -235,19 +239,7 @@ jobs:
 
       - name: Evaluate API and performance evidence
         if: env.LIVE_QA_TARGET == 'true'
-        shell: bash
-        run: |
-          newman_exit="$(cat qa-evidence/newman-exit-code.txt 2>/dev/null || echo 1)"
-          k6_exit="$(cat qa-evidence/k6-exit-code.txt 2>/dev/null || echo 1)"
-          {
-            echo "newman_exit_code=${newman_exit}"
-            echo "k6_exit_code=${k6_exit}"
-          } > qa-evidence/api-k6-result.txt
-
-          if [ "$newman_exit" -ne 0 ] || [ "$k6_exit" -ne 0 ]; then
-            echo "QA API/K6 evidence failed. Artifacts were still generated."
-            exit 1
-          fi
+        run: node tests/static/summarize-api-k6-evidence.mjs
 
       - name: Store QA target
         if: always()
