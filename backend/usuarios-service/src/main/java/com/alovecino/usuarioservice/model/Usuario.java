@@ -30,6 +30,9 @@ public class Usuario {
     @Column(name = "correo", nullable = false, unique = true, length = 180)
     private String correo;
 
+    @Column(name = "link_pfp")
+    private String fotoPerfil;
+
     @Column(name = "contrasena", nullable = false)
     private String contrasena;
 
@@ -80,6 +83,14 @@ public class Usuario {
         this.correo = correo;
     }
 
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
+    }
+
     public String getContrasena() {
         return contrasena;
     }
@@ -96,4 +107,3 @@ public class Usuario {
         this.rol = rol;
     }
 }
-

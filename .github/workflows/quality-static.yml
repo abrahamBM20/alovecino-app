@@ -49,6 +49,7 @@ jobs:
         run: |
           mvn -f backend/api-gateway/pom.xml test
           mvn -f backend/auth-service/pom.xml test
+          mvn -f backend/geo-service/pom.xml test
           mvn -f backend/usuarios-service/pom.xml test
 
       - name: Run frontend coverage

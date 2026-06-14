@@ -54,6 +54,7 @@ jobs:
         run: |
           mvn -f backend/api-gateway/pom.xml test
           mvn -f backend/auth-service/pom.xml test
+          mvn -f backend/geo-service/pom.xml test
           mvn -f backend/usuarios-service/pom.xml test
 
       - name: Run frontend coverage
@@ -62,6 +63,9 @@ jobs:
 
       - name: Prepare static evidence directory
         run: mkdir -p qa-evidence
+
+      - name: Validate HU acceptance coverage
+        run: node tests/static/qa-acceptance-coverage.mjs
 
       - name: Run Semgrep free static analysis
         run: |
@@ -99,6 +103,21 @@ jobs:
       BASE_URL: ${{ inputs.base_url || vars.QA_BASE_URL }}
       QA_AUTH_SERVICE_URL: ${{ vars.QA_AUTH_SERVICE_URL || 'https://alovecino-auth-service-qa.onrender.com' }}
       QA_USUARIOS_SERVICE_URL: ${{ vars.QA_USUARIOS_SERVICE_URL || 'https://alovecino-usuarios-service-qa.onrender.com' }}
+      QA_GEO_SERVICE_URL: ${{ vars.QA_GEO_SERVICE_URL || 'https://alovecino-geo-service-qa.onrender.com' }}
+      QA_CHAT_SERVICE_URL: ${{ vars.QA_CHAT_SERVICE_URL || 'https://alovecino-chat-service-qa.onrender.com' }}
+      QA_LOGIN_EMAIL: ${{ secrets.QA_LOGIN_EMAIL }}
+      QA_LOGIN_PASSWORD: ${{ secrets.QA_LOGIN_PASSWORD }}
+      QA_ALMACEN_LOGIN_EMAIL: ${{ secrets.QA_ALMACEN_LOGIN_EMAIL }}
+      QA_ALMACEN_LOGIN_PASSWORD: ${{ secrets.QA_ALMACEN_LOGIN_PASSWORD }}
+      QA_ADMIN_LOGIN_EMAIL: ${{ secrets.QA_ADMIN_LOGIN_EMAIL }}
+      QA_ADMIN_LOGIN_PASSWORD: ${{ secrets.QA_ADMIN_LOGIN_PASSWORD }}
+      QA_ALMACEN_ID: ${{ vars.QA_ALMACEN_ID }}
+      QA_CLIENTE_ID: ${{ vars.QA_CLIENTE_ID }}
+      QA_CONSULTA_ID: ${{ vars.QA_CONSULTA_ID }}
+      QA_MAP_LATITUDE: ${{ vars.QA_MAP_LATITUDE || '-33.44889' }}
+      QA_MAP_LONGITUDE: ${{ vars.QA_MAP_LONGITUDE || '-70.669265' }}
+      QA_MAP_RADIUS_METERS: ${{ vars.QA_MAP_RADIUS_METERS || '500' }}
+      RUN_QA_REGISTER_SMOKE: ${{ vars.RUN_QA_REGISTER_SMOKE || 'false' }}
       LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout
@@ -175,6 +194,8 @@ jobs:
 
           wait_for_service "auth-service" "${QA_AUTH_SERVICE_URL}"
           wait_for_service "usuarios-service" "${QA_USUARIOS_SERVICE_URL}"
+          wait_for_service "geo-service" "${QA_GEO_SERVICE_URL}"
+          wait_for_service "chat-service" "${QA_CHAT_SERVICE_URL}"
 
       - name: Run Postman collection
         if: env.LIVE_QA_TARGET == 'true'
@@ -183,7 +204,20 @@ jobs:
           set +e
           newman run tests/postman/alovecino-api.postman_collection.json \
             --env-var baseUrl="${BASE_URL}" \
-            --timeout-request 30000 \
+            --env-var qaLoginEmail="${QA_LOGIN_EMAIL}" \
+            --env-var qaLoginPassword="${QA_LOGIN_PASSWORD}" \
+            --env-var qaAlmacenLoginEmail="${QA_ALMACEN_LOGIN_EMAIL}" \
+            --env-var qaAlmacenLoginPassword="${QA_ALMACEN_LOGIN_PASSWORD}" \
+            --env-var qaAdminLoginEmail="${QA_ADMIN_LOGIN_EMAIL}" \
+            --env-var qaAdminLoginPassword="${QA_ADMIN_LOGIN_PASSWORD}" \
+            --env-var qaAlmacenId="${QA_ALMACEN_ID}" \
+            --env-var qaClienteId="${QA_CLIENTE_ID}" \
+            --env-var qaConsultaId="${QA_CONSULTA_ID}" \
+            --env-var qaMapLatitude="${QA_MAP_LATITUDE}" \
+            --env-var qaMapLongitude="${QA_MAP_LONGITUDE}" \
+            --env-var qaMapRadiusMeters="${QA_MAP_RADIUS_METERS}" \
+            --env-var runRegisterSmoke="${RUN_QA_REGISTER_SMOKE}" \
+            --timeout-request 90000 \
             --reporters cli,json,junit \
             --reporter-json-export qa-evidence/newman-report.json \
             --reporter-junit-export qa-evidence/newman-junit.xml
@@ -198,24 +232,14 @@ jobs:
         shell: bash
         run: |
           set +e
+          QA_MAP_LATITUDE="${QA_MAP_LATITUDE}" \
+          QA_MAP_LONGITUDE="${QA_MAP_LONGITUDE}" \
           k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
           echo "$?" > qa-evidence/k6-exit-code.txt
 
       - name: Evaluate API and performance evidence
         if: env.LIVE_QA_TARGET == 'true'
-        shell: bash
-        run: |
-          newman_exit="$(cat qa-evidence/newman-exit-code.txt 2>/dev/null || echo 1)"
-          k6_exit="$(cat qa-evidence/k6-exit-code.txt 2>/dev/null || echo 1)"
-          {
-            echo "newman_exit_code=${newman_exit}"
-            echo "k6_exit_code=${k6_exit}"
-          } > qa-evidence/api-k6-result.txt
-
-          if [ "$newman_exit" -ne 0 ] || [ "$k6_exit" -ne 0 ]; then
-            echo "QA API/K6 evidence failed. Artifacts were still generated."
-            exit 1
-          fi
+        run: node tests/static/summarize-api-k6-evidence.mjs
 
       - name: Store QA target
         if: always()
@@ -238,6 +262,8 @@ jobs:
     timeout-minutes: 35
     env:
       APPIUM_APK_URL: ${{ secrets.APPIUM_APK_URL }}
+      APPIUM_LOGIN_EMAIL: ${{ secrets.QA_LOGIN_EMAIL }}
+      APPIUM_LOGIN_PASSWORD: ${{ secrets.QA_LOGIN_PASSWORD }}
       LIVE_QA_TARGET: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Prepare mobile evidence directory

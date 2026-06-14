@@ -33,6 +33,9 @@ public class Almacen {
     @JoinColumn(name = "id_estado_cuenta", nullable = false)
     private EstadoCuenta estadoCuenta;
 
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
+
     public Long getIdAlmacen() {
         return idAlmacen;
     }
@@ -71,5 +74,13 @@ public class Almacen {
 
     public void setEstadoCuenta(EstadoCuenta estadoCuenta) {
         this.estadoCuenta = estadoCuenta;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+
+    public void setImagenUrl(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
     }
 }

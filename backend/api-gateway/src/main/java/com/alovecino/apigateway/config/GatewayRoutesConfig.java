@@ -12,6 +12,8 @@ public class GatewayRoutesConfig {
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder, GatewayProperties properties) {
         String authUrl = properties.getServices().getAuth().getBaseUrl();
         String usuariosUrl = properties.getServices().getUsuarios().getBaseUrl();
+        String geoUrl = properties.getServices().getGeo().getBaseUrl();
+        String chatUrl = properties.getServices().getChat().getBaseUrl();
 
         return builder.routes()
                 .route("auth-api", route -> route
@@ -26,15 +28,24 @@ public class GatewayRoutesConfig {
                 .route("almacenes-api", route -> route
                         .path("/api/almacenes/**")
                         .uri(usuariosUrl))
+                .route("configuracion-api", route -> route
+                        .path("/api/configuracion/**")
+                        .uri(usuariosUrl))
                 .route("consultas-api", route -> route
                         .path("/api/consultas/**")
-                        .uri(usuariosUrl))
+                        .uri(chatUrl))
+                .route("estados-consulta-api", route -> route
+                        .path("/api/estados-consulta/**")
+                        .uri(chatUrl))
                 .route("valoraciones-api", route -> route
                         .path("/api/valoraciones/**")
                         .uri(usuariosUrl))
                 .route("ofertas-api", route -> route
                         .path("/api/ofertas/**")
                         .uri(usuariosUrl))
+                .route("geo-api", route -> route
+                        .path("/api/geo/**")
+                        .uri(geoUrl))
                 .route("usuarios-docs", route -> route
                         .path("/v3/api-docs/**", "/swagger-ui/**")
                         .uri(usuariosUrl))

@@ -1,0 +1,41 @@
+{
+  "name": "alovecino-skillopt",
+  "language": "es",
+  "max_tokens": 1400,
+  "min_score": 85,
+  "textual_learning_rate": {
+    "max_added_lines": 12,
+    "max_replaced_lines": 8,
+    "max_deleted_lines": 12
+  },
+  "validation": {
+    "required_sections": [
+      "Mapa Del Proyecto",
+      "Contratos Estables",
+      "Rutas De Inspección Rápida",
+      "Lecciones Validadas",
+      "Matriz Mínima De Validación",
+      "Disciplina De Tokens"
+    ],
+    "required_patterns": [
+      "JWT",
+      "roles",
+      "httpClient",
+      "qa",
+      "merge-tree",
+      "Sonar",
+      "pull_request_template.md",
+      "trajectory-log.md",
+      "EAS",
+      "workflow"
+    ],
+    "forbidden_patterns": [
+      "Codex",
+      "siempre mergear",
+      "ignorar checks",
+      "cargar todo el repo",
+      "aceptar backend.zip",
+      "mergear backend.zip"
+    ]
+  }
+}

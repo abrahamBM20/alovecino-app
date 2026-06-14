@@ -6,7 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-backend/usuario-service/src/main/resources/application.properties
+backend/usuarios-service/src/main/resources/application.properties
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -78,6 +78,8 @@ web_modules/
 # Local auth and tooling state
 .neonctl/
 .docker-codex/
+.tmp/
+.vscode/settings.local-backup.json
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -146,7 +148,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-backend/usuario-service/msusuariosbs.env
+backend/usuarios-service/msusuariosbs.env
 
 # Mobile build artifacts and EAS logs
 frontend/.expo/
@@ -156,14 +158,34 @@ frontend/expo-*.log
 frontend/*.apk
 frontend/*.aab
 frontend/latest-*.apk
+frontend/eas-*.png
+frontend/maps-*.png
+frontend/src/features/home/screens/#executionenvironment
 
 # Backend secrets
 backend/**/msusuariosbs.env
 *.pem
 
+# Local QA/debug evidence
+docs/qa-evidence/
+scripts/seed-neon-dev-map-stores.mjs
+
 # Backend build outputs and local Maven caches
 .m2/
 .m2-*/
+
+# Java build output
 backend/**/target/
 .claude/
 .codex/
+
+# Backend Spring Boot properties (exclude all profiles)
+backend/chat-service/src/main/resources/application.properties
+backend/chat-service/src/main/resources/application-local.properties
+backend/chat-service/src/main/resources/application-dev.properties
+backend/chat-service/src/main/resources/application-qa.properties
+backend/chat-service/src/main/resources/application-prod.properties
+
+backend/chat-service/.env
+backend/chat-service/.env.*
+!backend/chat-service/.env.example

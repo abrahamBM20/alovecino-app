@@ -8,6 +8,21 @@ Este repositorio incluye plantillas para mapear cambios con historia de usuario 
 - Convencion de ramas: ver .github/convenciones-git.md
 - Plantilla de Pull Request: .github/pull_request_template.md
 - Plantilla de commit: .gitmessage.txt
+- Contexto optimizado tipo SkillOpt para agentes: ver `docs/skillopt/best_skill.md`
+
+### Contexto optimizado para agentes
+
+Para reducir tokens en revisiones y cambios asistidos, usa primero `docs/skillopt/best_skill.md`.
+Ese archivo resume los contratos estables del repo, rutas de inspeccion y validaciones minimas.
+Las lecciones nuevas se registran en `docs/skillopt/trajectory-log.md` y solo se promueven al skill si pasan el protocolo de `docs/skillopt/training-protocol.md`.
+El flujo esta en español porque SkillOpt optimiza instrucciones naturales; usar el idioma del equipo mejora reutilizacion y reduce ambiguedad.
+
+Verifica el presupuesto aproximado de tokens con:
+
+```powershell
+./scripts/measure-skill-budget.ps1 -Path docs/skillopt/best_skill.md -MaxTokens 1400
+./scripts/evaluate-skillopt.ps1 -Candidate docs/skillopt/best_skill.md
+```
 
 ### Configuracion recomendada (local)
 

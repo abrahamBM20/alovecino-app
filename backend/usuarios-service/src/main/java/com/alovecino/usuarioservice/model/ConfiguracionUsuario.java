@@ -50,4 +50,44 @@ public class ConfiguracionUsuario {
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
     }
+
+    public boolean isNotificacionesPush() {
+        return notificacionesPush;
+    }
+
+    public void setNotificacionesPush(boolean notificacionesPush) {
+        this.notificacionesPush = notificacionesPush;
+    }
+
+    public boolean isNotificacionesEmail() {
+        return notificacionesEmail;
+    }
+
+    public void setNotificacionesEmail(boolean notificacionesEmail) {
+        this.notificacionesEmail = notificacionesEmail;
+    }
+
+    public boolean isRecibirOfertas() {
+        return recibirOfertas;
+    }
+
+    public void setRecibirOfertas(boolean recibirOfertas) {
+        this.recibirOfertas = recibirOfertas;
+    }
+
+    public boolean isPerfilVisible() {
+        return perfilVisible;
+    }
+
+    public void setPerfilVisible(boolean perfilVisible) {
+        this.perfilVisible = perfilVisible;
+    }
+
+    public BigDecimal getRadioOfertasKm() {
+        return radioOfertasKm;
+    }
+
+    public void setRadioOfertasKm(BigDecimal radioOfertasKm) {
+        this.radioOfertasKm = radioOfertasKm;
+    }
 }

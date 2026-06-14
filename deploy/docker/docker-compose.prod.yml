@@ -9,8 +9,10 @@ services:
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=60}
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
-      USUARIOS_SERVICE_URL: http://usuarios-service:8080
       AUTH_SERVICE_URL: http://auth-service:8080
+      USUARIOS_SERVICE_URL: http://usuarios-service:8080
+      GEO_SERVICE_URL: http://geo-service:8080
+      CHAT_SERVICE_URL: http://chat-service:8080
       AUTH_JWK_SET_URI: http://auth-service:8080/.well-known/jwks.json
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
@@ -20,6 +22,8 @@ services:
     depends_on:
       - auth-service
       - usuarios-service
+      - geo-service
+      - chat-service
 
   auth-service:
     build:
@@ -55,3 +59,39 @@ services:
       AUTH_JWK_SET_URI: http://auth-service:8080/.well-known/jwks.json
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
+      GEO_SERVICE_URL: http://geo-service:8080
+
+  geo-service:
+    build:
+      context: ../../backend/geo-service
+      dockerfile: Dockerfile.prod
+    container_name: alovecino-geo-service-prod
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=60}
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${PROD_NEON_DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${PROD_NEON_DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${PROD_NEON_DATABASE_PASSWORD}
+      AUTH_JWK_SET_URI: http://auth-service:8080/.well-known/jwks.json
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-alovecino-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-alovecino-api}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+
+  chat-service:
+    build:
+      context: ../../backend/chat-service
+      dockerfile: Dockerfile.prod
+    container_name: alovecino-chat-service-prod
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=60}
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${PROD_NEON_DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${PROD_NEON_DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${PROD_NEON_DATABASE_PASSWORD}
+      CONSULTA_JWT_SECRET: ${CONSULTA_JWT_SECRET:-mySecretKeyProd}
+    ports:
+      - "${CHAT_SERVICE_PORT:-8084}:8080"

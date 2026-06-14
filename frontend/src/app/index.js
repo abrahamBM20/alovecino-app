@@ -5,14 +5,19 @@ import { useAuthStore } from '../store/authStore';
 
 export default function SplashRoute() {
   const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.role);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      router.replace(status === 'authenticated' ? '/home' : '/auth');
+      if (status !== 'authenticated') {
+        router.replace('/auth');
+      } else {
+        router.replace(role === 'ALMACEN' ? '/home/almacenero' : '/home');
+      }
     }, 1500);
 
     return () => clearTimeout(timeoutId);
-  }, [status]);
+  }, [status, role]);
 
   return <SplashScreen />;
 }

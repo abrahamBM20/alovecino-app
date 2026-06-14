@@ -48,6 +48,9 @@ public class UsuarioRequest {
     @Size(max = 140, message = "El nombre del almacén no puede superar 140 caracteres")
     private String nombreAlmacen;
 
+    @Size(max = 30, message = "El teléfono no puede superar 30 caracteres")
+    private String telefono;
+
     @Deprecated
     private String nombreRol;
 
@@ -121,6 +124,14 @@ public class UsuarioRequest {
 
     public void setNombreAlmacen(String nombreAlmacen) {
         this.nombreAlmacen = nombreAlmacen;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
     }
 
     public String getNombreRol() {

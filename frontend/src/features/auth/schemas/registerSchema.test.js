@@ -8,10 +8,11 @@ describe('registerSchema', () => {
     nombreCompleto: 'María José Peña Núñez',
     fechaNacimiento: '12/10/1992',
     nombreAlmacen: '',
+    telefono: '',
     calle: 'Los Alerces',
     numero: '123',
     comuna: 'Santiago',
-    region: 'Metropolitana',
+    region: 'Metropolitana de Santiago',
     codigoPostal: '',
     email: 'maria.pena@example.com',
     password: 'Password123',
@@ -58,10 +59,24 @@ describe('registerSchema', () => {
       nombreCompleto: 'Ñusta Camila Muñoz Álvarez',
       calle: 'Pasaje Ñuble',
       comuna: 'Peñalolén',
-      region: 'Biobío',
+      region: 'Metropolitana de Santiago',
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('rechaza comuna o región fuera del catálogo configurado', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      comuna: 'Comuna Inventada',
+      region: 'Biobío',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(expect.arrayContaining([
+      'comuna',
+      'region',
+    ]));
   });
 
   it('rechaza RUT con digito verificador inválido', () => {
@@ -84,6 +99,7 @@ describe('registerSchema', () => {
       tipoUsuario: 'almacen',
       fechaNacimiento: '',
       nombreAlmacen: 'Almacén Ñuñoa',
+      telefono: '+56 9 1234 5678',
     });
 
     expect(clientResult.success).toBe(false);
@@ -95,9 +111,79 @@ describe('registerSchema', () => {
       ...validClient,
       tipoUsuario: 'almacen',
       nombreAlmacen: '',
+      telefono: '+56 9 1234 5678',
     });
 
     expect(result.success).toBe(false);
     expect(result.error.issues[0].message).toBe('Ingresa el nombre del almacén');
+  });
+
+  it('exige teléfono válido para cuentas almacén', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      tipoUsuario: 'almacen',
+      nombreAlmacen: 'Almacén Ñuñoa',
+      telefono: '',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.some((issue) => issue.path.includes('telefono'))).toBe(true);
+  });
+
+  it('rechaza fecha de nacimiento con formato invalido, imposible o futura', () => {
+    const invalidDates = ['1992-10-12', '31/02/1992', '01/01/2999'];
+
+    invalidDates.forEach((fechaNacimiento) => {
+      const result = registerSchema.safeParse({
+        ...validClient,
+        fechaNacimiento,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error.issues.some((issue) => issue.path.includes('fechaNacimiento'))).toBe(true);
+    });
+  });
+
+  it('rechaza contraseña corta y confirmacion distinta', () => {
+    const shortPassword = registerSchema.safeParse({
+      ...validClient,
+      password: '1234567',
+      confirmarPassword: '1234567',
+    });
+    const mismatch = registerSchema.safeParse({
+      ...validClient,
+      confirmarPassword: 'OtraPassword123',
+    });
+
+    expect(shortPassword.success).toBe(false);
+    expect(shortPassword.error.issues[0].message).toBe('La contraseña debe tener al menos 8 caracteres');
+    expect(mismatch.success).toBe(false);
+    expect(mismatch.error.issues.some((issue) => issue.message === 'Las contraseñas no coinciden')).toBe(true);
+  });
+
+  it('rechaza campos obligatorios de identidad, direccion y correo', () => {
+    const result = registerSchema.safeParse({
+      ...validClient,
+      rut: '',
+      nombreUsuario: '',
+      nombreCompleto: '',
+      calle: '',
+      numero: '',
+      comuna: '',
+      region: '',
+      email: 'correo-invalido',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error.issues.map((issue) => issue.path[0])).toEqual(expect.arrayContaining([
+      'rut',
+      'nombreUsuario',
+      'nombreCompleto',
+      'calle',
+      'numero',
+      'comuna',
+      'region',
+      'email',
+    ]));
   });
 });

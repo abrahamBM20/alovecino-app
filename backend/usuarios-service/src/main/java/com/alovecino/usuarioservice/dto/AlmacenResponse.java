@@ -6,28 +6,47 @@ public class AlmacenResponse {
     private String nombre;
     private String calle;
     private String numero;
+    private String codigoPostal;
     private String comuna;
     private String region;
     private String latitud;
     private String longitud;
     private String estado;
     private Long idDueno;
+    private String imagenUrl;
+    private String telefono;
 
     public AlmacenResponse() {
     }
 
     public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String comuna, String region,
-            String latitud, String longitud, String estado, Long idDueno) {
+            String latitud, String longitud, String estado, Long idDueno, String imagenUrl) {
+        this(idAlmacen, nombre, calle, numero, null, comuna, region, latitud, longitud, estado, idDueno, imagenUrl,
+                null);
+    }
+
+    public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String comuna, String region,
+            String latitud, String longitud, String estado, Long idDueno, String imagenUrl, String telefono) {
+        this(idAlmacen, nombre, calle, numero, null, comuna, region, latitud, longitud, estado, idDueno, imagenUrl,
+                telefono);
+    }
+
+    public AlmacenResponse(Long idAlmacen, String nombre, String calle, String numero, String codigoPostal,
+            String comuna, String region, String latitud, String longitud, String estado, Long idDueno,
+            String imagenUrl, String telefono) {
         this.idAlmacen = idAlmacen;
         this.nombre = nombre;
         this.calle = calle;
         this.numero = numero;
+        this.codigoPostal = codigoPostal;
         this.comuna = comuna;
         this.region = region;
         this.latitud = latitud;
         this.longitud = longitud;
         this.estado = estado;
         this.idDueno = idDueno;
+        this.imagenUrl = imagenUrl;
+        this.telefono = telefono;
     }
 
     public Long getIdAlmacen() {
@@ -60,6 +79,14 @@ public class AlmacenResponse {
 
     public void setNumero(String numero) {
         this.numero = numero;
+    }
+
+    public String getCodigoPostal() {
+        return codigoPostal;
+    }
+
+    public void setCodigoPostal(String codigoPostal) {
+        this.codigoPostal = codigoPostal;
     }
 
     public String getComuna() {
@@ -108,5 +135,21 @@ public class AlmacenResponse {
 
     public void setIdDueno(Long idDueno) {
         this.idDueno = idDueno;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
+    }
+
+    public void setImagenUrl(String imagenUrl) {
+        this.imagenUrl = imagenUrl;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
     }
 }

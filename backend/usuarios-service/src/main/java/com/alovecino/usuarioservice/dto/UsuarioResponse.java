@@ -3,23 +3,27 @@ package com.alovecino.usuarioservice.dto;
 public class UsuarioResponse {
 
     private Long idUsuario;
+    private String uuid;
     private String rut;
     private String nombreUsuario;
     private String nombre;
     private String correo;
     private String nombreRol;
+    private String fotoPerfil;
 
     public UsuarioResponse() {
     }
 
-    public UsuarioResponse(Long idUsuario, String rut, String nombreUsuario, String nombre, String correo,
-            String nombreRol) {
+    public UsuarioResponse(Long idUsuario, String uuid, String rut, String nombreUsuario, String nombre, String correo,
+            String nombreRol, String fotoPerfil) {
         this.idUsuario = idUsuario;
+        this.uuid = uuid;
         this.rut = rut;
         this.nombreUsuario = nombreUsuario;
         this.nombre = nombre;
         this.correo = correo;
         this.nombreRol = nombreRol;
+        this.fotoPerfil = fotoPerfil;
     }
 
     public Long getIdUsuario() {
@@ -28,6 +32,14 @@ public class UsuarioResponse {
 
     public void setIdUsuario(Long idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public String getRut() {
@@ -68,6 +80,14 @@ public class UsuarioResponse {
 
     public void setNombreRol(String nombreRol) {
         this.nombreRol = nombreRol;
+    }
+
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
     }
 }
 

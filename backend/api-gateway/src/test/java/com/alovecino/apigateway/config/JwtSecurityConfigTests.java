@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "gateway.services.auth.base-url=http://auth-service:8081",
         "gateway.services.usuarios.base-url=http://usuarios-service:8080",
+        "gateway.services.geo.base-url=http://geo-service:8083",
         "gateway.security.jwt.jwk-set-uri=http://auth-service:8081/.well-known/jwks.json",
         "gateway.security.jwt.issuer=alovecino-auth",
         "gateway.security.jwt.audience=alovecino-api",
@@ -45,9 +46,11 @@ class JwtSecurityConfigTests {
             "/api/usuarios",
             "/api/usuarios/me",
             "/api/almacenes",
+            "/api/configuracion/1",
             "/api/consultas",
             "/api/valoraciones",
-            "/api/ofertas"
+            "/api/ofertas",
+            "/api/geo/stores"
     })
     void shouldRequireTokenForProtectedRoutes(String path) throws Exception {
         HttpResponse<String> response = get(path);

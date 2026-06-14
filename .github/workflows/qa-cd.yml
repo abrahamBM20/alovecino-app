@@ -8,6 +8,17 @@ on:
     branches:
       - qa
   workflow_dispatch:
+    inputs:
+      mobile_action:
+        description: "Mobile delivery action"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - update
+          - apk
+          - none
 
 concurrency:
   group: qa-cd-${{ github.ref }}
@@ -19,6 +30,8 @@ env:
   RENDER_AUTH_SERVICE_ID: srv-d7unku3tqb8s73coavd0
   RENDER_USUARIOS_SERVICE_ID: srv-d7unl4n7f7vs73cqrmi0
   RENDER_API_GATEWAY_SERVICE_ID: srv-d7unl3rtqb8s73cob4hg
+  RENDER_GEO_SERVICE_ID: ${{ vars.RENDER_GEO_SERVICE_ID || 'srv-d85s3ndi849s738dv1m0' }}
+  RENDER_CHAT_SERVICE_ID: ${{ vars.RENDER_QA_CHAT_SERVICE_ID || 'srv-d8i1r9q8qa3s73e052fg' }}
 
 jobs:
   backend-tests:
@@ -31,6 +44,8 @@ jobs:
           - backend/api-gateway
           - backend/auth-service
           - backend/usuarios-service
+          - backend/geo-service
+          - backend/chat-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -97,9 +112,16 @@ jobs:
           NEON_DATABASE_PASSWORD: ${{ secrets.NEON_DATABASE_PASSWORD }}
           APP_JWT_PRIVATE_KEY: ${{ secrets.APP_JWT_PRIVATE_KEY }}
           APP_JWT_PUBLIC_KEY: ${{ secrets.APP_JWT_PUBLIC_KEY }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          GEO_INTERNAL_API_KEY: ${{ secrets.GEO_INTERNAL_API_KEY }}
         shell: bash
         run: |
           set -euo pipefail
+          geo_internal_api_key="${GEO_INTERNAL_API_KEY:-}"
+          if [ -z "$geo_internal_api_key" ]; then
+            geo_internal_api_key="$(openssl rand -hex 32)"
+            echo "Generated deploy-scoped GEO_INTERNAL_API_KEY for QA services."
+          fi
 
           set_render_env() {
             local service_id="$1"
@@ -135,15 +157,36 @@ jobs:
 
           configure_backend_database "$RENDER_USUARIOS_SERVICE_ID"
           set_render_env "$RENDER_USUARIOS_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+          set_render_env "$RENDER_USUARIOS_SERVICE_ID" GEO_SERVICE_URL "https://alovecino-geo-service-qa.onrender.com"
+          set_render_env "$RENDER_USUARIOS_SERVICE_ID" GEO_INTERNAL_API_KEY "$geo_internal_api_key"
 
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" SERVER_PORT "10000"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" SPRING_PROFILES_ACTIVE "qa"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_SERVICE_URL "https://alovecino-auth-service-qa.onrender.com"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" USUARIOS_SERVICE_URL "https://alovecino-usuarios-service-qa.onrender.com"
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" GEO_SERVICE_URL "https://alovecino-geo-service-qa.onrender.com"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_JWT_ISSUER "alovecino-auth"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" AUTH_JWT_AUDIENCE "alovecino-api"
           set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" GATEWAY_CORS_ALLOWED_ORIGINS "http://localhost:19006,http://localhost:3000"
+
+          if [ -n "${RENDER_GEO_SERVICE_ID:-}" ]; then
+            configure_backend_database "$RENDER_GEO_SERVICE_ID"
+            set_render_env "$RENDER_GEO_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+            set_render_env "$RENDER_GEO_SERVICE_ID" GOOGLE_MAPS_API_KEY "${GOOGLE_MAPS_API_KEY:-}"
+            set_render_env "$RENDER_GEO_SERVICE_ID" GEO_INTERNAL_API_KEY "$geo_internal_api_key"
+          fi
+
+          if [ -n "${RENDER_CHAT_SERVICE_ID:-}" ]; then
+            configure_backend_database "$RENDER_CHAT_SERVICE_ID"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" AUTH_JWK_SET_URI "https://alovecino-auth-service-qa.onrender.com/.well-known/jwks.json"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_DATASOURCE_DRIVER_CLASS_NAME "org.postgresql.Driver"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_JPA_DATABASE_PLATFORM "org.hibernate.dialect.PostgreSQLDialect"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_JPA_HIBERNATE_DDL_AUTO "update"
+            set_render_env "$RENDER_CHAT_SERVICE_ID" SPRING_FLYWAY_ENABLED "false"
+          fi
+
+          set_render_env "$RENDER_API_GATEWAY_SERVICE_ID" CHAT_SERVICE_URL "https://alovecino-chat-service-qa.onrender.com"
 
       - name: Trigger auth-service deploy
         run: |
@@ -161,6 +204,24 @@ jobs:
             --header "Content-Type: application/json" \
             --data '{"clearCache":"do_not_clear"}'
 
+      - name: Trigger geo-service deploy
+        if: ${{ env.RENDER_GEO_SERVICE_ID != '' }}
+        run: |
+          curl --fail --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_GEO_SERVICE_ID}/deploys" \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            --data '{"clearCache":"do_not_clear"}'
+
+      - name: Trigger chat-service deploy
+        if: ${{ env.RENDER_CHAT_SERVICE_ID != '' }}
+        run: |
+          curl --fail --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_CHAT_SERVICE_ID}/deploys" \
+            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            --data '{"clearCache":"do_not_clear"}'
+
       - name: Trigger api-gateway deploy
         run: |
           curl --fail --request POST \
@@ -169,22 +230,32 @@ jobs:
             --header "Content-Type: application/json" \
             --data '{"clearCache":"do_not_clear"}'
 
-  eas-qa-build:
-    name: EAS Android QA build
+  eas-qa-mobile-delivery:
+    name: EAS Android QA delivery
     runs-on: ubuntu-latest
     needs:
       - backend-tests
       - frontend-tests
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/qa' && vars.ENABLE_QA_EAS_BUILD == 'true' && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
-    defaults:
-      run:
-        working-directory: frontend
+      - render-qa-deploy
+    if: ${{ always() && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && (needs.render-qa-deploy.result == 'success' || needs.render-qa-deploy.result == 'skipped') && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/qa' && (vars.ENABLE_QA_EAS_UPDATE == 'true' || vars.ENABLE_QA_EAS_BUILD == 'true'))) }}
+    env:
+      REQUESTED_MOBILE_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.mobile_action || 'auto' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve EAS mobile action
+        id: mobile
+        run: |
+          bash scripts/resolve-eas-mobile-action.sh \
+            --environment qa \
+            --requested-action "$REQUESTED_MOBILE_ACTION"
 
       - name: Set up Node
+        if: ${{ steps.mobile.outputs.action != 'none' }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -192,12 +263,37 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: ${{ steps.mobile.outputs.action != 'none' }}
+        working-directory: frontend
         run: npm ci
 
       - name: Install EAS CLI
+        if: ${{ steps.mobile.outputs.action != 'none' }}
+        working-directory: frontend
         run: npm install --global eas-cli
 
-      - name: Run EAS QA build
+      - name: Run EAS QA update
+        if: ${{ steps.mobile.outputs.action == 'update' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_QA_EAS_UPDATE == 'true') }}
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile qa --non-interactive
+          EXPO_PUBLIC_APP_ENV: qa
+          EXPO_PUBLIC_API_URL: https://alovecino-api-gateway-qa.onrender.com
+          EXPO_PUBLIC_API_TIMEOUT_MS: "90000"
+          EAS_UPDATE_BRANCH: ${{ steps.mobile.outputs.update_branch }}
+        working-directory: frontend
+        run: eas update --branch "$EAS_UPDATE_BRANCH" --message "$GITHUB_SHA" --non-interactive
+
+      - name: Run EAS QA APK build
+        if: ${{ steps.mobile.outputs.action == 'build' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_QA_EAS_BUILD == 'true') }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_PROFILE: ${{ steps.mobile.outputs.build_profile }}
+        working-directory: frontend
+        run: eas build --platform android --profile "$EAS_BUILD_PROFILE" --non-interactive
+
+      - name: Explain skipped mobile delivery
+        if: ${{ steps.mobile.outputs.action == 'none' || (steps.mobile.outputs.action == 'update' && github.event_name != 'workflow_dispatch' && vars.ENABLE_QA_EAS_UPDATE != 'true') || (steps.mobile.outputs.action == 'build' && github.event_name != 'workflow_dispatch' && vars.ENABLE_QA_EAS_BUILD != 'true') }}
+        run: |
+          echo "Mobile delivery skipped."
+          echo "Resolved action: ${{ steps.mobile.outputs.action }}"
+          echo "Reason: ${{ steps.mobile.outputs.reason }}"
