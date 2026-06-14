@@ -192,6 +192,13 @@ jobs:
           echo "Production gateway did not become healthy in time."
           exit 1
 
+      - name: Collect production diagnostics
+        if: failure()
+        run: |
+          ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "cd /opt/alovecino/prod/current && docker compose -f deploy/docker/docker-compose.prod.yml --env-file .env ps"
+          ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "free -m && df -h && docker stats --no-stream || true"
+          ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "cd /opt/alovecino/prod/current && docker compose -f deploy/docker/docker-compose.prod.yml --env-file .env logs --tail=120 api-gateway auth-service usuarios-service geo-service chat-service"
+
   eas-production-mobile-delivery:
     name: EAS Android production delivery
     runs-on: ubuntu-latest
