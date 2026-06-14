@@ -68,7 +68,7 @@ async function main() {
     await driver.back();
     await waitForSource(driver, /Bienvenido|Crear cuenta/i);
     await tapIfPresent(driver, 'Ir a crear cuenta');
-    await waitForSource(driver, /Crear cuenta|Tipo de usuario|Nombre completo/i);
+    await waitForSource(driver, /Tipo de usuario|Nombre completo|RUT/i);
     source = await driver.getPageSource();
     await fs.writeFile(path.join(evidenceDir, 'appium-register-page-source.xml'), source);
     assert.match(source, /Crear cuenta/i);
