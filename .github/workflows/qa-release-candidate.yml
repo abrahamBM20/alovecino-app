@@ -64,6 +64,9 @@ jobs:
       - name: Prepare static evidence directory
         run: mkdir -p qa-evidence
 
+      - name: Validate HU acceptance coverage
+        run: node tests/static/qa-acceptance-coverage.mjs
+
       - name: Run Semgrep free static analysis
         run: |
           docker run --rm -v "${PWD}:/src" -w /src semgrep/semgrep semgrep scan --config p/ci --sarif --output qa-evidence/semgrep.sarif
@@ -102,6 +105,13 @@ jobs:
       QA_USUARIOS_SERVICE_URL: ${{ vars.QA_USUARIOS_SERVICE_URL || 'https://alovecino-usuarios-service-qa.onrender.com' }}
       QA_LOGIN_EMAIL: ${{ secrets.QA_LOGIN_EMAIL }}
       QA_LOGIN_PASSWORD: ${{ secrets.QA_LOGIN_PASSWORD }}
+      QA_ALMACEN_LOGIN_EMAIL: ${{ secrets.QA_ALMACEN_LOGIN_EMAIL }}
+      QA_ALMACEN_LOGIN_PASSWORD: ${{ secrets.QA_ALMACEN_LOGIN_PASSWORD }}
+      QA_ADMIN_LOGIN_EMAIL: ${{ secrets.QA_ADMIN_LOGIN_EMAIL }}
+      QA_ADMIN_LOGIN_PASSWORD: ${{ secrets.QA_ADMIN_LOGIN_PASSWORD }}
+      QA_ALMACEN_ID: ${{ vars.QA_ALMACEN_ID }}
+      QA_CLIENTE_ID: ${{ vars.QA_CLIENTE_ID }}
+      QA_CONSULTA_ID: ${{ vars.QA_CONSULTA_ID }}
       QA_MAP_LATITUDE: ${{ vars.QA_MAP_LATITUDE || '-33.44889' }}
       QA_MAP_LONGITUDE: ${{ vars.QA_MAP_LONGITUDE || '-70.669265' }}
       QA_MAP_RADIUS_METERS: ${{ vars.QA_MAP_RADIUS_METERS || '500' }}
@@ -192,6 +202,13 @@ jobs:
             --env-var baseUrl="${BASE_URL}" \
             --env-var qaLoginEmail="${QA_LOGIN_EMAIL}" \
             --env-var qaLoginPassword="${QA_LOGIN_PASSWORD}" \
+            --env-var qaAlmacenLoginEmail="${QA_ALMACEN_LOGIN_EMAIL}" \
+            --env-var qaAlmacenLoginPassword="${QA_ALMACEN_LOGIN_PASSWORD}" \
+            --env-var qaAdminLoginEmail="${QA_ADMIN_LOGIN_EMAIL}" \
+            --env-var qaAdminLoginPassword="${QA_ADMIN_LOGIN_PASSWORD}" \
+            --env-var qaAlmacenId="${QA_ALMACEN_ID}" \
+            --env-var qaClienteId="${QA_CLIENTE_ID}" \
+            --env-var qaConsultaId="${QA_CONSULTA_ID}" \
             --env-var qaMapLatitude="${QA_MAP_LATITUDE}" \
             --env-var qaMapLongitude="${QA_MAP_LONGITUDE}" \
             --env-var qaMapRadiusMeters="${QA_MAP_RADIUS_METERS}" \
@@ -211,6 +228,8 @@ jobs:
         shell: bash
         run: |
           set +e
+          QA_MAP_LATITUDE="${QA_MAP_LATITUDE}" \
+          QA_MAP_LONGITUDE="${QA_MAP_LONGITUDE}" \
           k6 run --summary-export qa-evidence/k6-summary.json tests/k6/alovecino-smoke.js
           echo "$?" > qa-evidence/k6-exit-code.txt
 
