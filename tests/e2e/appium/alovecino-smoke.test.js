@@ -51,16 +51,79 @@ async function main() {
   try {
     await driver.pause(5000);
     await captureScreenshot(driver, '01-app-launched');
-    const source = await driver.getPageSource();
+    let source = await driver.getPageSource();
     await fs.writeFile(path.join(evidenceDir, 'appium-page-source.xml'), source);
-    assert.match(source, /AloVecino|Crear Cuenta|Correo|Contrase/i);
+    assert.match(source, /AloVecino|Crear cuenta|Crear Cuenta|Correo|Contrase/i);
     await captureScreenshot(driver, '02-smoke-validated');
+
+    await tapIfPresent(driver, 'Ir a inicio de sesion');
+    await waitForSource(driver, /Correo electr[oó]nico|Contrase/i);
+    source = await driver.getPageSource();
+    await fs.writeFile(path.join(evidenceDir, 'appium-login-page-source.xml'), source);
+    assert.match(source, /Correo electr[oó]nico/i);
+    assert.match(source, /Contrase/i);
+    assert.match(source, /Entrar/i);
+    await captureScreenshot(driver, '03-login-screen');
+
+    await driver.back();
+    await waitForSource(driver, /Bienvenido|Crear cuenta/i);
+    await tapIfPresent(driver, 'Ir a crear cuenta');
+    await waitForSource(driver, /Crear cuenta|Tipo de usuario|Nombre completo/i);
+    source = await driver.getPageSource();
+    await fs.writeFile(path.join(evidenceDir, 'appium-register-page-source.xml'), source);
+    assert.match(source, /Crear cuenta/i);
+    assert.match(source, /Tipo de usuario/i);
+    assert.match(source, /Nombre completo/i);
+    await captureScreenshot(driver, '04-register-screen');
+
+    if (process.env.APPIUM_LOGIN_EMAIL && process.env.APPIUM_LOGIN_PASSWORD) {
+      await driver.back();
+      await waitForSource(driver, /Bienvenido|Iniciar sesion/i);
+      await tapIfPresent(driver, 'Ir a inicio de sesion');
+      await waitForSource(driver, /Correo electr[oó]nico|Contrase/i);
+
+      await setValueByLabel(driver, 'Correo electrónico', process.env.APPIUM_LOGIN_EMAIL);
+      await setValueByLabel(driver, 'Contraseña', process.env.APPIUM_LOGIN_PASSWORD);
+      await tapIfPresent(driver, 'Iniciar sesion');
+      await waitForSource(driver, /Mapa de almacenes cercanos|Tab ubicacion|No hay almacenes cercanos|No se pudieron cargar/i);
+      await captureScreenshot(driver, '05-home-map-after-login');
+    }
   } catch (error) {
     await captureScreenshot(driver, '99-failure');
     throw error;
   } finally {
     await driver.deleteSession();
   }
+}
+
+async function setValueByLabel(driver, accessibilityLabel, value) {
+  const element = await driver.$(`~${accessibilityLabel}`);
+
+  await element.waitForDisplayed({ timeout: 15000 });
+  await element.setValue(value);
+}
+
+async function tapIfPresent(driver, accessibilityLabel) {
+  const selector = `~${accessibilityLabel}`;
+  const element = await driver.$(selector);
+
+  await element.waitForDisplayed({ timeout: 15000 });
+  await element.click();
+}
+
+async function waitForSource(driver, pattern) {
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const source = await driver.getPageSource();
+    if (pattern.test(source)) {
+      return source;
+    }
+
+    await driver.pause(1000);
+  }
+
+  const source = await driver.getPageSource();
+  assert.match(source, pattern);
+  return source;
 }
 
 async function captureScreenshot(driver, name) {

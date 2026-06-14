@@ -25,6 +25,10 @@ public class Almacen {
     @JoinColumn(name = "id_direccion", nullable = false)
     private Direccion direccion;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_estado_cuenta", nullable = false)
+    private EstadoCuenta estadoCuenta;
+
     public Long getIdAlmacen() {
         return idAlmacen;
     }
@@ -47,5 +51,13 @@ public class Almacen {
 
     public void setDireccion(Direccion direccion) {
         this.direccion = direccion;
+    }
+
+    public EstadoCuenta getEstadoCuenta() {
+        return estadoCuenta;
+    }
+
+    public void setEstadoCuenta(EstadoCuenta estadoCuenta) {
+        this.estadoCuenta = estadoCuenta;
     }
 }

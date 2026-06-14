@@ -46,6 +46,7 @@ class JwtSecurityConfigTests {
             "/api/usuarios",
             "/api/usuarios/me",
             "/api/almacenes",
+            "/api/configuracion/1",
             "/api/consultas",
             "/api/valoraciones",
             "/api/ofertas",

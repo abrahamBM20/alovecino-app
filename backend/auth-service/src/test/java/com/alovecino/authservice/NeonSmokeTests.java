@@ -115,7 +115,7 @@ class NeonSmokeTests {
                         """.formatted(email, TEST_PASSWORD)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
-                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.user.email").value(email))
                 .andReturn();
 
@@ -137,7 +137,7 @@ class NeonSmokeTests {
                 .cookie(loginRefreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
-                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
                 .andReturn();
 
         Cookie rotatedRefreshCookie = refreshResult.getResponse().getCookie("refreshToken");

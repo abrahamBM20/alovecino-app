@@ -6,8 +6,19 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      mobile_action:
+        description: Mobile delivery action
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - update
+          - apk
+          - store
+          - none
       build_prod_preview:
-        description: Build Android prod-preview APK
+        description: Build Android prod-preview APK (legacy shortcut)
         required: false
         default: false
         type: boolean
@@ -130,53 +141,15 @@ jobs:
 
       - name: Configure SSH
         run: |
-          if [[ "$PROD_EC2_HOST" == http://* || "$PROD_EC2_HOST" == https://* ]]; then
-            echo "PROD_EC2_HOST must be only the EC2 public DNS or IPv4, without http:// or https://."
-            exit 1
-          fi
-
           mkdir -p ~/.ssh
           printf '%s\n' "$PROD_EC2_SSH_KEY" > ~/.ssh/prod_ec2_key
           chmod 600 ~/.ssh/prod_ec2_key
-          if ! ssh-keyscan -T 30 -H "$PROD_EC2_HOST" >> ~/.ssh/known_hosts; then
-            {
-              echo "Could not reach EC2 SSH endpoint at ${PROD_EC2_HOST}:22."
-              echo "Check that the EC2 instance is running, PROD_EC2_HOST is current, and the security group allows inbound TCP 22 from GitHub Actions runners."
-            } >&2
-            exit 1
-          fi
+          ssh-keyscan -H "$PROD_EC2_HOST" >> ~/.ssh/known_hosts
 
       - name: Upload deployment bundle
         run: |
           ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" "mkdir -p /opt/alovecino/prod/current"
           scp -i ~/.ssh/prod_ec2_key prod-deploy.tar.gz "$PROD_EC2_USER@$PROD_EC2_HOST:/opt/alovecino/prod/prod-deploy.tar.gz"
-
-      - name: Ensure Docker Compose on EC2
-        run: |
-          ssh -i ~/.ssh/prod_ec2_key "$PROD_EC2_USER@$PROD_EC2_HOST" '
-            set -euo pipefail
-
-            if docker compose version >/dev/null 2>&1; then
-              docker compose version
-              exit 0
-            fi
-
-            arch="$(uname -m)"
-            case "$arch" in
-              x86_64|aarch64) ;;
-              *)
-                echo "Unsupported architecture for Docker Compose plugin: $arch" >&2
-                exit 1
-                ;;
-            esac
-
-            sudo mkdir -p /usr/local/lib/docker/cli-plugins
-            sudo curl --fail --location --show-error --silent \
-              "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-${arch}" \
-              --output /usr/local/lib/docker/cli-plugins/docker-compose
-            sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-            docker compose version
-          '
 
       - name: Deploy with Docker Compose
         run: |
@@ -216,29 +189,39 @@ jobs:
           echo "Production gateway did not become healthy in time."
           exit 1
 
-  eas-production-build:
-    name: EAS Android production build
+  eas-production-mobile-delivery:
+    name: EAS Android production delivery
     runs-on: ubuntu-latest
     needs:
       - backend-tests
       - frontend-tests
-    if: ${{ vars.ENABLE_PROD_EAS_BUILD == 'true' }}
-    defaults:
-      run:
-        working-directory: frontend
+      - deploy-backend-ec2
+    if: ${{ always() && needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && needs.deploy-backend-ec2.result == 'success' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_PROD_EAS_UPDATE == 'true' || vars.ENABLE_PROD_PREVIEW_EAS_BUILD == 'true' || vars.ENABLE_PROD_EAS_BUILD == 'true') }}
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       PROD_API_BASE_URL: ${{ vars.PROD_API_BASE_URL }}
+      REQUESTED_MOBILE_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.build_prod_preview && 'apk' || github.event_name == 'workflow_dispatch' && inputs.mobile_action || 'auto' }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve EAS mobile action
+        id: mobile
+        run: |
+          bash scripts/resolve-eas-mobile-action.sh \
+            --environment prod \
+            --requested-action "$REQUESTED_MOBILE_ACTION"
 
       - name: Validate production app variables
+        if: ${{ steps.mobile.outputs.action != 'none' }}
         run: |
           test -n "$EXPO_TOKEN"
           test -n "$PROD_API_BASE_URL"
 
       - name: Set up Node
+        if: ${{ steps.mobile.outputs.action != 'none' }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -246,58 +229,44 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: ${{ steps.mobile.outputs.action != 'none' }}
+        working-directory: frontend
         run: npm ci
 
       - name: Install EAS CLI
+        if: ${{ steps.mobile.outputs.action != 'none' }}
+        working-directory: frontend
         run: npm install --global eas-cli
 
       - name: Inject production API URL into EAS profile
-        run: |
-          jq '.build.prod.env.EXPO_PUBLIC_API_URL = env.PROD_API_BASE_URL' eas.json > eas.tmp.json
-          mv eas.tmp.json eas.json
-
-      - name: Run EAS production build
-        run: eas build --platform android --profile prod --non-interactive
-
-  eas-production-preview-build:
-    name: EAS Android production preview APK
-    runs-on: ubuntu-latest
-    needs:
-      - backend-tests
-      - frontend-tests
-    if: ${{ vars.ENABLE_PROD_PREVIEW_EAS_BUILD == 'true' || (github.event_name == 'workflow_dispatch' && inputs.build_prod_preview) }}
-    defaults:
-      run:
+        if: ${{ steps.mobile.outputs.action == 'build' }}
+        env:
+          EAS_BUILD_PROFILE: ${{ steps.mobile.outputs.build_profile }}
         working-directory: frontend
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      PROD_API_BASE_URL: ${{ vars.PROD_API_BASE_URL }}
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Validate production preview app variables
         run: |
-          test -n "$EXPO_TOKEN"
-          test -n "$PROD_API_BASE_URL"
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install EAS CLI
-        run: npm install --global eas-cli
-
-      - name: Inject production API URL into EAS preview profile
-        run: |
-          jq '.build["prod-preview"].env.EXPO_PUBLIC_API_URL = env.PROD_API_BASE_URL' eas.json > eas.tmp.json
+          jq --arg profile "$EAS_BUILD_PROFILE" '.build[$profile].env.EXPO_PUBLIC_API_URL = env.PROD_API_BASE_URL' eas.json > eas.tmp.json
           mv eas.tmp.json eas.json
 
-      - name: Run EAS production preview APK build
-        run: eas build --platform android --profile prod-preview --non-interactive
+      - name: Run EAS production update
+        if: ${{ steps.mobile.outputs.action == 'update' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_PROD_EAS_UPDATE == 'true') }}
+        env:
+          EXPO_PUBLIC_APP_ENV: prod
+          EXPO_PUBLIC_API_URL: ${{ vars.PROD_API_BASE_URL }}
+          EAS_UPDATE_BRANCH: ${{ steps.mobile.outputs.update_branch }}
+        working-directory: frontend
+        run: eas update --branch "$EAS_UPDATE_BRANCH" --message "$GITHUB_SHA" --non-interactive
+
+      - name: Run EAS production Android build
+        if: ${{ steps.mobile.outputs.action == 'build' && (github.event_name == 'workflow_dispatch' || (steps.mobile.outputs.build_profile == 'prod-preview' && vars.ENABLE_PROD_PREVIEW_EAS_BUILD == 'true') || (steps.mobile.outputs.build_profile == 'prod' && vars.ENABLE_PROD_EAS_BUILD == 'true')) }}
+        env:
+          EAS_BUILD_PROFILE: ${{ steps.mobile.outputs.build_profile }}
+        working-directory: frontend
+        run: eas build --platform android --profile "$EAS_BUILD_PROFILE" --non-interactive
+
+      - name: Explain skipped mobile delivery
+        if: ${{ steps.mobile.outputs.action == 'none' || (steps.mobile.outputs.action == 'update' && github.event_name != 'workflow_dispatch' && vars.ENABLE_PROD_EAS_UPDATE != 'true') || (steps.mobile.outputs.action == 'build' && steps.mobile.outputs.build_profile == 'prod-preview' && github.event_name != 'workflow_dispatch' && vars.ENABLE_PROD_PREVIEW_EAS_BUILD != 'true') || (steps.mobile.outputs.action == 'build' && steps.mobile.outputs.build_profile == 'prod' && github.event_name != 'workflow_dispatch' && vars.ENABLE_PROD_EAS_BUILD != 'true') }}
+        run: |
+          echo "Mobile delivery skipped."
+          echo "Resolved action: ${{ steps.mobile.outputs.action }}"
+          echo "Build profile: ${{ steps.mobile.outputs.build_profile }}"
+          echo "Reason: ${{ steps.mobile.outputs.reason }}"

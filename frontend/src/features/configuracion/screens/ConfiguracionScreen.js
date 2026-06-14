@@ -18,6 +18,7 @@ import BotonInicio from '../../../../assets/boton_inicio.svg';
 import BotonConfiguracion from '../../../../assets/boton_configuracion.svg';
 import BotonPerfil from '../../../../assets/boton_perfil.svg';
 import { useConfiguracionForm } from '../hooks/useConfiguracionForm';
+import { useAuthStore } from '../../../store/authStore';
 
 const PRIMARY = '#044E81';
 const MIN_KM = 0.5;
@@ -26,10 +27,10 @@ const STEP_KM = 0.5;
 const THUMB_SIZE = 26;
 
 const TAB_ITEMS = [
-  { id: 'ubicacion', Component: BotonFiltro, route: '/home' },
+  { id: 'ubicacion', Component: BotonFiltro, route: '/home/ubicacion' },
   { id: 'inicio', Component: BotonInicio, route: '/home' },
   { id: 'configuracion', Component: BotonConfiguracion, route: '/home/configuracion' },
-  { id: 'perfil', Component: BotonPerfil, route: '/home' },
+  { id: 'perfil', Component: BotonPerfil, route: '/home/perfil' },
 ];
 
 function RadioSlider({ value, onValueChange }) {
@@ -118,6 +119,19 @@ export default function ConfiguracionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { config, isLoading, isSaving, error, saveSuccess, updateField, save } = useConfiguracionForm();
+  const logout = useAuthStore((state) => state.logout);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+
+    try {
+      await logout();
+      router.replace('/auth');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <LinearGradient
@@ -178,7 +192,7 @@ export default function ConfiguracionScreen() {
 
               <Section title="Radio de búsqueda">
                 <Text style={styles.sliderDesc}>
-                  Negocios dentro del radio seleccionado aparecerán en el mapa.
+                  Negocios dentro del radio seleccionado aparecerán en inicio y mapa.
                 </Text>
                 <RadioSlider
                   value={config.radioOfertasKm}
@@ -205,6 +219,22 @@ export default function ConfiguracionScreen() {
               >
                 <Text style={styles.saveButtonText}>
                   {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.logoutButtonPressed,
+                  loggingOut && styles.saveButtonDisabled,
+                ]}
+                onPress={handleLogout}
+                disabled={loggingOut}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar sesión"
+              >
+                <Text style={styles.logoutButtonText}>
+                  {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </Text>
               </Pressable>
             </>
@@ -383,6 +413,25 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  logoutButton: {
+    borderRadius: 28,
+    minHeight: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: '#dc2626',
+  },
+  logoutButtonPressed: {
+    backgroundColor: '#fee2e2',
+  },
+  logoutButtonText: {
+    color: '#dc2626',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.4,

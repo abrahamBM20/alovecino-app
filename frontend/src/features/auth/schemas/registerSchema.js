@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { COMUNA_VALUES, REGION_VALUES } from '../constants/locationCatalog';
 
 const LATAM_PERSON_NAME_REGEX = /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u;
 const LATAM_TEXT_REGEX = /^[\p{L}\p{M}0-9 .,'’#°ºª/-]+$/u;
+const LATAM_PHONE_REGEX = /^[0-9+() -]+$/;
 const USERNAME_REGEX = /^[\p{L}\p{M}0-9._-]+$/u;
 const RUT_REGEX = /^\d{1,8}[\dkK]$/;
 
@@ -76,6 +78,12 @@ export const registerSchema = z
       .max(140, 'El nombre del almacén no puede superar 140 caracteres')
       .refine((value) => !value || LATAM_TEXT_REGEX.test(value), 'Ingresa un nombre de almacén válido')
       .optional(),
+    telefono: z
+      .string()
+      .trim()
+      .max(30, 'El teléfono no puede superar 30 caracteres')
+      .refine((value) => !value || LATAM_PHONE_REGEX.test(value), 'Ingresa un teléfono válido')
+      .optional(),
     calle: z
       .string()
       .trim()
@@ -91,15 +99,13 @@ export const registerSchema = z
     comuna: z
       .string()
       .trim()
-      .min(1, 'Ingresa la comuna')
-      .max(120, 'La comuna no puede superar 120 caracteres')
-      .regex(LATAM_TEXT_REGEX, 'Ingresa una comuna válida'),
+      .min(1, 'Selecciona la comuna')
+      .refine((value) => COMUNA_VALUES.includes(value), 'Selecciona una comuna configurada'),
     region: z
       .string()
       .trim()
-      .min(1, 'Ingresa la región')
-      .max(120, 'La región no puede superar 120 caracteres')
-      .regex(LATAM_TEXT_REGEX, 'Ingresa una región válida'),
+      .min(1, 'Selecciona la región')
+      .refine((value) => REGION_VALUES.includes(value), 'Selecciona una región configurada'),
     codigoPostal: z
       .string()
       .trim()
@@ -116,6 +122,10 @@ export const registerSchema = z
   .refine((data) => data.tipoUsuario !== 'almacen' || !!data.nombreAlmacen?.trim(), {
     message: 'Ingresa el nombre del almacén',
     path: ['nombreAlmacen'],
+  })
+  .refine((data) => data.tipoUsuario !== 'almacen' || String(data.telefono ?? '').trim().length >= 8, {
+    message: 'Ingresa un teléfono válido',
+    path: ['telefono'],
   })
   .refine((data) => data.password === data.confirmarPassword, {
     message: 'Las contraseñas no coinciden',

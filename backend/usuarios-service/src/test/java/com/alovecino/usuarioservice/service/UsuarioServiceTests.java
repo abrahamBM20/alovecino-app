@@ -3,6 +3,7 @@ package com.alovecino.usuarioservice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -10,20 +11,33 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.alovecino.usuarioservice.dto.DireccionRequest;
+import com.alovecino.usuarioservice.dto.AlmacenEstadoRequest;
+import com.alovecino.usuarioservice.dto.AlmacenRequest;
+import com.alovecino.usuarioservice.dto.AlmacenResponse;
 import com.alovecino.usuarioservice.dto.UsuarioRequest;
 import com.alovecino.usuarioservice.dto.UsuarioRequest.TipoCuenta;
 import com.alovecino.usuarioservice.dto.UsuarioResponse;
+import com.alovecino.usuarioservice.model.Rol;
+import com.alovecino.usuarioservice.model.Usuario;
+import com.alovecino.usuarioservice.repository.AlmacenContactoRepository;
 import com.alovecino.usuarioservice.repository.AlmacenRepository;
 import com.alovecino.usuarioservice.repository.ClienteRepository;
 import com.alovecino.usuarioservice.repository.ConfiguracionUsuarioRepository;
 import com.alovecino.usuarioservice.repository.DireccionRepository;
+import com.alovecino.usuarioservice.repository.RolRepository;
 import com.alovecino.usuarioservice.repository.UsuarioRepository;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 class UsuarioServiceTests {
 
@@ -31,13 +45,22 @@ class UsuarioServiceTests {
     private UsuarioService usuarioService;
 
     @Autowired
+    private AlmacenService almacenService;
+
+    @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private ClienteRepository clienteRepository;
 
     @Autowired
     private AlmacenRepository almacenRepository;
+
+    @Autowired
+    private AlmacenContactoRepository almacenContactoRepository;
 
     @Autowired
     private DireccionRepository direccionRepository;
@@ -47,6 +70,9 @@ class UsuarioServiceTests {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private CapturingGeocodingService geocodingService;
 
     @Test
     void shouldCreateClienteWithDireccionConfiguracionAndBcryptPassword() {
@@ -70,6 +96,8 @@ class UsuarioServiceTests {
         assertThat(configuracionUsuarioRepository.count()).isEqualTo(1);
         assertThat(direccionRepository.findAll().getFirst().getLatitud()).isNotNull();
         assertThat(direccionRepository.findAll().getFirst().getLongitud()).isNotNull();
+        assertThat(direccionRepository.findAll().getFirst().getComuna().getRegion().getNombre())
+                .isEqualTo("Metropolitana de Santiago");
     }
 
     @Test
@@ -84,6 +112,143 @@ class UsuarioServiceTests {
         assertThat(configuracionUsuarioRepository.count()).isEqualTo(1);
         assertThat(direccionRepository.findAll().getFirst().getLatitud()).isNotNull();
         assertThat(almacenRepository.findAll().getFirst().getEstadoCuenta().getCodigo()).isEqualTo("PENDIENTE");
+        assertThat(almacenContactoRepository.findAll()).hasSize(1)
+                .first()
+                .satisfies(contacto -> {
+                    assertThat(contacto.getValor()).isEqualTo("+56912345678");
+                    assertThat(contacto.isEsPrincipal()).isTrue();
+                });
+    }
+
+    @Test
+    void shouldGeocodeWithNormalizedComunaAndRegionAliases() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        request.getDireccion().setComuna("Penalolen");
+        request.getDireccion().setRegion("RM");
+
+        usuarioService.createUsuario(request);
+
+        assertThat(geocodingService.lastRequest().getComuna()).isEqualTo("Peñalolén");
+        assertThat(geocodingService.lastRequest().getRegion()).isEqualTo("Metropolitana de Santiago");
+    }
+
+    @Test
+    void shouldRejectDireccionOutsideConfiguredLocationCatalog() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        request.getDireccion().setComuna("Comuna Inventada");
+        request.getDireccion().setRegion("RM");
+
+        assertThatThrownBy(() -> usuarioService.createUsuario(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("comuna no está configurada");
+    }
+
+    @Test
+    void shouldUpdateAlmacenProfileDireccionAndTelefono() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        UsuarioResponse saved = usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+
+        AlmacenRequest update = new AlmacenRequest();
+        update.setNombre("Botillería Queltehues Sur");
+        update.setTelefono("+56911112222");
+        DireccionRequest direccion = new DireccionRequest();
+        direccion.setCalle("Pasaje Los Queltehues");
+        direccion.setNumero("1450");
+        direccion.setComuna("Peñalolén");
+        direccion.setRegion("Metropolitana de Santiago");
+        direccion.setCodigoPostal("7910000");
+        update.setDireccion(direccion);
+
+        AlmacenResponse response = almacenService.updateAlmacen(String.valueOf(saved.getIdUsuario()), idAlmacen,
+                update);
+
+        assertThat(response.getNombre()).isEqualTo("Botillería Queltehues Sur");
+        assertThat(response.getTelefono()).isEqualTo("+56911112222");
+        assertThat(response.getCalle()).isEqualTo("Pasaje Los Queltehues");
+        assertThat(response.getNumero()).isEqualTo("1450");
+        assertThat(response.getCodigoPostal()).isEqualTo("7910000");
+        assertThat(response.getComuna()).isEqualTo("Peñalolén");
+        assertThat(almacenContactoRepository
+                .findFirstByAlmacenIdAlmacenAndEsPrincipalTrueOrderByIdAlmacenContactoAsc(idAlmacen))
+                .isPresent()
+                .get()
+                .satisfies(contacto -> {
+                    assertThat(contacto.getValor()).isEqualTo("+56911112222");
+                    assertThat(contacto.getNombreContacto()).isEqualTo("Botillería Queltehues Sur");
+                });
+    }
+
+    @Test
+    void shouldAllowAdminToActivateAlmacen() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+        Usuario admin = adminUser();
+        AlmacenEstadoRequest estadoRequest = new AlmacenEstadoRequest();
+        estadoRequest.setEstado("ACTIVO");
+
+        AlmacenResponse response = almacenService.updateEstadoAlmacen(String.valueOf(admin.getIdUsuario()), idAlmacen,
+                estadoRequest);
+
+        assertThat(response.getEstado()).isEqualTo("ACTIVO");
+        assertThat(almacenRepository.findById(idAlmacen)).isPresent()
+                .get()
+                .satisfies(almacen -> assertThat(almacen.getEstadoCuenta().getCodigo()).isEqualTo("ACTIVO"));
+    }
+
+    @Test
+    void shouldRejectEstadoChangeFromNonAdmin() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        UsuarioResponse saved = usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+        AlmacenEstadoRequest estadoRequest = new AlmacenEstadoRequest();
+        estadoRequest.setEstado("ACTIVO");
+
+        assertThatThrownBy(() -> almacenService.updateEstadoAlmacen(String.valueOf(saved.getIdUsuario()), idAlmacen,
+                estadoRequest))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("administradores");
+    }
+
+    @Test
+    void shouldAllowAdminToRefreshAlmacenGeocoding() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+        Usuario admin = adminUser();
+        geocodingService.useCoordinates("-33.4801011", "-70.5431336");
+
+        AlmacenResponse response = almacenService.refreshGeocoding(String.valueOf(admin.getIdUsuario()), idAlmacen);
+
+        assertThat(response.getLatitud()).isEqualTo("-33.4801011");
+        assertThat(response.getLongitud()).isEqualTo("-70.5431336");
+        assertThat(geocodingService.lastRequest().getCalle()).isEqualTo("Avenida Siempre Viva");
+        assertThat(geocodingService.lastRequest().getComuna()).isEqualTo("Providencia");
+        assertThat(almacenRepository.findById(idAlmacen)).isPresent()
+                .get()
+                .satisfies(almacen -> {
+                    assertThat(almacen.getDireccion().getLatitud()).isEqualByComparingTo("-33.4801011");
+                    assertThat(almacen.getDireccion().getLongitud()).isEqualByComparingTo("-70.5431336");
+                });
+    }
+
+    @Test
+    void shouldRejectGeocodingRefreshFromNonAdmin() {
+        UsuarioRequest request = almacenRequest("222222222", "almacen-" + UUID.randomUUID() + "@alovecino.test",
+                "dueno-" + UUID.randomUUID());
+        UsuarioResponse saved = usuarioService.createUsuario(request);
+        Long idAlmacen = almacenRepository.findAll().getFirst().getIdAlmacen();
+
+        assertThatThrownBy(() -> almacenService.refreshGeocoding(String.valueOf(saved.getIdUsuario()), idAlmacen))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("administradores");
     }
 
     @Test
@@ -139,6 +304,7 @@ class UsuarioServiceTests {
         request.setFechaNacimiento(null);
         request.setNombre("Dueño Almacén");
         request.setNombreAlmacen("Almacén Test");
+        request.setTelefono("+56912345678");
         return request;
     }
 
@@ -152,13 +318,64 @@ class UsuarioServiceTests {
         return direccion;
     }
 
+    private Usuario adminUser() {
+        return usuarioRepository.findByCorreo("admin@alovecino.com")
+                .orElseGet(this::createAdminUser);
+    }
+
+    private Usuario createAdminUser() {
+        Rol adminRol = rolRepository.findByNombreRol("ADMIN")
+                .orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
+        Usuario admin = new Usuario();
+        admin.setRut("111111111");
+        admin.setNombreUsuario("admin-" + UUID.randomUUID());
+        admin.setNombre("Administrador Test");
+        admin.setCorreo("admin-" + UUID.randomUUID() + "@alovecino.test");
+        admin.setContrasena(passwordEncoder.encode("Password123"));
+        admin.setRol(adminRol);
+        return usuarioRepository.save(admin);
+    }
+
     @AfterEach
     void tearDown() {
+        almacenContactoRepository.deleteAll();
         almacenRepository.deleteAll();
         clienteRepository.deleteAll();
         configuracionUsuarioRepository.deleteAll();
         direccionRepository.deleteAll();
         usuarioRepository.deleteAll();
+    }
+
+    @TestConfiguration
+    static class GeocodingTestConfig {
+
+        @Bean
+        @Primary
+        CapturingGeocodingService capturingGeocodingService() {
+            return new CapturingGeocodingService();
+        }
+    }
+
+    static class CapturingGeocodingService implements GeocodingService {
+
+        private DireccionRequest lastRequest;
+        private BigDecimal latitud = new BigDecimal("-33.4876000");
+        private BigDecimal longitud = new BigDecimal("-70.5389000");
+
+        @Override
+        public Coordinates geocode(DireccionRequest direccion) {
+            lastRequest = direccion;
+            return new Coordinates(latitud, longitud);
+        }
+
+        DireccionRequest lastRequest() {
+            return lastRequest;
+        }
+
+        void useCoordinates(String latitud, String longitud) {
+            this.latitud = new BigDecimal(latitud);
+            this.longitud = new BigDecimal(longitud);
+        }
     }
 }
 

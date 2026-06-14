@@ -20,7 +20,7 @@ import com.alovecino.geoservice.repository.AlmacenGeoRepository;
 public class GeoService {
 
     public static final int DEFAULT_RADIUS_METERS = 500;
-    private static final Set<Integer> ALLOWED_RADIUS_METERS = Set.of(200, 500, 1000, 2000);
+    private static final Set<Integer> ALLOWED_RADIUS_METERS = Set.of(200, 500, 1000, 2000, 10000, 100000);
     private static final BigDecimal METERS_PER_LATITUDE_DEGREE = new BigDecimal("111320");
 
     private final AlmacenGeoRepository almacenGeoRepository;
@@ -51,7 +51,7 @@ public class GeoService {
     private int normalizeRadius(Integer radiusMeters) {
         int radius = radiusMeters == null ? DEFAULT_RADIUS_METERS : radiusMeters;
         if (!ALLOWED_RADIUS_METERS.contains(radius)) {
-            throw new IllegalArgumentException("radio_metros debe ser uno de: 200, 500, 1000, 2000");
+            throw new IllegalArgumentException("radio_metros debe ser uno de: 200, 500, 1000, 2000, 10000, 100000");
         }
         return radius;
     }
@@ -69,6 +69,8 @@ public class GeoService {
                 direccion.getLongitud(),
                 distanceMeters,
                 distanceKm,
+                direccion.getCalle(),
+                direccion.getNumero(),
                 direccion.getComuna().getNombre(),
                 direccion.getComuna().getRegion().getNombre());
     }

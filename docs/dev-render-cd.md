@@ -1,0 +1,69 @@
+# Deploy Dev En Render
+
+## Objetivo
+
+El ambiente `dev` debe desplegar backend automaticamente despues de mergear cambios hacia la rama `dev`, usando GitHub Actions y Render API.
+
+## Workflow
+
+El deploy dev vive en `.github/workflows/backend-ci.yml`.
+
+En `pull_request` hacia `dev`:
+
+- Ejecuta pruebas backend.
+- No despliega en Render.
+
+En `push` hacia `dev`:
+
+- Ejecuta pruebas backend.
+- Si todas pasan, ejecuta `Render dev deploy`.
+- Dispara deploys Render para `auth-service`, `usuarios-service`, `geo-service`, `chat-service` y `api-gateway`.
+- El `api-gateway` debe tener `CHAT_SERVICE_URL=https://alovecino-chat-service-dev.onrender.com` para enrutar `/api/consultas/**` y `/api/estados-consulta/**`.
+
+## Secretos Requeridos
+
+- `RENDER_API_KEY`: API key de Render para listar servicios y gatillar deploys.
+- `GEO_INTERNAL_API_KEY`: opcional. Si no existe, el workflow genera una clave por deploy y la configura en `usuarios-service` y `geo-service` para permitir geocodificacion interna durante registros publicos.
+- `GOOGLE_MAPS_API_KEY`: opcional, pero requerida para que `geo-service` geocodifique direcciones reales en registros publicos de almacenes. Si falta, `usuarios-service` conserva el fallback deterministico.
+
+## Variables Opcionales
+
+El workflow puede resolver los servicios por nombre usando defaults. Si se prefiere evitar busqueda por nombre, configurar IDs explicitamente:
+
+- `RENDER_DEV_AUTH_SERVICE_ID`
+- `RENDER_DEV_USUARIOS_SERVICE_ID`
+- `RENDER_DEV_GEO_SERVICE_ID`
+- `RENDER_DEV_API_GATEWAY_SERVICE_ID`
+- `RENDER_DEV_CHAT_SERVICE_ID`
+
+Tambien se pueden sobreescribir nombres:
+
+- `RENDER_DEV_AUTH_SERVICE_NAME` default `alovecino-auth-service-dev`
+- `RENDER_DEV_USUARIOS_SERVICE_NAME` default `alovecino-usuarios-service-dev`
+- `RENDER_DEV_GEO_SERVICE_NAME` default `alovecino-geo-service-dev`
+- `RENDER_DEV_API_GATEWAY_SERVICE_NAME` default `alovecino-api-gateway-dev`
+- `RENDER_DEV_CHAT_SERVICE_NAME` default `alovecino-chat-service-dev`
+
+## Geocodificacion De Registros
+
+Antes de gatillar deploys, el workflow configura:
+
+- `GEO_SERVICE_URL` en `usuarios-service`, usando la URL resuelta de `alovecino-geo-service-dev`.
+- `GEO_INTERNAL_API_KEY` en `usuarios-service` y `geo-service`, con el mismo valor.
+- `GOOGLE_MAPS_API_KEY` en `geo-service` si el secret existe.
+
+Si `GEO_SERVICE_URL` o `GOOGLE_MAPS_API_KEY` faltan, los registros de almacenes pueden quedar con coordenadas deterministicas y no aparecer cerca de la direccion ingresada.
+
+## Servicios Dev Activos
+
+- `alovecino-auth-service-dev`
+- `alovecino-usuarios-service-dev`
+- `alovecino-geo-service-dev`
+- `alovecino-chat-service-dev`
+- `alovecino-api-gateway-dev`
+
+## Relacion Con QA
+
+QA ya despliega con `.github/workflows/qa-cd.yml` despues de un `push` hacia `qa`, siempre que pasen pruebas backend/frontend. La promocion hacia `qa` debe venir desde `dev` por el gate `dev-to-qa-gate.yml`.
+
+QA tambien debe desplegar `chat-service` para soportar `/api/consultas/**`. El servicio Render `alovecino-chat-service-qa` queda asociado a la rama `qa`; si esa rama no contiene aun `backend/chat-service`, el deploy fallara hasta promover `dev` a `qa`.
